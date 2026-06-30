@@ -66,6 +66,12 @@ function _resetDescuento() {
 let tiendas = [];
 let tiendaId = null;
 
+// ¿El usuario actual es administrador? (puede gestionar stock, productos,
+// usuarios, ver costos/márgenes y finanzas). Los cajeros (client_pos) no.
+function _isAdmin() {
+  return ['client_admin','account_manager','super_admin'].includes(userRole);
+}
+
 // ── Helpers UI ───────────────────────────────────────
 function fmtARS(n){ return '$' + Number(n||0).toLocaleString('es-AR', {maximumFractionDigits:0}); }
 function fmtTime(ts){
@@ -174,10 +180,14 @@ async function init(){
   }
 
   await cargarTiendas();
-  if (['client_admin','account_manager','super_admin'].includes(userRole)) {
+  if (_isAdmin()) {
     document.getElementById('tab-tiendas-btn').style.display = '';
     document.getElementById('tab-cuotas-btn').style.display = '';
     document.getElementById('tab-promos-btn').style.display = '';
+    document.getElementById('tab-finanzas-btn').style.display = '';
+    document.getElementById('tab-usuarios-btn').style.display = '';
+    const addBtn = document.getElementById('btn-add-prod-toolbar');
+    if (addBtn) addBtn.style.display = '';
   }
 
   await Promise.all([
@@ -224,7 +234,7 @@ async function init(){
 
 async function cargarProductos(){
   const { data, error } = await sb.from('productos')
-    .select('id, nombre, precio, precio_pos, unidad, litros, tiene_envase, tipo_envase_id, codigo_barra, es_combo, peso_variable, fecha_vencimiento, descuento_volumen_qty, descuento_volumen_pct')
+    .select('id, nombre, precio, precio_pos, costo, unidad, litros, tiene_envase, tipo_envase_id, codigo_barra, es_combo, peso_variable, fecha_vencimiento, descuento_volumen_qty, descuento_volumen_pct')
     .eq('organization_id', orgId)
     .eq('activo', true)
     .order('es_combo', { ascending: false })
@@ -619,6 +629,8 @@ window.goTab = (tab) => {
   if (tab === 'cuotas')   renderCuotasConfig();
   if (tab === 'promos')   renderPromosConfig();
   if (tab === 'tiendas') renderTiendas();
+  if (tab === 'usuarios') renderUsuarios();
+  if (tab === 'finanzas') renderFinanzas();
 };
 
 // ── PROMOS (configuración) ───────────────────────────
@@ -1868,6 +1880,8 @@ function renderProductGrid(){
       ((new Date(p.fecha_vencimiento) - new Date(hoy)) / 86400000) <= 7;
     const tienePromo = p.descuento_volumen_qty > 0 && p.descuento_volumen_pct > 0;
 
+    // Editar producto: solo administradores (los cajeros no modifican catálogo).
+    const editBtnHtml = _isAdmin() ? '<button class="prod-card-edit" type="button" title="Editar producto">✏️</button>' : '';
     if (_prodView === 'list') {
       const tags =
         (sinTipo ? '<span class="prod-row-tag" style="background:rgba(245,158,11,.12);color:#b45309" title="Sin tipo de envase">⚠</span>' : '') +
@@ -1883,11 +1897,11 @@ function renderProductGrid(){
         '<span class="prod-row-stock ' + stockClass + '">' + (p.es_combo ? 'comp.' : stockTxt) + (p.unidad ? ' · ' + p.unidad.toUpperCase() : '') + '</span>' +
         '<span class="prod-row-precio">' + fmtARS(p.precio) + (p.precio_pos_falta ? ' <span title="Sin precio POS propio" style="font-size:10px;color:#f59e0b">⚠</span>' : '') + '</span>' +
         (enCart ? '<span class="prod-row-qty">' + enCart.cantidad + '</span>' : '') +
-        '<button class="prod-card-edit" type="button" title="Editar producto">✏️</button>';
+        editBtnHtml;
     } else {
     card.innerHTML =
       (enCart ? '<div class="prod-card-qty">' + (p.peso_variable ? enCart.cantidad : enCart.cantidad) + '</div>' : '') +
-      '<button class="prod-card-edit" type="button" title="Editar producto">✏️</button>' +
+      editBtnHtml +
       (sinTipo ? '<div class="prod-card-warn" title="Producto retornable sin tipo de envase. Editá para asignar.">⚠ sin tipo</div>' : '') +
       (p.es_combo ? '<div class="prod-card-combo" title="Combo: descuenta stock de los componentes al vender">🎁 COMBO</div>' : '') +
       (vencido ? '<div class="prod-card-warn" style="background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.4);color:#dc2626">⏰ VENCIDO</div>' : '') +
@@ -1906,12 +1920,14 @@ function renderProductGrid(){
     }
     card.querySelector('.prod-card-name').textContent = p.nombre;
     card.addEventListener('click', () => agregarAlCarrito(p));
-    card.querySelector('.prod-card-edit').addEventListener('click', (e) => {
+    const _editBtn = card.querySelector('.prod-card-edit');
+    if (_editBtn) _editBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       abrirAltaProducto({
         _editId: p.id,
         nombre: p.nombre,
         precio: p.precio,
+        costo: p.costo,
         unidad: p.unidad,
         codigo_barra: p.codigo_barra,
         tiene_envase: p.tiene_envase,
@@ -2256,16 +2272,31 @@ window.abrirEntregaParcial = () => {
   });
 };
 
-function renderStock(){
+let _stockShowInactive = false;
+async function renderStock(){
   const list = document.getElementById('stock-list');
   if (!list) return;
-  if (!productos.length) {
-    list.innerHTML = '<div style="padding:30px;text-align:center;color:var(--muted)">Sin productos en el catálogo</div>';
+  const admin = _isAdmin();
+
+  // El control de stock (reponer/cargar/ajustar) y el alta/baja de productos
+  // son SOLO para administradores. Los cajeros ven el stock en modo lectura;
+  // las ventas igual lo descuentan en el backend. Mostramos/ocultamos también
+  // el toggle de "bloquear venta por stock" (es una config de operación).
+  const strictCb = document.getElementById('stock-strict-toggle');
+  if (strictCb && strictCb.closest('label')) {
+    strictCb.closest('label').style.display = admin ? '' : 'none';
+  }
+
+  if (!productos.length && !_stockShowInactive) {
+    list.innerHTML = (admin ? _stockAdminToolbar() : '') +
+      '<div style="padding:30px;text-align:center;color:var(--muted)">Sin productos en el catálogo' +
+      (admin ? '. Tocá "➕ Producto" para crear el primero.' : '.') + '</div>';
+    if (admin) _wireStockToolbar();
     return;
   }
 
   const negativos = productos.filter(p => stockMap.has(p.id) && stockMap.get(p.id) < 0);
-  let html = '';
+  let html = admin ? _stockAdminToolbar() : '';
   if (negativos.length) {
     const items = negativos.map(p =>
       '<li><b>' + p.nombre.replace(/</g,'&lt;') + '</b>: ' + stockMap.get(p.id) + '</li>'
@@ -2278,23 +2309,114 @@ function renderStock(){
       + '</div>';
   }
   list.innerHTML = html;
+  if (admin) _wireStockToolbar();
 
   productos.forEach(p => {
     const cant = stockMap.has(p.id) ? stockMap.get(p.id) : 0;
     const cls  = cant < 0 ? 'negativo' : cant <= 5 ? 'bajo' : '';
+    // Línea secundaria: precio siempre; costo y margen solo para admin.
+    let sub = fmtARS(p.precio) + (p.unidad ? ' · ' + p.unidad : '');
+    if (admin && p.costo != null && p.costo !== '' && Number(p.costo) > 0) {
+      const costo = Number(p.costo);
+      const gan = p.precio - costo;
+      const mg = p.precio > 0 ? (gan / p.precio) * 100 : 0;
+      const col = gan < 0 ? '#dc2626' : '#059669';
+      sub += ' · costo ' + fmtARS(costo) +
+        ' · <b style="color:' + col + '">margen ' + mg.toFixed(0) + '% (' + (gan>=0?'+':'') + fmtARS(gan) + ')</b>';
+    } else if (admin) {
+      sub += ' · <span style="color:#f59e0b">sin costo</span>';
+    }
     const row = document.createElement('div');
     row.className = 'stock-row';
     row.innerHTML =
       '<div>' +
         '<div class="stock-row-name"></div>' +
-        '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + fmtARS(p.precio) + (p.unidad ? ' · ' + p.unidad : '') + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + sub + '</div>' +
       '</div>' +
       '<div class="stock-row-cant ' + cls + '">' + cant + '</div>' +
-      '<button class="rep-btn" style="padding:6px 12px;border:1.5px solid var(--primary);background:rgba(124,58,237,.06);color:var(--primary);border-radius:50px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">+ Reponer</button>';
+      (admin
+        ? '<div style="display:flex;gap:6px">' +
+            '<button class="rep-btn" style="padding:6px 12px;border:1.5px solid var(--primary);background:rgba(124,58,237,.06);color:var(--primary);border-radius:50px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">+ Reponer</button>' +
+            '<button class="edit-btn" title="Editar producto" style="padding:6px 10px;border:1.5px solid var(--border);background:#fff;border-radius:50px;font-size:12px;cursor:pointer">✏️</button>' +
+            '<button class="baja-btn" title="Dar de baja" style="padding:6px 10px;border:1.5px solid rgba(239,68,68,.35);background:rgba(239,68,68,.06);color:#dc2626;border-radius:50px;font-size:12px;cursor:pointer">🗑</button>' +
+          '</div>'
+        : '<div style="font-size:11px;color:var(--muted)">solo lectura</div>');
     row.querySelector('.stock-row-name').textContent = p.nombre;
-    row.querySelector('.rep-btn').addEventListener('click', () => reponer(p));
+    if (admin) {
+      row.querySelector('.rep-btn').addEventListener('click', () => reponer(p));
+      row.querySelector('.edit-btn').addEventListener('click', () => abrirAltaProducto({
+        _editId: p.id, nombre: p.nombre, precio: p.precio, costo: p.costo, unidad: p.unidad,
+        codigo_barra: p.codigo_barra, tiene_envase: p.tiene_envase, tipo_envase_id: p.tipo_envase_id,
+        es_combo: p.es_combo, peso_variable: p.peso_variable, fecha_vencimiento: p.fecha_vencimiento,
+        descuento_volumen_qty: p.descuento_volumen_qty, descuento_volumen_pct: p.descuento_volumen_pct,
+      }));
+      row.querySelector('.baja-btn').addEventListener('click', () => darDeBajaProducto(p));
+    }
     list.appendChild(row);
   });
+
+  // Sección de productos dados de baja (inactivos) — admin, bajo demanda.
+  if (admin && _stockShowInactive) {
+    const { data: inact } = await sb.from('productos')
+      .select('id, nombre, precio, precio_pos, unidad, codigo_barra')
+      .eq('organization_id', orgId).eq('activo', false).order('nombre');
+    const cont = document.createElement('div');
+    cont.style.cssText = 'margin-top:18px';
+    cont.innerHTML = '<h3 style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:0 0 8px">Dados de baja (' + (inact?.length || 0) + ')</h3>';
+    if (!inact || !inact.length) {
+      cont.innerHTML += '<div style="font-size:12px;color:var(--muted);padding:8px">No hay productos dados de baja.</div>';
+    } else {
+      inact.forEach(p => {
+        const r = document.createElement('div');
+        r.className = 'stock-row';
+        r.style.opacity = '.7';
+        r.innerHTML = '<div><div class="ia-nm" style="font-weight:600;font-size:13px"></div>' +
+          '<div style="font-size:11px;color:var(--muted)">' + fmtARS(p.precio_pos != null ? p.precio_pos : p.precio) + (p.unidad ? ' · ' + p.unidad : '') + '</div></div>' +
+          '<div></div>' +
+          '<button class="react-btn" style="padding:6px 12px;border:1.5px solid #059669;background:rgba(16,185,129,.08);color:#059669;border-radius:50px;font-size:12px;font-weight:700;cursor:pointer">Reactivar</button>';
+        r.querySelector('.ia-nm').textContent = p.nombre;
+        r.querySelector('.react-btn').addEventListener('click', () => reactivarProducto(p));
+        cont.appendChild(r);
+      });
+    }
+    list.appendChild(cont);
+  }
+}
+
+function _stockAdminToolbar() {
+  return '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">' +
+    '<button id="stk-add" type="button" style="padding:9px 16px;border-radius:50px;border:1.5px solid var(--primary);background:rgba(124,58,237,.06);color:var(--primary);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">➕ Producto</button>' +
+    '<button id="stk-carga" type="button" style="padding:9px 16px;border-radius:50px;border:1.5px solid var(--border);background:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">📦 Cargar mercadería</button>' +
+    '<button id="stk-inact" type="button" style="padding:9px 16px;border-radius:50px;border:1.5px solid var(--border);background:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">' + (_stockShowInactive ? '✓ Ocultar dados de baja' : '👁 Ver dados de baja') + '</button>' +
+    '</div>';
+}
+function _wireStockToolbar() {
+  document.getElementById('stk-add')?.addEventListener('click', () => abrirAltaProducto());
+  document.getElementById('stk-carga')?.addEventListener('click', () => abrirCargaStock());
+  document.getElementById('stk-inact')?.addEventListener('click', () => { _stockShowInactive = !_stockShowInactive; renderStock(); });
+}
+
+async function darDeBajaProducto(p) {
+  const ok = await tmvDialog.confirm(
+    'Se quita "' + p.nombre + '" del catálogo (no se borra el histórico de ventas). Podés reactivarlo después desde "Ver dados de baja".',
+    { title: 'Dar de baja producto', severity: 'warning', okLabel: 'Dar de baja', cancelLabel: 'Cancelar' }
+  );
+  if (!ok) return;
+  const { error } = await sb.from('productos').update({ activo: false }).eq('id', p.id);
+  if (error) { tmvShowError(error, { title: 'No se pudo dar de baja' }); return; }
+  toast('Producto dado de baja', 'ok');
+  await cargarProductos();
+  renderProductGrid();
+  renderStock();
+}
+
+async function reactivarProducto(p) {
+  const { error } = await sb.from('productos').update({ activo: true }).eq('id', p.id);
+  if (error) { tmvShowError(error, { title: 'No se pudo reactivar' }); return; }
+  toast('Producto reactivado ✓', 'ok');
+  await cargarProductos();
+  renderProductGrid();
+  renderStock();
 }
 
 async function reponer(p){
@@ -4832,6 +4954,12 @@ window.abrirAltaProducto = (preset) => {
   document.getElementById('prod-promo-qty').value = preset.descuento_volumen_qty || '';
   document.getElementById('prod-promo-pct').value = preset.descuento_volumen_pct || '';
   document.getElementById('prod-es-combo').checked = !!preset.es_combo;
+  // Costo + margen: solo administradores. Precargamos y mostramos la fila.
+  const costoRow = document.getElementById('prod-costo-row');
+  const costoInp = document.getElementById('prod-costo');
+  if (costoRow) costoRow.style.display = _isAdmin() ? '' : 'none';
+  if (costoInp) costoInp.value = (preset.costo != null && preset.costo !== '') ? preset.costo : '';
+  _recalcMargenProd();
   _llenarSelectTipoEnvase(preset.tipo_envase_id || null);
   _toggleTipoEnvaseVisibility();
   _toggleComboVisibility();
@@ -4844,6 +4972,21 @@ window.abrirAltaProducto = (preset) => {
   ov.classList.add('show');
   setTimeout(() => document.getElementById('prod-nombre').focus(), 50);
 };
+
+// Calcula y muestra el margen (precio venta vs costo) en el modal de producto.
+function _recalcMargenProd() {
+  const el = document.getElementById('prod-margen');
+  if (!el) return;
+  const precio = parseFloat(document.getElementById('prod-precio')?.value) || 0;
+  const costo  = parseFloat(document.getElementById('prod-costo')?.value) || 0;
+  if (costo <= 0 || precio <= 0) { el.textContent = '—'; el.style.color = 'var(--muted)'; return; }
+  const ganancia = precio - costo;
+  const margenPct = precio > 0 ? (ganancia / precio) * 100 : 0;
+  const markupPct = costo > 0 ? (ganancia / costo) * 100 : 0;
+  el.textContent = margenPct.toFixed(0) + '% · +' + fmtARS(ganancia);
+  el.style.color = ganancia < 0 ? 'var(--danger)' : '#059669';
+  el.title = 'Margen ' + margenPct.toFixed(1) + '% · Markup ' + markupPct.toFixed(0) + '% · Ganancia ' + fmtARS(ganancia) + ' por unidad';
+}
 
 async function _llenarSelectTipoEnvase(seleccionar) {
   const sel = document.getElementById('prod-tipo-envase');
@@ -4937,6 +5080,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('prod-tiene-envase')?.addEventListener('change', _toggleTipoEnvaseVisibility);
   document.getElementById('prod-es-combo')?.addEventListener('change', _toggleComboVisibility);
+  document.getElementById('prod-precio')?.addEventListener('input', _recalcMargenProd);
+  document.getElementById('prod-costo')?.addEventListener('input', _recalcMargenProd);
   document.getElementById('prod-combo-add')?.addEventListener('click', () => {
     _comboItems.push({ producto_id: null, cantidad: 1 });
     _renderComboList();
@@ -4983,14 +5128,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const promoP  = parseFloat(document.getElementById('prod-promo-pct').value) || null;
       const productoId = _prodEditId || data.producto_id || data.id;
       if (productoId) {
+        const extra = {
+          es_combo:               esCombo,
+          peso_variable:          pesoVar,
+          fecha_vencimiento:      venc,
+          descuento_volumen_qty:  promoQ,
+          descuento_volumen_pct:  promoP,
+        };
+        // El costo solo lo escriben administradores (campo oculto para cajeros).
+        if (_isAdmin()) {
+          const costoRaw = document.getElementById('prod-costo')?.value;
+          extra.costo = (costoRaw != null && costoRaw !== '') ? (parseFloat(costoRaw) || 0) : null;
+        }
         const { error: cErr } = await sb.from('productos')
-          .update({
-            es_combo:               esCombo,
-            peso_variable:          pesoVar,
-            fecha_vencimiento:      venc,
-            descuento_volumen_qty:  promoQ,
-            descuento_volumen_pct:  promoP,
-          })
+          .update(extra)
           .eq('id', productoId);
         if (cErr) console.warn('update extra fields:', cErr);
         if (esCombo) {
@@ -5044,24 +5195,20 @@ async function _resolverBarcode(codigo) {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const inp = document.getElementById('barcode-input');
-  if (inp) {
-    inp.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        const v = inp.value.trim();
-        inp.value = '';
-        if (v) _resolverBarcode(v);
-      }
-    });
-  }
-});
-
+// Captura global del scanner. Funciona haya o no foco en la barra de
+// búsqueda: el scanner USB "tipea" los dígitos muy rápido (ráfaga) y termina
+// con Enter. Detectamos la ráfaga por el tiempo entre teclas (BARCODE_GAP_MS)
+// y, al recibir Enter con un buffer suficientemente largo, lo resolvemos como
+// código de barras y lo agregamos al carrito al instante — limpiando la barra
+// de búsqueda si el foco estaba ahí. Un humano tipeando es más lento, así que
+// el buffer se resetea y no interfiere con la búsqueda normal.
 document.addEventListener('keydown', (e) => {
   const tag = (e.target?.tagName || '').toLowerCase();
   const enInput = tag === 'input' || tag === 'textarea';
-  if (enInput && e.target?.id !== 'barcode-input') return;
+  // Permitimos la captura solo cuando no hay foco en un input, o cuando el
+  // foco está en la barra de búsqueda (prod-q). En otros inputs (formularios,
+  // cantidades, etc.) no interferimos.
+  if (enInput && e.target?.id !== 'prod-q') return;
   const blockingModals = ['lock-overlay','prod-overlay','mix-overlay','carga-overlay'];
   for (const id of blockingModals) {
     if (document.getElementById(id)?.classList?.contains('show')) return;
@@ -5070,11 +5217,18 @@ document.addEventListener('keydown', (e) => {
   _barcodeTimer = setTimeout(() => { _barcodeBuf = ''; }, BARCODE_GAP_MS * 4);
 
   if (e.key === 'Enter') {
-    if (_barcodeBuf.length >= 4) {
+    // Umbral 6: los códigos EAN/UPC tienen 8–13 dígitos, evita falsos
+    // positivos con búsquedas cortas tipeadas a mano.
+    if (_barcodeBuf.length >= 6) {
       const code = _barcodeBuf;
       _barcodeBuf = '';
       e.preventDefault();
+      // Si el foco estaba en la búsqueda, limpiamos lo que el scanner dejó.
+      const q = document.getElementById('prod-q');
+      if (q && e.target === q) { q.value = ''; _searchProd = ''; renderProductGrid(); }
       _resolverBarcode(code);
+    } else {
+      _barcodeBuf = '';
     }
     return;
   }
@@ -5590,4 +5744,286 @@ if ('serviceWorker' in navigator) {
       }
     });
   });
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  USUARIOS (gestión por el admin) — crear y dar de alta/baja
+// ════════════════════════════════════════════════════════════════════
+const _ROLE_LABEL = {
+  client_admin: 'Administrador', account_manager: 'Gerente',
+  client_pos: 'Cajero', client_user: 'Usuario', super_admin: 'Super admin',
+};
+async function renderUsuarios() {
+  const wrap = document.getElementById('usuarios-wrap');
+  if (!wrap) return;
+  if (!_isAdmin()) { wrap.innerHTML = '<div class="env-empty" style="background:#fff;border:1px solid var(--border);border-radius:14px">Solo administradores.</div>'; return; }
+  wrap.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>';
+  const { data, error } = await sb.rpc('pos_listar_usuarios', { p_organization_id: orgId });
+  if (error) { wrap.innerHTML = '<div style="color:var(--danger);padding:20px">Error: ' + error.message + '</div>'; return; }
+  const usuarios = data?.usuarios || [];
+  const esc = s => String(s ?? '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+
+  let html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap">' +
+    '<h3 style="font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:0">Usuarios del negocio</h3>' +
+    '<button id="usr-add" type="button" style="padding:9px 16px;border-radius:50px;border:1.5px solid var(--primary);background:rgba(124,58,237,.06);color:var(--primary);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">+ Nuevo usuario</button>' +
+    '</div>' +
+    '<div style="font-size:12px;color:var(--ink);background:rgba(124,58,237,.06);border-radius:8px;padding:8px 10px;margin-bottom:12px">ℹ️ Creá cajeros (solo venta) o administradores (acceso total). Dar de baja desactiva el acceso sin borrar el historial; podés reactivarlos cuando quieras.</div>';
+
+  if (!usuarios.length) {
+    html += '<div class="env-empty" style="background:#fff;border:1px solid var(--border);border-radius:14px">Todavía no hay usuarios.</div>';
+  } else {
+    usuarios.forEach(u => {
+      const rol = _ROLE_LABEL[u.role] || u.role;
+      const inactivo = !u.activo;
+      html += '<div class="tienda-card' + (inactivo ? ' inactiva' : '') + '">' +
+        '<div class="tienda-card-info">' +
+        '  <div class="tienda-card-nm"><span class="nm"></span>' +
+        '    <span class="pp" style="background:' + (u.role==='client_pos' ? '#0ea5e9' : 'var(--primary)') + '">' + esc(rol) + '</span>' +
+        (u.es_actual ? '<span style="font-size:10px;color:var(--muted)">vos</span>' : '') +
+        (inactivo ? '<span style="font-size:10px;color:var(--danger)">dado de baja</span>' : '') +
+        '  </div>' +
+        '  <div class="tienda-card-meta email"></div>' +
+        '</div>' +
+        '<div class="tienda-card-actions">' +
+        (u.es_actual ? '<span style="font-size:11px;color:var(--muted)">—</span>'
+                     : '<button type="button" data-toggle="' + u.user_id + '" data-activo="' + (u.activo?'1':'0') + '">' + (u.activo ? 'Dar de baja' : 'Reactivar') + '</button>') +
+        '</div>' +
+        '</div>';
+    });
+  }
+  wrap.innerHTML = html;
+  usuarios.forEach((u, i) => {
+    const card = wrap.querySelectorAll('.tienda-card')[i];
+    if (!card) return;
+    card.querySelector('.nm').textContent = u.nombre || '—';
+    card.querySelector('.email').textContent = u.email + (u.tienda_nombre ? ' · 🏪 ' + u.tienda_nombre : '');
+  });
+
+  document.getElementById('usr-add')?.addEventListener('click', abrirNuevoUsuario);
+  wrap.querySelectorAll('button[data-toggle]').forEach(b => {
+    b.addEventListener('click', async () => {
+      const activar = b.dataset.activo !== '1';
+      if (!activar && !confirm('¿Dar de baja a este usuario? No podrá ingresar hasta que lo reactives.')) return;
+      const { data, error } = await sb.rpc('pos_set_usuario_activo', {
+        p_organization_id: orgId, p_user_id: b.dataset.toggle, p_activo: activar,
+      });
+      if (error) { tmvShowError(error); return; }
+      if (!data?.ok) { toast('No se pudo actualizar', 'err'); return; }
+      toast(activar ? 'Usuario reactivado ✓' : 'Usuario dado de baja', 'ok');
+      renderUsuarios();
+    });
+  });
+}
+
+function abrirNuevoUsuario() {
+  const tiendasOpts = (tiendas || []).map(t => '<option value="' + t.id + '">' + (t.es_principal ? '★ ' : '') + t.nombre.replace(/[<>&"]/g, '') + '</option>').join('');
+  const ov = document.createElement('div');
+  ov.className = 'qr-overlay show';
+  ov.style.cssText = 'background:rgba(0,0,0,.5);z-index:240';
+  ov.innerHTML =
+    '<div style="background:#fff;border-radius:14px;width:min(440px,92vw);max-height:90vh;overflow:auto;padding:22px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+    '<h3 style="margin:0;font-size:18px">+ Nuevo usuario</h3>' +
+    '<button id="usr-x" style="background:none;border:0;font-size:22px;cursor:pointer;color:#64748b">×</button></div>' +
+    '<label class="prod-form-l">Nombre *</label>' +
+    '<input id="usr-nombre" class="prod-form-i" style="width:100%;margin-bottom:10px" placeholder="Nombre del cajero/admin">' +
+    '<label class="prod-form-l">Email *</label>' +
+    '<input id="usr-email" type="email" class="prod-form-i" style="width:100%;margin-bottom:10px" placeholder="usuario@negocio.com" autocomplete="off">' +
+    '<label class="prod-form-l">Contraseña *</label>' +
+    '<input id="usr-pass" type="text" class="prod-form-i" style="width:100%;margin-bottom:10px" placeholder="mínimo 6 caracteres" autocomplete="off">' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
+    '<div><label class="prod-form-l">Rol</label>' +
+    '<select id="usr-role" class="prod-form-i" style="width:100%">' +
+    '<option value="client_pos" selected>Cajero (solo venta)</option>' +
+    '<option value="client_admin">Administrador (acceso total)</option>' +
+    '</select></div>' +
+    '<div><label class="prod-form-l">Tienda (opcional)</label>' +
+    '<select id="usr-tienda" class="prod-form-i" style="width:100%"><option value="">Todas</option>' + tiendasOpts + '</select></div>' +
+    '</div>' +
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:14px">El cajero solo verá la pantalla de venta, ventas del día y caja. El administrador ve todo (stock, costos, finanzas, usuarios).</div>' +
+    '<button id="usr-save" style="width:100%;padding:13px;border-radius:50px;border:none;background:var(--primary);color:#fff;font-weight:700;font-size:14px;cursor:pointer">Crear usuario</button>' +
+    '</div>';
+  document.body.appendChild(ov);
+  const close = () => ov.remove();
+  ov.querySelector('#usr-x').addEventListener('click', close);
+  ov.addEventListener('mousedown', e => { if (e.target === ov) close(); });
+  setTimeout(() => ov.querySelector('#usr-nombre')?.focus(), 50);
+
+  ov.querySelector('#usr-save').addEventListener('click', async (e) => {
+    const nombre = ov.querySelector('#usr-nombre').value.trim();
+    const email  = ov.querySelector('#usr-email').value.trim();
+    const pass   = ov.querySelector('#usr-pass').value;
+    const role   = ov.querySelector('#usr-role').value;
+    const tienda = ov.querySelector('#usr-tienda').value || null;
+    if (!nombre || !email || pass.length < 6) { toast('Completá nombre, email y contraseña (6+)', 'warn'); return; }
+    e.target.disabled = true; e.target.textContent = 'Creando…';
+    try {
+      const token = await _freshAccessToken();
+      if (!token) { toast('Sesión expirada, recargá la página', 'err'); e.target.disabled = false; return; }
+      const res = await fetch(SB_URL + '/functions/v1/crear-usuario', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'apikey': SB_KEY },
+        body: JSON.stringify({ email, password: pass, nombre, role, organization_id: orgId }),
+      });
+      const out = await res.json().catch(() => ({}));
+      if (!res.ok || out.error) { toast('Error: ' + (out.error || ('status ' + res.status)), 'err'); e.target.disabled = false; e.target.textContent = 'Crear usuario'; return; }
+      // Asignación de tienda (best-effort): la edge function no la setea.
+      if (tienda && out.user_id) {
+        try { await sb.from('user_roles').update({ tienda_id: tienda }).eq('user_id', out.user_id).eq('organization_id', orgId); }
+        catch (_) {}
+      }
+      toast('Usuario creado ✓', 'ok');
+      close();
+      renderUsuarios();
+    } catch (err) {
+      toast('Error: ' + err.message, 'err');
+      e.target.disabled = false; e.target.textContent = 'Crear usuario';
+    }
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  FINANZAS — resumen de lo que pasó (ventas, costo, margen, gastos…)
+// ════════════════════════════════════════════════════════════════════
+function _finRango(preset) {
+  const hoy = new Date();
+  const fmt = d => d.toISOString().slice(0, 10);
+  if (preset === 'hoy')  return [fmt(hoy), fmt(hoy)];
+  if (preset === 'mes')  return [fmt(new Date(hoy.getFullYear(), hoy.getMonth(), 1)), fmt(hoy)];
+  if (preset === '7')    { const d = new Date(hoy); d.setDate(d.getDate()-6); return [fmt(d), fmt(hoy)]; }
+  if (preset === '30')   { const d = new Date(hoy); d.setDate(d.getDate()-29); return [fmt(d), fmt(hoy)]; }
+  return [fmt(new Date(hoy.getFullYear(), hoy.getMonth(), 1)), fmt(hoy)];
+}
+
+async function renderFinanzas() {
+  const wrap = document.getElementById('finanzas-wrap');
+  if (!wrap) return;
+  if (!_isAdmin()) { wrap.innerHTML = '<div class="env-empty" style="background:#fff;border:1px solid var(--border);border-radius:14px">Solo administradores.</div>'; return; }
+  // Estructura base con selector de período (solo la primera vez)
+  if (!document.getElementById('fin-desde')) {
+    const [d0, d1] = _finRango('mes');
+    wrap.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">' +
+        '<h2 style="margin:0;font-size:20px">📈 Finanzas</h2>' +
+        '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+          '<input type="date" id="fin-desde" class="prod-form-i" style="padding:6px 10px" value="' + d0 + '">' +
+          '<span style="color:var(--muted)">→</span>' +
+          '<input type="date" id="fin-hasta" class="prod-form-i" style="padding:6px 10px" value="' + d1 + '">' +
+          '<button id="fin-go" style="padding:8px 14px;border:none;background:var(--primary);color:#fff;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">Ver</button>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="fin-presets">' +
+        '<button data-p="hoy" style="padding:6px 14px;border-radius:50px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:12px;font-weight:600">Hoy</button>' +
+        '<button data-p="7" style="padding:6px 14px;border-radius:50px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:12px;font-weight:600">7 días</button>' +
+        '<button data-p="mes" style="padding:6px 14px;border-radius:50px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:12px;font-weight:600">Este mes</button>' +
+        '<button data-p="30" style="padding:6px 14px;border-radius:50px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:12px;font-weight:600">30 días</button>' +
+      '</div>' +
+      '<div id="fin-content"></div>';
+    document.getElementById('fin-go').addEventListener('click', _cargarFinanzas);
+    wrap.querySelectorAll('#fin-presets button').forEach(b => b.addEventListener('click', () => {
+      const [a, c] = _finRango(b.dataset.p);
+      document.getElementById('fin-desde').value = a;
+      document.getElementById('fin-hasta').value = c;
+      _cargarFinanzas();
+    }));
+  }
+  _cargarFinanzas();
+}
+
+async function _cargarFinanzas() {
+  const cont = document.getElementById('fin-content');
+  if (!cont) return;
+  const desde = document.getElementById('fin-desde').value;
+  const hasta = document.getElementById('fin-hasta').value;
+  if (!desde || !hasta) { toast('Elegí el rango', 'warn'); return; }
+  cont.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>';
+
+  // 1) Ventas del rango (reusa la RPC existente, no la modifica)
+  const { data: vr, error: vErr } = await sb.rpc('pos_get_ventas_rango', {
+    p_organization_id: orgId, p_fecha_desde: desde, p_fecha_hasta: hasta, p_cajero_id: null,
+  });
+  if (vErr) { cont.innerHTML = '<div style="color:var(--danger);padding:20px">Error: ' + vErr.message + '</div>'; return; }
+  const t = vr.totales || {};
+  const porProd = vr.por_producto || [];
+
+  // 2) COGS (costo de mercadería vendida) estimado con el costo del catálogo
+  const costoMap = new Map(productos.map(p => [p.id, Number(p.costo) || 0]));
+  let cogs = 0, sinCosto = 0, gananciaProd = [];
+  porProd.forEach(p => {
+    const c = costoMap.get(p.producto_id) || 0;
+    const qty = Number(p.cantidad) || 0;
+    const monto = Number(p.monto) || 0;
+    if (c <= 0) sinCosto += qty;
+    cogs += qty * c;
+    gananciaProd.push({ nombre: p.producto, qty, monto, costoTotal: qty * c, ganancia: monto - qty * c, tieneCosto: c > 0 });
+  });
+  const ventas = Number(t.total) || 0;
+  const margenBruto = ventas - cogs;
+
+  // 3) Gastos e ingresos extra del rango (lectura directa; degrada si falla)
+  let gastos = [], ingresos = [];
+  try {
+    const { data } = await sb.from('gastos')
+      .select('monto, fecha, descripcion, proveedor, metodo_pago, categorias_gasto(nombre)')
+      .eq('organization_id', orgId).gte('fecha', desde).lte('fecha', hasta).order('fecha', { ascending: false });
+    gastos = data || [];
+  } catch (_) {}
+  try {
+    const { data } = await sb.from('ingresos')
+      .select('monto, fecha, descripcion, origen, metodo_pago, categorias_ingreso(nombre)')
+      .eq('organization_id', orgId).gte('fecha', desde).lte('fecha', hasta).order('fecha', { ascending: false });
+    ingresos = data || [];
+  } catch (_) {}
+  const totGastos = gastos.reduce((s, g) => s + (Number(g.monto) || 0), 0);
+  const totIngresos = ingresos.reduce((s, g) => s + (Number(g.monto) || 0), 0);
+  const cajaIng = Number(t.ingresos) || 0;
+  const cajaEgr = Number(t.egresos) || 0;
+  const resultado = margenBruto - totGastos + totIngresos;
+
+  const kpi = (lbl, val, color, sub) => '<div style="background:white;border:1px solid var(--border);border-radius:12px;padding:14px 16px;flex:1;min-width:150px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">' + lbl + '</div><div style="font-size:22px;font-weight:800;margin-top:3px;color:' + (color||'var(--ink)') + '">' + val + '</div>' + (sub ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + sub + '</div>' : '') + '</div>';
+
+  let html = '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">' +
+    kpi('Ventas (cobrado)', fmtARS(ventas), '#059669', (t.count||0) + ' ventas') +
+    kpi('Costo mercadería', fmtARS(cogs), '#dc2626', 'estimado') +
+    kpi('Margen bruto', fmtARS(margenBruto), margenBruto<0?'#dc2626':'#059669', ventas>0 ? (margenBruto/ventas*100).toFixed(0) + '% s/ventas' : '') +
+    kpi('Gastos', fmtARS(totGastos), '#dc2626', gastos.length + ' registros') +
+    kpi('Otros ingresos', fmtARS(totIngresos), '#059669', ingresos.length + ' registros') +
+    kpi('Resultado neto', fmtARS(resultado), resultado<0?'#dc2626':'#059669', 'margen − gastos + ingresos') +
+  '</div>';
+
+  if (sinCosto > 0) {
+    html += '<div style="font-size:12px;color:#b45309;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:8px 10px;margin-bottom:14px">⚠ ' + sinCosto + ' unidad(es) vendida(s) sin costo cargado: el costo y el margen son parciales. Cargá el costo de esos productos en Stock para un cálculo exacto.</div>';
+  }
+
+  // Ventas por método
+  const metodos = [['efectivo','💵 Efectivo'],['transf','🏦 Transferencia'],['mp','📱 MercadoPago'],['debito','💳 Débito'],['credito','💳 Crédito'],['cc','📒 Cuenta corriente']];
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px">';
+  html += '<div style="background:white;border:1px solid var(--border);border-radius:12px;padding:14px"><div style="font-weight:700;margin-bottom:8px">Ventas por método de pago</div><table style="width:100%;border-collapse:collapse;font-size:13px"><tbody>' +
+    metodos.filter(([k]) => (Number(t[k])||0) > 0).map(([k, lbl]) => '<tr><td style="padding:4px 0">' + lbl + '</td><td style="text-align:right;font-weight:600">' + fmtARS(t[k]) + '</td></tr>').join('') +
+    '<tr style="border-top:1px solid var(--border)"><td style="padding-top:6px;font-weight:700">Total</td><td style="text-align:right;font-weight:800;padding-top:6px">' + fmtARS(ventas) + '</td></tr>' +
+    (cajaIng > 0 || cajaEgr > 0 ? '<tr><td colspan="2" style="padding-top:8px;font-size:11px;color:var(--muted)">Caja: +' + fmtARS(cajaIng) + ' ingresos · −' + fmtARS(cajaEgr) + ' egresos</td></tr>' : '') +
+    '</tbody></table></div>';
+
+  // Productos más rentables (con costo)
+  const conGanancia = gananciaProd.filter(g => g.tieneCosto).sort((a,b) => b.ganancia - a.ganancia).slice(0, 8);
+  html += '<div style="background:white;border:1px solid var(--border);border-radius:12px;padding:14px"><div style="font-weight:700;margin-bottom:8px">Productos por ganancia</div>';
+  if (!conGanancia.length) html += '<div style="font-size:12px;color:var(--muted)">Cargá costos a tus productos para ver la ganancia por artículo.</div>';
+  else html += '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="color:var(--muted);text-align:right"><th style="text-align:left">Producto</th><th>Vts</th><th>Ganancia</th></tr></thead><tbody>' +
+    conGanancia.map(g => '<tr><td style="text-align:left;padding:3px 0">' + String(g.nombre||'').replace(/[<>&]/g,'') + '</td><td style="text-align:right">' + g.qty + '</td><td style="text-align:right;font-weight:600;color:' + (g.ganancia<0?'#dc2626':'#059669') + '">' + fmtARS(g.ganancia) + '</td></tr>').join('') +
+    '</tbody></table>';
+  html += '</div>';
+  html += '</div>';
+
+  // Detalle de gastos
+  html += '<div style="background:white;border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:14px"><div style="font-weight:700;margin-bottom:8px">Gastos del período (' + gastos.length + ')</div>';
+  if (!gastos.length) html += '<div style="font-size:12px;color:var(--muted)">Sin gastos registrados en este rango. Los gastos se cargan desde el panel de administración.</div>';
+  else html += '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="color:var(--muted)"><th style="text-align:left;padding:4px">Fecha</th><th style="text-align:left">Categoría</th><th style="text-align:left">Detalle</th><th style="text-align:right">Monto</th></tr></thead><tbody>' +
+    gastos.slice(0, 50).map(g => '<tr style="border-top:1px solid #f1f5f9"><td style="padding:4px">' + (g.fecha||'') + '</td><td>' + String(g.categorias_gasto?.nombre||'—').replace(/[<>&]/g,'') + '</td><td>' + String(g.descripcion||g.proveedor||'').replace(/[<>&]/g,'') + '</td><td style="text-align:right;font-weight:600;color:#dc2626">' + fmtARS(g.monto) + '</td></tr>').join('') +
+    '<tr style="border-top:2px solid var(--border)"><td colspan="3" style="padding:6px;font-weight:700">Total gastos</td><td style="text-align:right;font-weight:800;padding:6px">' + fmtARS(totGastos) + '</td></tr>' +
+    '</tbody></table>';
+  html += '</div>';
+
+  html += '<div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">El costo de mercadería y el margen se calculan con el costo actual cargado en cada producto. El resultado neto es una estimación de gestión (no reemplaza la contabilidad formal).</div>';
+
+  cont.innerHTML = html;
 }

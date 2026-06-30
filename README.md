@@ -53,6 +53,29 @@ sw.js                   Service worker (cache shell + offline)
 icon.svg                Ícono de la app
 ```
 
+## Roles, permisos y administración
+
+- **Cajero** (`client_pos`): solo vende. Ve la pantalla de venta, ventas del
+  día, caja y reservas. El stock lo ve en **modo lectura** (las ventas igual lo
+  descuentan). No ve costos, márgenes ni finanzas.
+- **Administrador** (`client_admin`): acceso total. Además gestiona:
+  - **Usuarios**: crear cajeros/administradores y darlos de alta/baja
+    (pestaña *Usuarios* → RPC `pos_listar_usuarios` / `pos_set_usuario_activo`
+    + edge function `crear-usuario`).
+  - **Stock**: reponer, cargar mercadería, ajustar, **agregar y dar de baja
+    productos** (reversible) — todo desde la pestaña *Stock*.
+  - **Costo y margen**: al alta/edición de producto se carga el **costo**
+    (columna `productos.costo`, aditiva) y se calcula margen/ganancia. Solo
+    visible para administradores.
+  - **Finanzas** (pestaña *Finanzas*): ventas por método, costo de mercadería
+    vendida, margen bruto, gastos, otros ingresos, movimientos de caja y
+    resultado neto del período. Lectura compuesta sobre `pos_get_ventas_rango`,
+    `gastos` e `ingresos` (no modifica funciones existentes).
+
+El **scanner de código de barras** funciona con una sola barra: al escanear se
+agrega el producto al carrito al instante, sin necesidad de enfocar ningún
+campo.
+
 ## Registro (sign up) y provisión de cuenta
 
 `signup.html` crea el usuario con **Supabase Auth** (`signUp`) guardando el

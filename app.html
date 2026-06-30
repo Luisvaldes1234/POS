@@ -498,6 +498,8 @@
     <button class="topbar-tab"        data-tab="recibo"  onclick="goTab('recibo')">Recibo</button>
     <button class="topbar-tab"        data-tab="cuotas"  onclick="goTab('cuotas')" id="tab-cuotas-btn" style="display:none">Cuotas</button>
     <button class="topbar-tab"        data-tab="promos"  onclick="goTab('promos')" id="tab-promos-btn" style="display:none">🎁 Promos</button>
+    <button class="topbar-tab"        data-tab="finanzas" onclick="goTab('finanzas')" id="tab-finanzas-btn" style="display:none">📈 Finanzas</button>
+    <button class="topbar-tab"        data-tab="usuarios" onclick="goTab('usuarios')" id="tab-usuarios-btn" style="display:none">👤 Usuarios</button>
   </div>
   <div id="dash-mini" class="dash-mini" title="Tu turno · click para detalle" style="display:none" onclick="goTab('caja')">
     <span id="dash-ventas">0</span> ventas · <span id="dash-monto">$0</span>
@@ -511,11 +513,10 @@
     <div class="pos-layout">
       <div class="pos-products">
         <div class="prod-search">
-          <input id="prod-q" type="search" placeholder="Buscar producto…" autocomplete="off">
-          <input id="barcode-input" type="text" placeholder="📷 Escanear código…" autocomplete="off"
-                 inputmode="numeric" title="Conectá el scanner USB y enfocá este input. También funciona escaneo global desde cualquier parte del POS.">
+          <input id="prod-q" type="search" placeholder="🔍 Buscar producto o escanear código…" autocomplete="off"
+                 title="Buscá por nombre o escaneá un código de barras: se agrega al carrito al instante, sin tener que enfocar nada.">
           <button id="prod-view-toggle" class="btn-add-prod" type="button" onclick="posToggleVista()" title="Cambiar entre grilla y lista">≣ Lista</button>
-          <button class="btn-add-prod" type="button" onclick="abrirAltaProducto()" title="Agregar nuevo producto al catálogo">+ Producto</button>
+          <button id="btn-add-prod-toolbar" class="btn-add-prod" type="button" onclick="abrirAltaProducto()" title="Agregar nuevo producto al catálogo" style="display:none">+ Producto</button>
         </div>
         <div class="prod-grid" id="prod-grid"></div>
       </div>
@@ -719,6 +720,20 @@
     </div>
   </div>
 
+  <!-- ═══ FINANZAS ═══ -->
+  <div class="screen" id="screen-finanzas">
+    <div class="ventas-wrap" id="finanzas-wrap" style="max-width:1000px">
+      <div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>
+    </div>
+  </div>
+
+  <!-- ═══ USUARIOS ═══ -->
+  <div class="screen" id="screen-usuarios">
+    <div class="tiendas-wrap" id="usuarios-wrap">
+      <div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>
+    </div>
+  </div>
+
   <!-- ═══ TRANSFERIR ENVASES MODAL ═══ -->
   <div class="qr-overlay" id="transf-overlay">
     <div class="qr-modal" style="max-width:480px">
@@ -795,13 +810,28 @@
 
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             <div>
-              <label class="prod-form-l">Precio *</label>
+              <label class="prod-form-l">Precio de venta *</label>
               <input id="prod-precio" type="number" min="0" step="0.01" required placeholder="0" class="prod-form-i">
             </div>
             <div>
               <label class="prod-form-l">Unidad</label>
               <input id="prod-unidad" type="text" placeholder="u." value="u." class="prod-form-i">
             </div>
+          </div>
+
+          <!-- Costo + margen: solo visible para administradores. -->
+          <div id="prod-costo-row" style="display:none;background:rgba(16,185,129,.05);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:10px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div>
+                <label class="prod-form-l">Costo (compra)</label>
+                <input id="prod-costo" type="number" min="0" step="0.01" placeholder="0" class="prod-form-i" autocomplete="off">
+              </div>
+              <div>
+                <label class="prod-form-l">Margen</label>
+                <div id="prod-margen" class="prod-form-i" style="display:flex;align-items:center;font-weight:800;color:#059669;background:#f8f9ff">—</div>
+              </div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:6px">💡 El margen y la ganancia se calculan con el precio de venta. Solo lo ven los administradores.</div>
           </div>
 
           <label class="prod-form-l">Código de barras (opcional)</label>
