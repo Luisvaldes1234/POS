@@ -5757,6 +5757,58 @@ async function cargarReciboConfig() {
   if (data) reciboCfg = { ...reciboCfg, ...data };
 }
 
+// Reduce una imagen a un data URL chico (para guardar el logo del ticket sin
+// usar Storage). Mantiene proporción, ancho máx ~360px.
+function _fileToLogoDataURL(file, maxW = 360) {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) { reject(new Error('El archivo no es una imagen')); return; }
+    const fr = new FileReader();
+    fr.onerror = () => reject(new Error('No se pudo leer el archivo'));
+    fr.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Imagen inválida'));
+      img.onload = () => {
+        const scale = Math.min(1, maxW / (img.width || maxW));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(cv.toDataURL('image/png'));
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+
+// HTML de un ticket de muestra para la vista previa, según la config actual.
+function _reciboPreviewHTML(cfg) {
+  const esc = s => String(s ?? '').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+  const fiscal = [];
+  if (cfg.header_extra) fiscal.push(cfg.header_extra);
+  if (cfg.mostrar_cuit && orgFiscal.cuit)           fiscal.push('CUIT: ' + orgFiscal.cuit);
+  if (cfg.mostrar_direccion && orgFiscal.direccion) fiscal.push(orgFiscal.direccion);
+  if (cfg.mostrar_telefono && orgFiscal.telefono)   fiscal.push('Tel: ' + orgFiscal.telefono);
+  const foot = [];
+  if (cfg.footer_mensaje) foot.push(cfg.footer_mensaje);
+  if (cfg.footer_extra)   foot.push(cfg.footer_extra);
+  const width = cfg.tamano_papel === '58mm' ? 210 : cfg.tamano_papel === 'a4' ? 360 : 280;
+  return '<div style="background:#fff;color:#000;width:' + width + 'px;max-width:100%;margin:0 auto;padding:14px 16px;border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.14);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.5">' +
+    (cfg.logo_url ? '<div style="text-align:center;margin-bottom:8px"><img src="' + cfg.logo_url + '" alt="logo" style="max-height:56px;max-width:75%;object-fit:contain"></div>' : '') +
+    '<div style="text-align:center;font-weight:800;font-size:14px">' + esc(orgName || 'Tu negocio') + '</div>' +
+    (fiscal.length ? '<div style="text-align:center;color:#555;font-size:10px;margin-top:2px">' + fiscal.map(esc).join('<br>') + '</div>' : '') +
+    '<div style="text-align:center;color:#777;font-size:10px;margin:8px 0">Ref A1B2C3D4 · ' + new Date().toLocaleDateString('es-AR') + '</div>' +
+    '<div style="font-size:12px;font-weight:700;margin-bottom:6px">Cliente: Mostrador</div>' +
+    '<div style="border-top:1px dashed #999;border-bottom:1px dashed #999;padding:8px 0;margin-bottom:8px">' +
+      '<div style="display:flex;justify-content:space-between"><span>2 × Gaseosa 600ml</span><span>$2.000</span></div>' +
+      '<div style="display:flex;justify-content:space-between"><span>1 × Alfajor</span><span>$1.500</span></div>' +
+    '</div>' +
+    '<div style="display:flex;justify-content:space-between;font-weight:800;font-size:15px"><span>Total</span><span>$3.500</span></div>' +
+    '<div style="display:flex;justify-content:space-between;color:#555;font-size:11px;margin-top:2px"><span>Método</span><span>💵 Efectivo</span></div>' +
+    (foot.length ? '<div style="text-align:center;color:#555;font-size:10px;border-top:1px dashed #999;margin-top:8px;padding-top:6px">' + foot.map(esc).join('<br>') + '</div>' : '') +
+    '</div>';
+}
+
 async function renderReciboConfig() {
   const wrap = document.getElementById('recibo-wrap');
   if (!wrap) return;
@@ -5764,12 +5816,25 @@ async function renderReciboConfig() {
   await cargarReciboConfig();
   const c = reciboCfg;
   const isAdmin = ['client_admin','account_manager','super_admin'].includes(userRole);
+  let logoActual = c.logo_url || null;   // se actualiza al subir/quitar logo
 
   wrap.innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr;gap:16px">' +
     '<div class="recibo-card">' +
     '  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
     '    <div style="font-size:18px;font-weight:800">Recibo / Ticket</div>' +
     '    <span style="font-size:11px;color:var(--muted)">' + (isAdmin ? '' : 'Solo lectura') + '</span>' +
+    '  </div>' +
+    '  <div class="recibo-section">' +
+    '    <div class="recibo-section-h">Logo del negocio</div>' +
+    '    <div style="display:flex;gap:12px;align-items:center">' +
+    '      <div id="rc-logo-prev" style="width:64px;height:64px;border:1.5px dashed var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff;flex-shrink:0;font-size:24px">🏪</div>' +
+    '      <div style="flex:1;min-width:0">' +
+    '        <input id="rc-logo-file" type="file" accept="image/png,image/jpeg,image/webp" style="font-size:12px;max-width:100%"' + (isAdmin ? '' : ' disabled') + '>' +
+    '        <div style="font-size:11px;color:var(--muted);margin-top:4px">PNG/JPG. Se reduce solo para el ticket. Mejor con fondo transparente.</div>' +
+    '        <button id="rc-logo-clear" type="button" style="margin-top:6px;padding:5px 10px;border:1px solid var(--border);background:#fff;border-radius:8px;font-size:12px;cursor:pointer;display:none">Quitar logo</button>' +
+    '      </div>' +
+    '    </div>' +
     '  </div>' +
     '  <div class="recibo-section">' +
     '    <div class="recibo-section-h">Tamaño del papel</div>' +
@@ -5794,11 +5859,71 @@ async function renderReciboConfig() {
     '    <input id="rc-footer-extra" class="prod-form-i" style="width:100%" placeholder="Ej: WhatsApp 11-1234-5678 · Instagram @almacen" maxlength="120">' +
     '  </div>' +
     '  <button id="rc-save" type="button" style="width:100%;padding:14px;border-radius:50px;border:none;background:var(--primary);color:#fff;font-weight:700;font-size:14px;cursor:pointer"' + (isAdmin ? '' : ' disabled') + '>Guardar configuración</button>' +
+    '</div>' +
+    '<div class="recibo-card">' +
+    '  <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">Vista previa del ticket</div>' +
+    '  <div id="rc-preview" style="background:#f1f5f9;border-radius:12px;padding:20px;overflow:auto"></div>' +
+    '</div>' +
     '</div>';
 
   document.getElementById('rc-header').value      = c.header_extra || '';
   document.getElementById('rc-footer-msg').value  = c.footer_mensaje || '';
   document.getElementById('rc-footer-extra').value = c.footer_extra || '';
+
+  // Estado del thumbnail del logo + botón de quitar.
+  const logoPrev  = document.getElementById('rc-logo-prev');
+  const logoClear = document.getElementById('rc-logo-clear');
+  const pintarLogoThumb = () => {
+    if (logoActual) {
+      logoPrev.innerHTML = '<img src="' + logoActual + '" alt="logo" style="max-width:100%;max-height:100%;object-fit:contain">';
+      logoClear.style.display = isAdmin ? '' : 'none';
+    } else {
+      logoPrev.innerHTML = '🏪';
+      logoClear.style.display = 'none';
+    }
+  };
+  pintarLogoThumb();
+
+  // Vista previa en vivo: lee los inputs actuales + el logo en memoria.
+  const refreshPreview = () => {
+    const cfg = {
+      logo_url:         logoActual,
+      tamano_papel:     wrap.querySelector('input[name="papel"]:checked')?.value || '80mm',
+      mostrar_cuit:     document.getElementById('rc-cuit').checked,
+      mostrar_direccion:document.getElementById('rc-dir').checked,
+      mostrar_telefono: document.getElementById('rc-tel').checked,
+      header_extra:     document.getElementById('rc-header').value.trim() || null,
+      footer_mensaje:   document.getElementById('rc-footer-msg').value.trim() || null,
+      footer_extra:     document.getElementById('rc-footer-extra').value.trim() || null,
+    };
+    document.getElementById('rc-preview').innerHTML = _reciboPreviewHTML(cfg);
+  };
+  refreshPreview();
+  // Re-render del preview ante cualquier cambio.
+  wrap.querySelectorAll('input, select').forEach(el => {
+    el.addEventListener('input', refreshPreview);
+    el.addEventListener('change', refreshPreview);
+  });
+
+  // Carga de logo.
+  document.getElementById('rc-logo-file').addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      logoActual = await _fileToLogoDataURL(file, 360);
+      pintarLogoThumb();
+      refreshPreview();
+      toast('Logo cargado · acordate de Guardar', 'ok');
+    } catch (err) {
+      toast('No se pudo procesar la imagen: ' + err.message, 'err');
+    }
+  });
+  logoClear.addEventListener('click', () => {
+    logoActual = null;
+    document.getElementById('rc-logo-file').value = '';
+    pintarLogoThumb();
+    refreshPreview();
+  });
 
   document.getElementById('rc-save').addEventListener('click', async (e) => {
     if (!isAdmin) { toast('Sin permisos', 'err'); return; }
@@ -5814,7 +5939,7 @@ async function renderReciboConfig() {
         p_header_extra:      document.getElementById('rc-header').value.trim() || null,
         p_footer_mensaje:    document.getElementById('rc-footer-msg').value.trim() || null,
         p_footer_extra:      document.getElementById('rc-footer-extra').value.trim() || null,
-        p_logo_url:          c.logo_url || null,
+        p_logo_url:          logoActual || null,
         p_tienda_id:         tiendaId,
       });
       if (error) throw error;
@@ -5828,6 +5953,7 @@ async function renderReciboConfig() {
         header_extra: document.getElementById('rc-header').value.trim() || null,
         footer_mensaje: document.getElementById('rc-footer-msg').value.trim() || null,
         footer_extra: document.getElementById('rc-footer-extra').value.trim() || null,
+        logo_url: logoActual || null,
       };
       toast('Configuración guardada ✓', 'ok');
     } catch (err) {
