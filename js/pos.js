@@ -4226,6 +4226,9 @@ async function _capturarMovEnvases(items) {
 }
 
 async function _confirmarVentaEnvases(items, totalBruto) {
+  // Sin cliente (venta a Mostrador) no hay comodato ni devolución que confirmar:
+  // el retornable se vende como un producto más.
+  if (!clienteSel?.id) return true;
   const prestados = [];
   let totalPrestados = 0;
   items.forEach(it => {
@@ -4432,14 +4435,9 @@ window.cobrar = async (metodo) => {
     return;
   }
 
-  if (!clienteSel?.id) {
-    const retornables = [];
-    cart.forEach(it => { if (it.tiene_envase) retornables.push(it.nombre); });
-    if (retornables.length > 0) {
-      toast('Para vender ' + (retornables.length === 1 ? 'un producto retornable' : 'productos retornables') + ' seleccioná un cliente real (no Mostrador)', 'warn');
-      return;
-    }
-  }
+  // En este POS de mostrador se puede vender un producto retornable a Mostrador
+  // (sin cliente): se vende como un producto normal, sin seguimiento de envase
+  // en comodato (eso requiere un cliente real para poder recuperarlo después).
 
   let hayPrepago = false;
   cart.forEach(it => { if (it.entregar != null && it.entregar < it.cantidad) hayPrepago = true; });
