@@ -39,16 +39,32 @@ como archivos estáticos y se conecta directo a Supabase desde el navegador.
 ## Estructura
 
 ```
-index.html              Shell del POS (markup + estilos)
+index.html              Landing pública (presenta las funciones)
+signup.html             Registro / alta de cuenta (Supabase Auth + trial)
 login.html              Acceso (Supabase Auth)
+app.html                Shell del POS (markup + estilos)
 js/pos.js               Toda la lógica del POS
+js/config.js            Config de runtime (token de Mapbox opcional)
 js/shared/dialogs.js    Modales de confirmación (tmvDialog)
 js/shared/errors.js     Presentación de errores (tmvShowError)
 js/sentry-init.js       Stub de telemetría (sin envío por defecto)
-manifest.webmanifest    PWA manifest
+manifest.webmanifest    PWA manifest (start_url = app.html)
 sw.js                   Service worker (cache shell + offline)
 icon.svg                Ícono de la app
 ```
+
+## Registro (sign up) y provisión de cuenta
+
+`signup.html` crea el usuario con **Supabase Auth** (`signUp`) guardando el
+nombre del negocio, dueño, teléfono y país en el metadata. La organización se
+crea con la RPC **`provision_trial_org_for_user`** (trial de 14 días, rol
+`client_admin`), que también dispara el email de bienvenida vía la edge
+function `notify-signup`.
+
+- Si el proyecto auto-confirma el email, se provisiona y entra directo al POS.
+- Si requiere confirmación, se provisiona en el primer ingreso: `app.html`
+  detecta al usuario autenticado sin organización y llama a la RPC
+  automáticamente (es idempotente).
 
 ## Backend
 
@@ -72,7 +88,9 @@ Para correr local:
 
 ```bash
 python3 -m http.server 8080
-# abrir http://localhost:8080/login.html
+# abrir http://localhost:8080/         (landing)
+#        http://localhost:8080/signup.html  (crear cuenta)
+#        http://localhost:8080/app.html     (POS, requiere sesión)
 ```
 
 > Nota: el scanner de código de barras y el cajón monedero (Web Serial)

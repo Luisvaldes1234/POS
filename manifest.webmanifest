@@ -2,7 +2,7 @@
   "name": "POS Mostrador",
   "short_name": "POS",
   "description": "Punto de venta en mostrador para tiendas de abarrotes, ferreterías y kioscos.",
-  "start_url": "./index.html",
+  "start_url": "./app.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

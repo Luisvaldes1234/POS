@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a1a2e">
+<meta name="description" content="Creá tu cuenta del POS Mostrador para tiendas, kioscos y ferreterías.">
+<title>POS · Crear cuenta</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  :root{--primary:#7C3AED;--primary-dark:#6d28d9;--ink:#0a0a14;--ink2:#1a1a2e;--muted:#94a3b8;--border:rgba(255,255,255,.1)}
+  html,body{min-height:100%;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}
+  body{display:flex;align-items:center;justify-content:center;padding:20px;color:#fff;
+    background:linear-gradient(135deg,#1a1a2e 0%,#0a0a14 100%)}
+  .card{background:rgba(255,255,255,.05);border:1.5px solid var(--border);border-radius:24px;padding:32px 30px;max-width:440px;width:100%;backdrop-filter:blur(10px);box-shadow:0 24px 60px rgba(0,0,0,.4)}
+  .logo{font-size:24px;font-weight:800;background:linear-gradient(135deg,#7C3AED,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center}
+  .sub{font-size:13px;color:var(--muted);text-align:center;margin-top:6px;margin-bottom:24px}
+  .trial{display:inline-flex;gap:6px;align-items:center;background:rgba(124,58,237,.16);border:1px solid rgba(124,58,237,.35);color:#c4b5fd;font-size:11px;font-weight:700;padding:5px 12px;border-radius:50px;margin:0 auto 22px;width:fit-content}
+  .trial-wrap{display:flex;justify-content:center}
+  label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block;margin-bottom:6px}
+  input,select{width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;font-family:inherit;outline:none;margin-bottom:14px;transition:border .15s}
+  select option{background:#1a1a2e;color:#fff}
+  input:focus,select:focus{border-color:var(--primary)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  button{width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#7C3AED,#a855f7);color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:filter .15s;margin-top:4px}
+  button:hover:not(:disabled){filter:brightness(1.08)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .msg{font-size:12.5px;text-align:center;margin-top:14px;min-height:18px;line-height:1.5}
+  .msg.err{color:#fca5a5}
+  .msg.ok{color:#6ee7b7}
+  .foot{font-size:12px;color:var(--muted);text-align:center;margin-top:20px;line-height:1.6}
+  .foot a{color:#a855f7;font-weight:700;text-decoration:none}
+  .done{display:none;text-align:center;padding:10px 0}
+  .done.show{display:block}
+  .done .ico{font-size:46px}
+  .done h2{font-size:19px;font-weight:800;margin:10px 0 6px}
+  .done p{font-size:13.5px;color:var(--muted);line-height:1.6}
+  .terms{font-size:11px;color:var(--muted);text-align:center;margin-top:12px;line-height:1.5}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">⚡ POS Mostrador</div>
+    <div class="sub">Creá tu cuenta y empezá a vender en minutos</div>
+    <div class="trial-wrap"><span class="trial">🎁 14 días de prueba · sin tarjeta</span></div>
+
+    <form id="signup-form" autocomplete="on">
+      <label for="business">Nombre del negocio *</label>
+      <input id="business" type="text" required placeholder="Almacén Don José" autocomplete="organization">
+
+      <div class="row">
+        <div>
+          <label for="owner">Tu nombre *</label>
+          <input id="owner" type="text" required placeholder="José Pérez" autocomplete="name">
+        </div>
+        <div>
+          <label for="country">País</label>
+          <select id="country">
+            <option value="AR" selected>Argentina</option>
+            <option value="MX">México</option>
+            <option value="CL">Chile</option>
+            <option value="CO">Colombia</option>
+            <option value="PE">Perú</option>
+            <option value="UY">Uruguay</option>
+            <option value="OT">Otro</option>
+          </select>
+        </div>
+      </div>
+
+      <label for="phone">WhatsApp / teléfono</label>
+      <input id="phone" type="tel" inputmode="tel" placeholder="+54 9 11 1234 5678" autocomplete="tel">
+
+      <label for="email">Email *</label>
+      <input id="email" type="email" required placeholder="vos@negocio.com" autocomplete="email">
+
+      <label for="password">Contraseña *</label>
+      <input id="password" type="password" required minlength="6" placeholder="mínimo 6 caracteres" autocomplete="new-password">
+
+      <button type="submit" id="btn">Crear mi cuenta</button>
+      <div class="msg" id="msg"></div>
+      <div class="terms">Al crear la cuenta aceptás recibir comunicaciones para ayudarte a empezar.</div>
+    </form>
+
+    <div class="done" id="done">
+      <div class="ico">📧</div>
+      <h2>¡Casi listo!</h2>
+      <p id="done-text">Te enviamos un email para confirmar tu cuenta. Confirmala y después iniciá sesión para entrar al POS.</p>
+      <button type="button" onclick="window.location.href='login.html'" style="margin-top:18px">Ir a iniciar sesión</button>
+    </div>
+
+    <div class="foot">¿Ya tenés cuenta? <a href="login.html">Iniciá sesión</a><br>
+      <a href="index.html" style="color:var(--muted)">← Volver al inicio</a></div>
+  </div>
+
+<script>
+  const SB_URL = 'https://zgdrvptneiwlxlaywfur.supabase.co';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpnZHJ2cHRuZWl3bHhsYXl3ZnVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NDU4NDgsImV4cCI6MjA5MDUyMTg0OH0.r1BR_OruT95Ks_xdkvlnuSqT8Lm-Vh6usJhgdLcV_Ig';
+  const sb = supabase.createClient(SB_URL, SB_KEY);
+
+  const msg  = document.getElementById('msg');
+  const btn  = document.getElementById('btn');
+  const form = document.getElementById('signup-form');
+
+  // Si ya tiene sesión activa, mandarlo al POS.
+  sb.auth.getSession().then(({ data }) => {
+    if (data?.session) window.location.replace('app.html');
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const business = document.getElementById('business').value.trim();
+    const owner    = document.getElementById('owner').value.trim();
+    let   country  = document.getElementById('country').value;
+    const phone    = document.getElementById('phone').value.trim();
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    if (country === 'OT') country = '';  // país desconocido → el backend usa default
+
+    if (!business || !owner || !email || password.length < 6) {
+      msg.className = 'msg err';
+      msg.textContent = 'Completá los campos obligatorios (contraseña de 6+ caracteres)';
+      return;
+    }
+
+    btn.disabled = true; btn.textContent = 'Creando tu cuenta…';
+    msg.className = 'msg'; msg.textContent = '';
+
+    // El metadata queda en raw_user_meta_data; provision_trial_org_for_user
+    // lo lee para crear la organización con trial + rol client_admin.
+    const { data, error } = await sb.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { business_name: business, owner_name: owner, phone, country, product: 'pos' },
+        emailRedirectTo: new URL('login.html', window.location.href).href,
+      },
+    });
+
+    if (error) {
+      btn.disabled = false; btn.textContent = 'Crear mi cuenta';
+      msg.className = 'msg err';
+      msg.textContent = /registered|already/i.test(error.message)
+        ? 'Ese email ya tiene una cuenta. Iniciá sesión.'
+        : error.message;
+      return;
+    }
+
+    // Caso 1: el proyecto auto-confirma (hay sesión) → provisionamos y entramos.
+    if (data?.session) {
+      msg.className = 'msg ok'; msg.textContent = '✓ Cuenta creada, preparando tu POS…';
+      try {
+        await sb.rpc('provision_trial_org_for_user', {
+          p_business_name: business, p_owner_name: owner, p_phone: phone, p_country: country || null,
+        });
+      } catch (e) { console.warn('provision:', e); }
+      window.location.replace('app.html');
+      return;
+    }
+
+    // Caso 2: requiere confirmación por email → mostramos instrucción.
+    form.style.display = 'none';
+    document.querySelector('.trial-wrap').style.display = 'none';
+    document.querySelector('.sub').style.display = 'none';
+    document.getElementById('done-text').textContent =
+      'Te enviamos un email a ' + email + ' para confirmar tu cuenta. Confirmala y después iniciá sesión para entrar al POS (tu organización se crea automáticamente).';
+    document.getElementById('done').classList.add('show');
+  });
+</script>
+</body>
+</html>

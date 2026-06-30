@@ -45,7 +45,8 @@
 
     <button type="submit" id="btn">Ingresar</button>
     <div class="msg" id="msg"></div>
-    <div class="foot">Usá las credenciales de tu cuenta del sistema.<br>El acceso lo gestiona el administrador de la organización.</div>
+    <div class="foot">¿No tenés cuenta? <a href="signup.html" style="color:#a855f7;font-weight:700;text-decoration:none">Creá una gratis</a><br>
+      <a href="index.html" style="color:var(--muted);text-decoration:none">← Volver al inicio</a></div>
   </form>
 
 <script>
@@ -58,7 +59,7 @@
 
   // Si ya hay sesión, ir directo al POS.
   sb.auth.getSession().then(({ data }) => {
-    if (data?.session) window.location.replace('index.html');
+    if (data?.session) window.location.replace('app.html');
   });
 
   document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -76,7 +77,7 @@
       return;
     }
     msg.className = 'msg ok'; msg.textContent = '✓ Acceso correcto, abriendo POS…';
-    window.location.replace('index.html');
+    window.location.replace('app.html');
   });
 </script>
 </body>

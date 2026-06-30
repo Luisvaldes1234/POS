@@ -2,986 +2,334 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#1a1a2e">
-<meta name="apple-mobile-web-app-title" content="POS">
-<meta name="application-name" content="POS Mostrador">
-<meta name="description" content="Punto de venta en mostrador para tiendas de abarrotes, ferreterías y kioscos.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0a14">
+<meta name="description" content="POS Mostrador: punto de venta para tiendas de abarrotes, ferreterías y kioscos. Scanner de código de barras, caja, stock, promos, facturación y más. 14 días de prueba.">
+<meta property="og:title" content="POS Mostrador — Punto de venta para tu tienda">
+<meta property="og:description" content="Vendé más rápido en tu abarrotes, ferretería o kiosco. Scanner, caja, stock, reportes y facturación, todo en uno.">
+<title>POS Mostrador — Punto de venta para tiendas, kioscos y ferreterías</title>
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="manifest" href="manifest.webmanifest">
-<title>POS · Mostrador</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="js/shared/dialogs.js"></script>
-<script src="js/shared/errors.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   :root{
-    --primary:#7C3AED;--primary-dark:#6d28d9;
-    --ink:#0a0a14;--ink2:#1a1a2e;
-    --muted:#64748b;--light:#f8f9ff;
-    --border:rgba(124,58,237,.14);
-    --grad:linear-gradient(135deg,#7C3AED,#a855f7);
-    --success:#10b981;--danger:#ef4444;--warn:#f59e0b;
-    --bg:#f5f5fa;
-    --safe-top:env(safe-area-inset-top,0px);
-    --safe-bot:env(safe-area-inset-bottom,0px);
-    --topbar:60px;
+    --primary:#7C3AED;--primary2:#a855f7;--ink:#0a0a14;--ink2:#12121f;
+    --muted:#94a3b8;--muted2:#64748b;--card:rgba(255,255,255,.04);
+    --border:rgba(255,255,255,.09);--grad:linear-gradient(135deg,#7C3AED,#a855f7);
   }
-  html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
-  body{overflow:hidden}
+  html{scroll-behavior:smooth}
+  body{font-family:'Inter',sans-serif;background:var(--ink);color:#fff;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 22px}
+  .btn{display:inline-flex;align-items:center;gap:8px;justify-content:center;font-weight:700;font-size:15px;border-radius:12px;padding:13px 24px;cursor:pointer;border:none;font-family:inherit;transition:filter .15s,transform .15s}
+  .btn-primary{background:var(--grad);color:#fff;box-shadow:0 8px 28px rgba(124,58,237,.35)}
+  .btn-primary:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  .btn-ghost{background:rgba(255,255,255,.06);border:1.5px solid var(--border);color:#fff}
+  .btn-ghost:hover{background:rgba(255,255,255,.1)}
 
-  /* ── TOPBAR ───────────────────────────────────────── */
-  .topbar{position:fixed;top:0;left:0;right:0;height:calc(var(--topbar) + var(--safe-top));padding-top:var(--safe-top);background:var(--ink2);display:flex;align-items:center;padding-left:16px;padding-right:16px;gap:12px;z-index:100;border-bottom:1px solid rgba(124,58,237,.18)}
-  .topbar-logo{font-size:16px;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-  .topbar-org{font-size:13px;font-weight:600;color:rgba(255,255,255,.85);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .topbar-tabs{display:flex;gap:4px}
-  .topbar-tab{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.55);padding:6px 12px;border-radius:50px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
-  .topbar-tab.active{background:var(--grad);border-color:transparent;color:#fff;box-shadow:0 4px 12px rgba(124,58,237,.4)}
-  .topbar-logout{background:none;border:none;color:rgba(255,255,255,.45);font-size:18px;cursor:pointer;padding:6px}
+  /* NAV */
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(12px);background:rgba(10,10,20,.72);border-bottom:1px solid var(--border)}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .logo{font-size:19px;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .nav-links{display:flex;align-items:center;gap:10px}
+  .nav-links a.lnk{color:var(--muted);font-weight:600;font-size:14px;padding:8px 12px;border-radius:8px}
+  .nav-links a.lnk:hover{color:#fff}
+  @media(max-width:620px){.nav-hide{display:none}}
 
-  /* ── CONTENT ──────────────────────────────────────── */
-  .content{position:fixed;top:calc(var(--topbar) + var(--safe-top));bottom:0;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
-  .screen{display:none;min-height:100%}
-  .screen.active{display:block}
+  /* HERO */
+  .hero{position:relative;padding:80px 0 70px;text-align:center;overflow:hidden}
+  .hero::before{content:'';position:absolute;top:-180px;left:50%;transform:translateX(-50%);width:760px;height:760px;background:radial-gradient(circle,rgba(124,58,237,.30),transparent 62%);filter:blur(20px);z-index:-1}
+  .badge{display:inline-flex;gap:7px;align-items:center;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.4);color:#c4b5fd;font-size:12.5px;font-weight:700;padding:7px 15px;border-radius:50px;margin-bottom:26px}
+  h1{font-size:clamp(34px,6vw,62px);font-weight:900;line-height:1.04;letter-spacing:-.02em;max-width:880px;margin:0 auto}
+  h1 .hl{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .lead{font-size:clamp(16px,2.3vw,20px);color:var(--muted);max-width:660px;margin:24px auto 0;line-height:1.6}
+  .cta-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:36px}
+  .hero-note{font-size:13px;color:var(--muted2);margin-top:16px}
 
-  /* ── POS LAYOUT (productos + carrito) ─────────────── */
-  .pos-layout{display:grid;grid-template-columns:1fr 460px;gap:0;height:100%}
-  @media (max-width:1100px){
-    .pos-layout{grid-template-columns:1fr 400px}
-  }
-  @media (max-width:760px){
-    .pos-layout{grid-template-columns:1fr}
-    .pos-cart{position:fixed;left:0;right:0;bottom:0;border-radius:24px 24px 0 0;box-shadow:0 -8px 24px rgba(0,0,0,.12);max-height:65vh;transform:translateY(calc(100% - 80px));transition:transform .3s cubic-bezier(.34,1.2,.64,1);z-index:50}
-    .pos-cart.open{transform:translateY(0)}
-    .pos-cart-handle{display:flex !important}
-    .pos-products{padding-bottom:100px}
-  }
+  .audience{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:48px}
+  .aud{background:var(--card);border:1px solid var(--border);border-radius:50px;padding:10px 20px;font-size:14px;font-weight:600;color:#e2e8f0}
+  .aud span{margin-right:7px}
 
-  /* ── PRODUCTS GRID ────────────────────────────────── */
-  .pos-products{padding:14px 14px 20px;background:var(--bg)}
-  .prod-search{position:sticky;top:0;background:var(--bg);padding-bottom:10px;z-index:5}
-  .prod-search input{width:100%;padding:11px 16px;border:1.5px solid var(--border);border-radius:50px;font-family:inherit;font-size:14px;background:#fff;outline:none;transition:border .15s}
-  .prod-search input:focus{border-color:var(--primary)}
-  .prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
-  .prod-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:12px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:6px;min-height:110px}
-  .prod-card:active{transform:scale(.97)}
-  .prod-card:hover{border-color:var(--primary);box-shadow:0 6px 20px -4px rgba(124,58,237,.15)}
-  .prod-card.in-cart{border-color:var(--primary);background:rgba(124,58,237,.04)}
-  .prod-card-name{font-size:13px;font-weight:700;color:var(--ink);line-height:1.25;flex:1}
-  .prod-card-precio{font-size:16px;font-weight:800;color:var(--primary);font-variant-numeric:tabular-nums}
-  .prod-card-stock{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);font-weight:500}
-  .prod-card-stock.bajo{color:var(--warn)}
-  .prod-card-stock.negativo{color:var(--danger);font-weight:700}
-  .prod-card-qty{position:absolute;top:8px;right:8px;background:var(--primary);color:#fff;border-radius:50px;font-size:11px;font-weight:700;padding:2px 8px;min-width:24px;text-align:center}
-  /* Vista LISTA (toggle): renglones compactos, más productos por pantalla */
-  .prod-grid.as-list{grid-template-columns:1fr;gap:6px}
-  .prod-row{display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:9px 14px;cursor:pointer;transition:border .15s}
-  .prod-row:active{transform:scale(.99)}
-  .prod-row:hover{border-color:var(--primary)}
-  .prod-row.in-cart{border-color:var(--primary);background:rgba(124,58,237,.05)}
-  .prod-row .prod-card-name{flex:1;font-size:14px;font-weight:700;color:var(--ink);line-height:1.2}
-  .prod-row-tags{display:inline-flex;gap:4px;flex-wrap:wrap;margin-left:6px;vertical-align:middle}
-  .prod-row-tag{font-size:9px;font-weight:800;padding:1px 6px;border-radius:50px;letter-spacing:.02em;white-space:nowrap}
-  .prod-row-stock{font-size:11px;color:var(--muted);white-space:nowrap;font-weight:500}
-  .prod-row-stock.bajo{color:var(--warn)}
-  .prod-row-stock.negativo{color:var(--danger);font-weight:700}
-  .prod-row-precio{font-size:15px;font-weight:800;color:var(--primary);font-variant-numeric:tabular-nums;white-space:nowrap}
-  .prod-row-qty{background:var(--primary);color:#fff;border-radius:50px;font-size:11px;font-weight:700;padding:2px 8px;min-width:22px;text-align:center}
-  .prod-row .prod-card-edit{position:static;width:30px;height:30px;opacity:.6;flex:0 0 auto}
-  .prod-row .prod-card-edit:hover{opacity:1}
+  /* SECTION */
+  section{padding:72px 0}
+  .sec-head{text-align:center;max-width:640px;margin:0 auto 48px}
+  .kicker{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--primary2)}
+  .sec-head h2{font-size:clamp(27px,4vw,40px);font-weight:900;letter-spacing:-.02em;margin-top:12px;line-height:1.12}
+  .sec-head p{color:var(--muted);font-size:16px;margin-top:14px;line-height:1.6}
 
-  /* ── CART ─────────────────────────────────────────── */
-  .pos-cart{background:#fff;border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
-  .pos-cart-handle{display:none;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer;flex-shrink:0;user-select:none}
-  .pos-cart-handle::before{content:'';width:40px;height:4px;background:#cbd5e1;border-radius:2px;position:absolute;top:6px;left:50%;transform:translateX(-50%)}
-  .pos-cart-h{padding:20px 22px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
-  .pos-cart-h h2{font-size:17px;font-weight:800;letter-spacing:-.01em}
-  .pos-cart-clear{background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;padding:4px 8px}
-  .pos-cart-clear:hover{color:var(--danger)}
-  .pos-cart-list{flex:1;overflow-y:auto;padding:12px 22px}
-  .pos-cart-empty{text-align:center;padding:48px 20px;color:var(--muted);font-size:13px}
-  .pos-cart-empty-icon{font-size:48px;opacity:.3;margin-bottom:12px}
-  .cart-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9}
-  .cart-item-info{flex:1;min-width:0}
-  .cart-item-name{font-size:13px;font-weight:600;color:var(--ink);line-height:1.2}
-  .cart-item-precio{font-size:11px;color:var(--muted);margin-top:2px}
-  .cart-stepper{display:flex;align-items:center;gap:4px;background:#f8fafc;border-radius:50px;padding:2px}
-  .cart-stepper button{width:28px;height:28px;border-radius:50%;border:none;background:#fff;color:var(--ink);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-  .cart-stepper button:active{transform:scale(.92)}
-  .cart-stepper button:disabled{opacity:.3;cursor:not-allowed}
-  .cart-stepper-val{min-width:28px;text-align:center;font-weight:700;font-size:13px}
-  .cart-item-sub{font-size:13px;font-weight:700;color:var(--ink);min-width:64px;text-align:right;font-variant-numeric:tabular-nums}
-  .cart-item-rm{background:none;border:none;color:#cbd5e1;font-size:18px;cursor:pointer;padding:0 2px}
-  .cart-item-rm:hover{color:var(--danger)}
+  /* FEATURE GRID */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:600px){.grid{grid-template-columns:1fr}}
+  .feat{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:24px;transition:transform .15s,border-color .15s,background .15s}
+  .feat:hover{transform:translateY(-3px);border-color:rgba(124,58,237,.45);background:rgba(124,58,237,.06)}
+  .feat .ic{font-size:30px;line-height:1}
+  .feat h3{font-size:17px;font-weight:800;margin:14px 0 8px}
+  .feat p{font-size:14px;color:var(--muted);line-height:1.6}
+  .feat ul{margin:10px 0 0;padding-left:0;list-style:none}
+  .feat li{font-size:13px;color:#cbd5e1;padding:3px 0 3px 20px;position:relative}
+  .feat li::before{content:'✓';position:absolute;left:0;color:var(--primary2);font-weight:800}
 
-  /* ── CART FOOTER ──────────────────────────────────── */
-  .pos-cart-foot{border-top:1px solid var(--border);padding:16px 22px;flex-shrink:0;background:#fff}
-  .pos-cliente{margin-bottom:14px;position:relative}
-  .pos-cliente-input,.pos-cliente input[type="text"]{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;font-weight:600;outline:none;background:#fff}
-  .pos-cliente-input:focus{border-color:var(--primary)}
-  .pos-cliente-tag{display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,.08);color:var(--primary);padding:8px 14px;border-radius:50px;font-size:13px;font-weight:700}
-  .pos-cliente-tag button{background:none;border:none;color:var(--primary);cursor:pointer;font-size:16px;line-height:1;padding:0}
-  .pos-cliente-suggest{position:absolute;bottom:100%;left:0;right:0;background:#fff;border:1.5px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);max-height:240px;overflow-y:auto;margin-bottom:4px;display:none;z-index:10}
-  .pos-cliente-suggest.show{display:block}
-  .pos-cliente-suggest-item{padding:10px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;font-size:13px}
-  .pos-cliente-suggest-item:hover{background:rgba(124,58,237,.05)}
-  .pos-cliente-suggest-item .nm{font-weight:600}
-  .pos-cliente-suggest-item .tel{font-size:11px;color:var(--muted)}
+  /* PAYMENTS STRIP */
+  .pay-strip{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:8px}
+  .chip{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 18px;font-size:14px;font-weight:700;display:flex;align-items:center;gap:9px}
 
-  .pos-total{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;padding-bottom:12px;border-bottom:1px dashed var(--border)}
-  .pos-total-l{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-  .pos-total-v{font-size:28px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
+  /* STEPS */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;counter-reset:s}
+  @media(max-width:760px){.steps{grid-template-columns:1fr}}
+  .step{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:26px;position:relative}
+  .step::before{counter-increment:s;content:counter(s);position:absolute;top:-16px;left:24px;width:42px;height:42px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:19px;box-shadow:0 6px 18px rgba(124,58,237,.4)}
+  .step h3{font-size:18px;font-weight:800;margin:18px 0 8px}
+  .step p{font-size:14px;color:var(--muted);line-height:1.6}
 
-  .pos-pago-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
-  .pos-descuento-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:8px 10px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:10px}
-  .pos-descuento-row input{flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-variant-numeric:tabular-nums}
-  .pos-descuento-row select{padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:white;cursor:pointer}
-  .pos-cli-historial{margin:8px 0 12px;padding:10px 12px;background:rgba(102,126,234,.04);border:1px solid rgba(102,126,234,.15);border-radius:10px;font-size:12.5px;line-height:1.45}
-  .pos-cli-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:white;border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:500}
-  .dash-mini{display:flex;align-items:center;gap:6px;padding:4px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:50px;color:white;font-size:12px;font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums;transition:background .15s}
-  .dash-mini:hover{background:rgba(255,255,255,.18)}
-  .dash-mini #dash-monto{font-weight:800}
-  .pos-fact-toggle{display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:10px;background:rgba(102,126,234,.06);border:1px solid rgba(102,126,234,.18);border-radius:10px;cursor:pointer;font-size:13px;color:var(--ink);font-weight:500;user-select:none}
-  .pos-fact-toggle input{cursor:pointer;width:18px;height:18px;accent-color:var(--primary)}
-  .pos-fact-toggle .pos-fact-label{flex:1}
-  .pos-fact-toggle select{margin-left:auto;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:white;cursor:pointer}
-  .pos-pago-btn{padding:14px 10px;border:1.5px solid var(--border);background:#fff;border-radius:12px;cursor:pointer;font-family:inherit;font-weight:700;font-size:13px;color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .15s}
-  .pos-pago-btn:active{transform:scale(.97)}
-  .pos-pago-btn:hover:not(:disabled){border-color:var(--primary);background:rgba(124,58,237,.04)}
-  .pos-pago-btn:disabled{opacity:.4;cursor:not-allowed}
-  .pos-pago-btn .ico{font-size:22px}
-  .pos-pago-btn.full{grid-column:1/-1;background:var(--grad);color:#fff;border-color:transparent}
-  .pos-pago-btn.full:hover:not(:disabled){background:var(--primary-dark)}
+  /* FINAL CTA */
+  .final{margin:20px auto 0;max-width:980px;background:linear-gradient(135deg,rgba(124,58,237,.18),rgba(168,85,247,.10));border:1px solid rgba(124,58,237,.35);border-radius:26px;padding:54px 28px;text-align:center}
+  .final h2{font-size:clamp(26px,4vw,38px);font-weight:900;letter-spacing:-.02em}
+  .final p{color:var(--muted);font-size:16px;margin:14px auto 0;max-width:520px;line-height:1.6}
 
-  /* ── VENTAS HOY ───────────────────────────────────── */
-  .ventas-wrap{padding:18px 18px 60px;max-width:980px;margin:0 auto}
-  .ventas-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px}
-  .ventas-kpi{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 14px;position:relative;overflow:hidden}
-  .ventas-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--ka,var(--primary))}
-  .ventas-kpi-l{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-  .ventas-kpi-v{font-size:20px;font-weight:800;margin-top:3px;font-variant-numeric:tabular-nums}
-  .ventas-list{display:flex;flex-direction:column;gap:8px}
-  .venta-row{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr auto auto;gap:12px;align-items:center}
-  .venta-row.cancelada{opacity:.55}
-  .venta-row.cancelada .venta-row-total{text-decoration:line-through}
-  .venta-row-time{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:var(--muted)}
-  .venta-row-cli{font-weight:700;font-size:13px;color:var(--ink)}
-  .venta-row-items{font-size:11px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px}
-  .venta-row-total{font-size:15px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
-  .venta-row-meta{font-size:10px;color:var(--muted);text-align:right}
-  .venta-row-actions{display:flex;gap:4px}
-  .venta-row-actions button{background:none;border:1px solid var(--border);border-radius:50px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;color:var(--muted);font-family:inherit}
-  .venta-row-actions button:hover{border-color:var(--primary);color:var(--primary)}
-
-  /* ── STOCK ────────────────────────────────────────── */
-  .stock-wrap{padding:18px 18px 60px;max-width:760px;margin:0 auto}
-  .stock-list{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden}
-  .stock-row{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid #f1f5f9}
-  .stock-row:last-child{border-bottom:none}
-  .stock-row-name{font-weight:600;font-size:13px}
-  .stock-row-cant{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;min-width:48px;text-align:right}
-  .stock-row-cant.bajo{color:var(--warn)}
-  .stock-row-cant.negativo{color:var(--danger)}
-
-  /* ── RECEIPT MODAL ────────────────────────────────── */
-  .receipt-overlay{position:fixed;inset:0;background:rgba(10,10,20,.7);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
-  .receipt-overlay.show{display:flex}
-  .receipt{background:#fff;border-radius:18px;width:100%;max-width:380px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column}
-  .receipt-h{padding:18px 22px;border-bottom:1px solid var(--border);text-align:center}
-  .receipt-h-icon{font-size:48px;line-height:1}
-  .receipt-h-title{font-size:18px;font-weight:800;margin-top:6px}
-  .receipt-h-sub{font-size:12px;color:var(--muted);margin-top:2px}
-  .receipt-body{padding:16px 22px}
-  .receipt-meta{font-size:11px;color:var(--muted);text-align:center;margin-bottom:14px;font-family:'JetBrains Mono',ui-monospace,monospace}
-  .receipt-items{display:flex;flex-direction:column;gap:6px;border-top:1px dashed var(--border);border-bottom:1px dashed var(--border);padding:12px 0;margin-bottom:12px}
-  .receipt-item{display:grid;grid-template-columns:1fr auto;font-size:13px}
-  .receipt-item-q{font-size:11px;color:var(--muted);margin-top:2px}
-  .receipt-tot{display:flex;justify-content:space-between;font-weight:800;font-size:18px;margin-bottom:6px}
-  .receipt-pago{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
-  .receipt-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px 22px 18px;border-top:1px solid var(--border)}
-  .receipt-actions button,.receipt-actions a{padding:11px;border-radius:10px;border:1.5px solid var(--border);background:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;text-align:center;color:var(--ink);display:flex;align-items:center;justify-content:center;gap:6px}
-  .receipt-actions .btn-primary{background:var(--grad);color:#fff;border-color:transparent;grid-column:1/-1}
-  .receipt-actions .btn-primary:hover{background:var(--primary-dark)}
-
-  /* ── Caja diaria ────────────────────────────────────── */
-  .caja-wrap{max-width:560px;margin:0 auto;padding:20px}
-  .caja-card{background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 4px 18px rgba(0,0,0,.04)}
-  .caja-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:10px}
-  .caja-title{font-size:18px;font-weight:800}
-  .caja-badge{padding:4px 12px;border-radius:50px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
-  .caja-badge.abierta{background:rgba(16,185,129,.12);color:var(--success);border:1.5px solid rgba(16,185,129,.3)}
-  .caja-badge.cerrada{background:rgba(124,58,237,.08);color:var(--primary);border:1.5px solid rgba(124,58,237,.2)}
-  .caja-meta{font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5}
-  .caja-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-  .caja-stat{background:#f8f9ff;border:1px solid var(--border);border-radius:12px;padding:12px}
-  .caja-stat-l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
-  .caja-stat-v{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
-  .caja-form{display:flex;flex-direction:column;gap:10px}
-  .caja-form label{font-size:12px;color:var(--muted);font-weight:600}
-  .caja-form input,.caja-form textarea{padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;outline:none}
-  .caja-form button{padding:12px 16px;border-radius:50px;border:none;background:var(--primary);color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer}
-  .caja-form button:disabled{opacity:.5;cursor:not-allowed}
-  .caja-form button.danger{background:var(--danger)}
-  .caja-diff{font-size:13px;font-weight:700;padding:8px 12px;border-radius:10px;margin-top:6px}
-  .caja-diff.zero{background:rgba(16,185,129,.08);color:var(--success)}
-  .caja-diff.neg{background:rgba(239,68,68,.08);color:var(--danger)}
-  .caja-diff.pos{background:rgba(245,158,11,.08);color:var(--warn)}
-
-  /* ── Historial cliente ──────────────────────────────── */
-  .pos-historial{margin-bottom:8px}
-  .pos-historial-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
-  .pos-historial-stat{background:#f8f9ff;border:1px solid var(--border);border-radius:10px;padding:8px 10px;text-align:center}
-  .pos-historial-stat.deuda{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.3)}
-  .pos-historial-stat.favor{background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.3)}
-  .pos-historial-l{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
-  .pos-historial-v{font-size:13px;font-weight:800;margin-top:2px}
-  .pos-historial-stat.deuda .pos-historial-v{color:#b45309}
-  .pos-historial-stat.favor .pos-historial-v{color:var(--success)}
-
-  /* ── Envases retornados ─────────────────────────────── */
-  .pos-envases{background:rgba(124,58,237,.04);border:1.5px solid rgba(124,58,237,.18);border-radius:14px;padding:10px 12px;margin-bottom:10px}
-  .pos-envases-h{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;color:var(--ink);margin-bottom:6px}
-  .pos-envases-info{font-size:11px;color:var(--muted);font-weight:600}
-  .pos-envases-stepper{display:flex;align-items:center;gap:8px}
-  .pos-envases-stepper button{width:36px;height:36px;border-radius:10px;border:1.5px solid var(--border);background:#fff;font-size:18px;font-weight:700;cursor:pointer}
-  .pos-envases-stepper button:hover{background:#f8f9ff}
-  .pos-envases-stepper input{flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:15px;font-weight:700;text-align:center;outline:none;-moz-appearance:textfield}
-  .pos-envases-stepper input::-webkit-outer-spin-button,.pos-envases-stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-
-  /* ── Selector de tienda en topbar ───────────────────── */
-  .topbar-tienda{padding:6px 12px;border-radius:50px;border:1.5px solid var(--border);background:#fff;font-family:inherit;font-size:12px;font-weight:600;color:var(--ink);cursor:pointer;outline:none;max-width:180px}
-  .topbar-tienda:focus{border-color:var(--primary)}
-  .topbar-tienda:hover{background:#f8f9ff}
-  @media (max-width: 760px){.topbar-tienda{max-width:120px}}
-
-  /* ── Tab Tiendas (CRUD) ─────────────────────────────── */
-  .tiendas-wrap{max-width:680px;margin:0 auto;padding:20px}
-  .tienda-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px}
-  .tienda-card.principal{border-color:var(--primary);background:rgba(124,58,237,.04)}
-  .tienda-card.inactiva{opacity:.55}
-  .tienda-card-info{flex:1;min-width:0}
-  .tienda-card-nm{font-size:15px;font-weight:800;display:flex;align-items:center;gap:6px}
-  .tienda-card-nm .pp{font-size:9px;background:var(--primary);color:#fff;padding:2px 8px;border-radius:50px;letter-spacing:.04em;text-transform:uppercase}
-  .tienda-card-meta{font-size:12px;color:var(--muted);margin-top:2px}
-  .tienda-card-actions button{padding:6px 12px;border-radius:50px;border:1px solid var(--border);background:#fff;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;margin-left:6px}
-  .tienda-card-actions button:hover{background:#f8f9ff}
-
-  /* ── Edit button + warning chip en product card ──────── */
-  .prod-card{position:relative}
-  .prod-card-edit{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:rgba(255,255,255,.95);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:.55;transition:opacity .15s,transform .15s;padding:0;line-height:1}
-  .prod-card:hover .prod-card-edit{opacity:1}
-  .prod-card-edit:hover{transform:scale(1.1)}
-  .prod-card-warn{position:absolute;top:6px;left:6px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.4);color:#b45309;font-size:9px;font-weight:700;padding:2px 6px;border-radius:50px;letter-spacing:.02em}
-  .prod-card-combo{position:absolute;top:6px;left:6px;background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.4);color:#7c3aed;font-size:9px;font-weight:700;padding:2px 6px;border-radius:50px;letter-spacing:.02em}
-  .prod-card-peso{position:absolute;bottom:6px;right:34px;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.4);color:#2563eb;font-size:11px;font-weight:700;padding:0 5px;border-radius:50%;line-height:1;width:20px;height:20px;display:flex;align-items:center;justify-content:center}
-  .prod-card-fav{position:absolute;bottom:6px;left:6px;background:rgba(245,158,11,.18);border:1px solid rgba(245,158,11,.5);color:#b45309;font-size:10px;font-weight:800;padding:1px 6px;border-radius:50px;letter-spacing:.04em}
-
-  /* ── Toggle comodato/venta del envase en el cart ─────── */
-  .cart-item-envase{display:inline-block;margin-top:4px;padding:3px 8px;border-radius:50px;font-size:10px;font-weight:700;cursor:pointer;user-select:none;border:1.5px solid;letter-spacing:.02em}
-  .cart-item-envase.comodato{background:rgba(124,58,237,.06);border-color:rgba(124,58,237,.25);color:var(--primary)}
-  .cart-item-envase.venta{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.35);color:#b45309}
-  .cart-item-envase:hover{filter:brightness(1.05)}
-
-  /* ── Catálogo: barcode + alta ───────────────────────── */
-  .prod-search{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
-  .prod-search > input{flex:1;min-width:160px}
-  .prod-search #barcode-input{flex:0 0 220px;border:1.5px solid rgba(124,58,237,.25);background:rgba(124,58,237,.04);color:var(--ink);padding:10px 14px;border-radius:50px;font-family:inherit;font-size:13px;outline:none;font-variant-numeric:tabular-nums}
-  .prod-search #barcode-input:focus{border-color:var(--primary);background:#fff}
-  .btn-add-prod{padding:10px 16px;border-radius:50px;border:1.5px solid var(--primary);background:rgba(124,58,237,.06);color:var(--primary);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0}
-  .btn-add-prod:hover{background:rgba(124,58,237,.12)}
-
-  /* ── Modales (alta producto + carga stock) ──────────── */
-  .prod-form-l{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-  .prod-form-i{padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;outline:none;background:#fff}
-  .prod-form-i:focus{border-color:var(--primary)}
-  .carga-row{display:grid;grid-template-columns:1fr 100px 100px;gap:8px;align-items:center;padding:6px 8px;background:#f8f9ff;border:1px solid var(--border);border-radius:10px}
-  .carga-row-name{font-weight:700;font-size:13px}
-  .carga-row-cur{font-size:11px;color:var(--muted);text-align:center}
-  .carga-row-input{padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;font-weight:700;text-align:right;outline:none;background:#fff;width:100%;-moz-appearance:textfield}
-  .carga-row-input::-webkit-outer-spin-button,.carga-row-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-
-  /* ── Tab Envases — tarjeta por tipo (4 niveles) ────── */
-  .env-tipo-card{background:#fff;border:1.5px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px}
-  .env-tipo-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;gap:10px;flex-wrap:wrap}
-  .env-tipo-name{font-size:16px;font-weight:800}
-  .env-tipo-cap{font-size:11px;color:var(--muted);font-weight:600}
-  .env-tipo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
-  @media (max-width: 600px){.env-tipo-grid{grid-template-columns:repeat(2,1fr)}}
-  .env-col{background:#f8f9ff;border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center}
-  .env-col.comodato{background:rgba(124,58,237,.04);border-color:rgba(124,58,237,.18)}
-  .env-col-icon{font-size:18px}
-  .env-col-l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-top:2px}
-  .env-col-v{font-size:20px;font-weight:900;font-variant-numeric:tabular-nums;margin-top:2px}
-  .env-tipo-total{display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-top:1px dashed var(--border);font-size:13px;font-weight:700}
-  .env-tipo-total-v{color:var(--primary);font-size:15px;font-variant-numeric:tabular-nums}
-  .env-tipo-extras{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
-  .env-extra{font-size:11px;padding:4px 10px;border-radius:50px;border:1px solid var(--border)}
-  .env-extra.venta{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.3);color:#b45309}
-  .env-extra.roto{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.25);color:var(--danger)}
-  .env-extra.perdido{background:rgba(100,116,139,.08);border-color:rgba(100,116,139,.25);color:#475569}
-
-  /* ── Tab Envases retornados ─────────────────────────── */
-  .envases-wrap{max-width:780px;margin:0 auto;padding:20px}
-  .env-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px}
-  .env-kpi{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:14px}
-  .env-kpi-l{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
-  .env-kpi-v{font-size:28px;font-weight:900;margin-top:4px;font-variant-numeric:tabular-nums}
-  .env-kpi.hl .env-kpi-v{background:linear-gradient(135deg,var(--primary),#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-  .env-section{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px}
-  .env-section h3{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
-  .env-row{display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid var(--border);font-size:13px}
-  .env-row:last-child{border-bottom:none}
-  .env-row-cant{font-weight:800;color:var(--primary);font-variant-numeric:tabular-nums;min-width:50px;text-align:right}
-  .env-empty{padding:30px;text-align:center;color:var(--muted);font-size:13px}
-  .env-period{display:flex;gap:6px;margin-bottom:14px}
-  .env-period button{padding:6px 14px;border-radius:50px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);font-family:inherit}
-  .env-period button.active{background:var(--primary);color:#fff;border-color:var(--primary)}
-
-  /* ── Tab Recibo (config) ────────────────────────────── */
-  .recibo-wrap{max-width:560px;margin:0 auto;padding:20px}
-  .recibo-card{background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:22px}
-  .recibo-section{margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)}
-  .recibo-section:last-child{border-bottom:none;padding-bottom:0}
-  .recibo-section-h{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
-  .recibo-papel-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-  .recibo-papel-grid label{display:flex;align-items:center;justify-content:center;padding:10px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;text-align:center}
-  .recibo-papel-grid input[type=radio]{display:none}
-  .recibo-papel-grid input[type=radio]:checked + span{color:var(--primary);font-weight:800}
-  .recibo-papel-grid label:has(input:checked){border-color:var(--primary);background:rgba(124,58,237,.04)}
-  .recibo-toggle{display:flex;align-items:center;justify-content:space-between;padding:10px 0;font-size:13px}
-  .recibo-toggle input{transform:scale(1.2)}
-
-  /* ── Cobro mixto ────────────────────────────────────── */
-  .mix-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;background:#f8f9ff;border:1.5px solid var(--border);border-radius:12px;margin-bottom:6px;font-weight:700}
-  .mix-row span{font-size:14px}
-  .mix-row input{width:130px;padding:8px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;text-align:right;outline:none}
-  .mix-row input:focus{border-color:var(--primary)}
-
-  /* ── Lock overlay ───────────────────────────────────── */
-  .lock-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e 0%,#0a0a14 100%);z-index:400;display:none;align-items:center;justify-content:center;padding:20px;color:#fff}
-  .lock-overlay.show{display:flex}
-  .lock-modal{background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);border-radius:24px;padding:32px;max-width:380px;width:100%;text-align:center;backdrop-filter:blur(8px)}
-  .lock-icon{font-size:48px;margin-bottom:12px}
-  .lock-title{font-size:22px;font-weight:800;margin-bottom:6px}
-  .lock-sub{font-size:13px;color:rgba(255,255,255,.6);margin-bottom:20px}
-  .lock-modal input{width:100%;padding:14px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:#fff;font-size:14px;font-family:inherit;margin-bottom:12px;outline:none;text-align:center}
-  .lock-modal input:focus{border-color:var(--primary)}
-  .lock-modal button{width:100%;padding:14px;border-radius:12px;border:none;background:var(--primary);color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px}
-  .lock-modal .lock-logout{background:transparent;color:rgba(255,255,255,.5);font-size:12px;font-weight:500}
-  .lock-modal .lock-logout:hover{color:#fff}
-
-  /* ── QR MercadoPago ─────────────────────────────────── */
-  .qr-overlay{position:fixed;inset:0;background:rgba(10,10,20,.78);z-index:250;display:none;align-items:center;justify-content:center;padding:20px}
-  .qr-overlay.show{display:flex}
-  .qr-modal{background:#fff;border-radius:24px;width:100%;max-width:480px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.35)}
-  .qr-modal-h{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)}
-  .qr-modal-title{font-size:16px;font-weight:800}
-  .qr-modal-close{background:rgba(239,68,68,.08);color:var(--danger);border:1.5px solid rgba(239,68,68,.2);width:36px;height:36px;border-radius:50%;font-size:22px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
-  .qr-modal-close:hover{background:rgba(239,68,68,.15)}
-  .qr-modal-body{padding:24px;display:flex;flex-direction:column;align-items:center;gap:14px}
-  .qr-img-wrap{width:280px;height:280px;display:flex;align-items:center;justify-content:center;background:#f8f9ff;border-radius:18px;border:1.5px solid var(--border);overflow:hidden}
-  .qr-img-wrap img{width:100%;height:100%;object-fit:contain}
-  .qr-status{font-size:13px;font-weight:700;padding:8px 16px;border-radius:50px;text-align:center}
-  .qr-status.wait{background:rgba(124,58,237,.08);color:var(--primary)}
-  .qr-status.ok{background:rgba(16,185,129,.08);color:var(--success)}
-  .qr-status.err{background:rgba(239,68,68,.08);color:var(--danger)}
-  .qr-monto{font-size:32px;font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums}
-  .qr-link-wrap a{display:block;padding:10px;text-align:center;background:rgba(0,158,227,.08);border:1.5px solid #009ee3;border-radius:12px;color:#009ee3;font-weight:700;font-size:12px;text-decoration:none}
-  .spinner-lg{width:48px;height:48px;border:4px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
-
-  /* ── TOAST ────────────────────────────────────────── */
-  .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(100px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:50px;font-size:13px;font-weight:600;z-index:300;opacity:0;transition:all .25s;box-shadow:0 8px 24px rgba(0,0,0,.2);max-width:90%}
-  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
-  .toast.ok{background:var(--success)}
-  .toast.err{background:var(--danger)}
-  .toast.warn{background:var(--warn)}
-
-  /* ── QR MODAL ─────────────────────────────────────── */
-  .qr-card{background:#fff;border-radius:18px;width:100%;max-width:380px;display:flex;flex-direction:column;overflow:hidden}
-  .qr-card-h{padding:18px 22px;text-align:center;border-bottom:1px solid var(--border)}
-  .qr-card-h-title{font-size:16px;font-weight:800}
-  .qr-card-h-mt{font-size:28px;font-weight:800;color:var(--primary);margin-top:6px;font-variant-numeric:tabular-nums}
-  .qr-card-body{padding:18px 22px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px}
-  .qr-status.wait{background:rgba(245,158,11,.12);color:#b45309}
-  .qr-status.ok{background:rgba(16,185,129,.12);color:#047857}
-  .qr-status.err{background:rgba(239,68,68,.12);color:#b91c1c}
-  .qr-card-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px 22px 18px;border-top:1px solid var(--border)}
-  .qr-card-actions a,.qr-card-actions button{padding:11px;border-radius:10px;border:1.5px solid var(--border);background:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;text-align:center;color:var(--ink);display:flex;align-items:center;justify-content:center;gap:6px}
-  .qr-card-actions .btn-cancel{color:var(--danger);border-color:rgba(239,68,68,.3)}
-
-  /* ── NUEVO CLIENTE MINI MODAL ─────────────────────── */
-  .nc-overlay{position:fixed;inset:0;background:rgba(10,10,20,.7);z-index:220;display:none;align-items:center;justify-content:center;padding:20px}
-  .nc-overlay.show{display:flex}
-  .nc-card{background:#fff;border-radius:16px;width:100%;max-width:380px;padding:20px}
-  .nc-card h3{font-size:15px;font-weight:800;margin-bottom:14px}
-  .nc-field{margin-bottom:10px}
-  .nc-field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:5px}
-  .nc-field input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;outline:none}
-  .nc-field input:focus{border-color:var(--primary)}
-  .nc-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
-  .nc-actions button{padding:11px;border-radius:10px;border:1.5px solid var(--border);background:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
-  .nc-actions .btn-primary{background:var(--grad);color:#fff;border-color:transparent}
-
-  .pos-cliente-add-btn{padding:8px 12px;border:1.5px dashed var(--primary);background:rgba(124,58,237,.04);color:var(--primary);border-radius:10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;width:100%;margin-top:6px}
-  .pos-cliente-add-btn:hover{background:rgba(124,58,237,.08)}
-
-  /* ── DATE PICKER ──────────────────────────────────── */
-  .ventas-toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
-  .ventas-toolbar input[type=date]{padding:8px 12px;border:1.5px solid var(--border);border-radius:50px;font-family:inherit;font-size:13px;font-weight:600;background:#fff;outline:none;color:var(--ink)}
-  .ventas-toolbar input[type=date]:focus{border-color:var(--primary)}
-  .ventas-toolbar button{background:#fff;border:1.5px solid var(--border);border-radius:50px;padding:8px 14px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted)}
-  .ventas-toolbar button:hover{border-color:var(--primary);color:var(--primary)}
-  .ventas-toolbar button.active{background:var(--grad);color:#fff;border-color:transparent}
-
-  /* ── Recibo fiscal (datos org en header) ─────────── */
-  .receipt-fiscal{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.4;text-align:center}
-  .receipt-fiscal > div{margin:1px 0}
-  .receipt-footer{margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);text-align:center;font-size:11px;color:var(--muted);line-height:1.4}
-  .receipt-footer > div{margin:1px 0}
-
-  /* ── PRINT ────────────────────────────────────────── */
-  @media print{
-    body > *:not(.receipt-overlay){display:none !important}
-    .receipt-overlay{position:static !important;background:#fff;display:block !important;padding:0;inset:auto}
-    .receipt{box-shadow:none !important;max-height:none !important;border-radius:0 !important;color:#000}
-    .receipt-h{padding:6px 0 4px;border-bottom:1px dashed #000;text-align:center}
-    .receipt-h-icon{display:none}
-    .receipt-h-title{font-size:13px;font-weight:800;margin-bottom:2px}
-    .receipt-h-sub{font-size:12px;font-weight:700}
-    .receipt-fiscal{font-size:9px;color:#000}
-    .receipt-body{padding:6px 0}
-    .receipt-meta{font-size:10px;color:#000;margin-bottom:4px}
-    .receipt-items{font-size:11px}
-    .receipt-item{padding:2px 0;border-bottom:1px dotted #ccc}
-    .receipt-tot{font-size:14px !important;font-weight:800;border-top:1px dashed #000;padding-top:4px;margin-top:4px}
-    .receipt-pago{font-size:11px;margin-top:2px}
-    .receipt-footer{font-size:10px;color:#000;border-top-color:#000;padding-top:6px;margin-top:8px}
-    .receipt-actions,.no-print{display:none !important}
-  }
-  @media print{
-    .receipt.papel-80mm{max-width:none !important;width:76mm;font-size:11px}
-    .receipt.papel-58mm{max-width:none !important;width:54mm;font-size:10px}
-    .receipt.papel-58mm .receipt-h-title{font-size:11px}
-    .receipt.papel-58mm .receipt-tot{font-size:12px !important}
-    .receipt.papel-a4{max-width:none !important;width:auto;font-size:13px}
-  }
-  body.print-58mm @page{size:58mm auto;margin:1mm}
-  body.print-80mm @page{size:80mm auto;margin:2mm}
-  body.print-a4   @page{size:A4;margin:15mm}
-  @page{size:80mm auto;margin:2mm}
+  footer{border-top:1px solid var(--border);padding:34px 0;margin-top:72px}
+  .foot-in{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;color:var(--muted2);font-size:13px}
+  .foot-in a{color:var(--muted)}
+  .foot-in a:hover{color:#fff}
 </style>
-  <script src="js/sentry-init.js" defer></script>
 </head>
 <body>
 
-<div class="topbar">
-  <div class="topbar-logo">⚡ POS</div>
-  <div class="topbar-org" id="t-org">—</div>
-  <select class="topbar-tienda" id="t-tienda" title="Cambiar de tienda">
-    <option value="">— Cargando tiendas… —</option>
-  </select>
-  <div class="topbar-tabs">
-    <button class="topbar-tab active" data-tab="pos"     onclick="goTab('pos')">Vender</button>
-    <button class="topbar-tab"        data-tab="ventas"  onclick="goTab('ventas')">Ventas hoy</button>
-    <button class="topbar-tab"        data-tab="reservas" onclick="goTab('reservas')">Reservas <span id="reservas-badge" style="display:none;background:#f59e0b;color:white;padding:1px 6px;border-radius:10px;font-size:10px;margin-left:2px"></span></button>
-    <button class="topbar-tab"        data-tab="reportes" onclick="goTab('reportes')">Reportes</button>
-    <button class="topbar-tab"        data-tab="stock"   onclick="goTab('stock')">Stock</button>
-    <button class="topbar-tab"        data-tab="envases" onclick="goTab('envases')">Envases</button>
-    <button class="topbar-tab"        data-tab="caja"    onclick="goTab('caja')">Caja</button>
-    <button class="topbar-tab"        data-tab="tiendas" onclick="goTab('tiendas')" id="tab-tiendas-btn" style="display:none">Tiendas</button>
-    <button class="topbar-tab"        data-tab="recibo"  onclick="goTab('recibo')">Recibo</button>
-    <button class="topbar-tab"        data-tab="cuotas"  onclick="goTab('cuotas')" id="tab-cuotas-btn" style="display:none">Cuotas</button>
-    <button class="topbar-tab"        data-tab="promos"  onclick="goTab('promos')" id="tab-promos-btn" style="display:none">🎁 Promos</button>
+<nav>
+  <div class="wrap nav-in">
+    <div class="logo">⚡ POS Mostrador</div>
+    <div class="nav-links">
+      <a class="lnk nav-hide" href="#funciones">Funciones</a>
+      <a class="lnk nav-hide" href="#como">Cómo funciona</a>
+      <a class="lnk" href="login.html">Ingresar</a>
+      <a class="btn btn-primary" href="signup.html" style="padding:9px 18px;font-size:14px">Crear cuenta</a>
+    </div>
   </div>
-  <div id="dash-mini" class="dash-mini" title="Tu turno · click para detalle" style="display:none" onclick="goTab('caja')">
-    <span id="dash-ventas">0</span> ventas · <span id="dash-monto">$0</span>
-  </div>
-  <button class="topbar-logout" onclick="hacerLogout()" title="Atajos: F1 Efectivo · F2 Transferencia · F3 MP QR · F4 Mixto · F5 Buscar producto · F6 Buscar cliente · F7-F12 Favoritos · Esc Cerrar · Ctrl+⌫ Vaciar">⏻</button>
-</div>
+</nav>
 
-<div class="content">
-  <!-- ═══ POS ═══ -->
-  <div class="screen active" id="screen-pos">
-    <div class="pos-layout">
-      <div class="pos-products">
-        <div class="prod-search">
-          <input id="prod-q" type="search" placeholder="Buscar producto…" autocomplete="off">
-          <input id="barcode-input" type="text" placeholder="📷 Escanear código…" autocomplete="off"
-                 inputmode="numeric" title="Conectá el scanner USB y enfocá este input. También funciona escaneo global desde cualquier parte del POS.">
-          <button id="prod-view-toggle" class="btn-add-prod" type="button" onclick="posToggleVista()" title="Cambiar entre grilla y lista">≣ Lista</button>
-          <button class="btn-add-prod" type="button" onclick="abrirAltaProducto()" title="Agregar nuevo producto al catálogo">+ Producto</button>
-        </div>
-        <div class="prod-grid" id="prod-grid"></div>
+<header class="hero">
+  <div class="wrap">
+    <span class="badge">🎁 14 días de prueba · sin tarjeta</span>
+    <h1>El punto de venta para tu <span class="hl">tienda, kiosco o ferretería</span></h1>
+    <p class="lead">Cobrá rápido con scanner de código de barras, controlá tu caja y tu stock, sacá reportes y emití comprobantes. Todo desde una tablet, celular o computadora.</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="signup.html">Crear mi cuenta gratis →</a>
+      <a class="btn btn-ghost" href="login.html">Ya tengo cuenta</a>
+    </div>
+    <div class="hero-note">Funciona offline · Se instala como app · Listo para usar en minutos</div>
+
+    <div class="audience">
+      <div class="aud"><span>🛒</span>Almacenes y abarrotes</div>
+      <div class="aud"><span>🔧</span>Ferreterías</div>
+      <div class="aud"><span>🥤</span>Kioscos y maxikioscos</div>
+      <div class="aud"><span>🏪</span>Autoservicios y minimercados</div>
+    </div>
+  </div>
+</header>
+
+<section id="funciones">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker">Todo en uno</div>
+      <h2>Todas las funciones que tu mostrador necesita</h2>
+      <p>Pensado para vender rápido en la caja y tener el control de tu negocio sin planillas ni vueltas.</p>
+    </div>
+
+    <div class="grid">
+      <div class="feat">
+        <div class="ic">⚡</div>
+        <h3>Venta ultra rápida</h3>
+        <p>Cargá el carrito en segundos y cobrá sin demoras.</p>
+        <ul>
+          <li>Scanner de código de barras (USB o cámara)</li>
+          <li>Búsqueda inteligente por nombre</li>
+          <li>Vista grilla o lista + productos favoritos</li>
+          <li>Atajos de teclado (F1–F12)</li>
+        </ul>
       </div>
 
-      <aside class="pos-cart" id="pos-cart">
-        <div class="pos-cart-handle" id="cart-handle">
-          <div style="font-weight:700;font-size:13px">🛒 Carrito · <span id="cart-handle-count">0</span></div>
-          <div style="font-weight:800;font-size:14px" id="cart-handle-total">$0</div>
-        </div>
-        <div class="pos-cart-h">
-          <h2>Carrito</h2>
-          <button class="pos-cart-clear" onclick="vaciarCarrito()">Vaciar</button>
-        </div>
-        <div class="pos-cart-list" id="cart-list"></div>
-        <div class="pos-cart-foot">
-          <div class="pos-cliente" id="cli-wrap" style="display:flex;gap:6px;align-items:stretch">
-            <div style="flex:1;position:relative">
-              <input id="cli-q" type="text" placeholder="🔍 Buscar cliente — vacío = Mostrador" autocomplete="off" style="width:100%">
-              <div class="pos-cliente-suggest" id="cli-suggest"></div>
-            </div>
-            <button type="button" id="btn-nuevo-cliente-pos" title="Nuevo cliente"
-              onclick="window._posAbrirNuevoCliente()"
-              style="padding:0 12px;border:1.5px solid var(--border);background:#fff;border-radius:10px;font-size:18px;font-weight:700;cursor:pointer;color:var(--primary)">+</button>
-          </div>
-          <!-- Envases retornados (solo visible si hay cliente real seleccionado) -->
-          <div class="pos-envases" id="pos-envases" style="display:none">
-            <div class="pos-envases-h">
-              <span>🫙 Envases recibidos del cliente</span>
-              <span class="pos-envases-info" id="env-saldo">—</span>
-            </div>
-            <div id="env-rows" style="display:flex;flex-direction:column;gap:6px"></div>
-            <button type="button" id="env-add" class="pos-envases-add"
-              style="margin-top:6px;width:100%;padding:8px 10px;border:1.5px dashed rgba(124,58,237,.35);border-radius:10px;background:#fff;color:var(--ink);font-size:12px;font-weight:600;cursor:pointer">
-              + Agregar tipo
-            </button>
-            <button type="button" id="btn-solo-devolver" onclick="window._posSoloDevolver()"
-              style="display:none;margin-top:8px;width:100%;padding:9px;border:1.5px solid rgba(245,158,11,.4);background:rgba(245,158,11,.06);color:#92400e;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer">
-              ↩️ Solo registrar devolución (sin venta)
-            </button>
-          </div>
-          <!-- Prepagos pendientes del cliente (producto ya pagado, entrega diferida) -->
-          <div id="pos-prepagos" style="display:none;margin-bottom:10px;background:rgba(5,150,105,.06);border:1.5px solid rgba(5,150,105,.3);border-radius:10px;padding:10px 12px"></div>
-          <button type="button" id="btn-promo" onclick="aplicarPromoPOS()"
-            style="width:100%;margin-bottom:8px;padding:9px;border:1.5px solid rgba(245,158,11,.4);background:rgba(245,158,11,.08);color:#b45309;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer">🎁 Aplicar promo</button>
-          <div class="pos-descuento-row">
-            <label for="pos-descuento" style="font-size:12px;font-weight:600;color:var(--muted)">Descuento</label>
-            <input type="text" id="pos-descuento" placeholder="0" inputmode="decimal" autocomplete="off">
-            <select id="pos-descuento-tipo">
-              <option value="ars">$</option>
-              <option value="pct">%</option>
-            </select>
-          </div>
-          <div class="pos-total">
-            <span class="pos-total-l">Total</span>
-            <span class="pos-total-v" id="pos-total">$0</span>
-          </div>
-          <button type="button" id="btn-prepago" onclick="abrirEntregaParcial()"
-            style="width:100%;margin-bottom:8px;padding:9px;border:1.5px solid rgba(5,150,105,.35);background:rgba(5,150,105,.06);color:#047857;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;display:none">
-            📦 Entrega parcial / prepago
-          </button>
-          <label class="pos-fact-toggle" id="fact-toggle-wrap">
-            <input type="checkbox" id="fact-toggle">
-            <span class="pos-fact-label">🧾 Emitir factura</span>
-            <select id="fact-tipo" style="display:none">
-              <option value="auto" selected>Auto (según cliente)</option>
-              <option value="A">A — RI / Monotributo (con CUIT)</option>
-              <option value="B">B — Consumidor Final</option>
-              <option value="C">C — RI a CF</option>
-            </select>
-          </label>
-          <div class="pos-pago-grid">
-            <button class="pos-pago-btn" id="btn-efe" onclick="cobrar('efectivo')">
-              <span class="ico">💵</span><span>Efectivo</span>
-            </button>
-            <button class="pos-pago-btn" id="btn-trs" onclick="cobrar('transferencia')">
-              <span class="ico">🏦</span><span>Transferencia</span>
-            </button>
-            <button class="pos-pago-btn" id="btn-mp" onclick="cobrar('mercadopago')">
-              <span class="ico">📱</span><span>MP QR</span>
-            </button>
-            <button class="pos-pago-btn" id="btn-cc" onclick="cobrar('cuenta_corriente')" title="Solo con cliente real (no Mostrador)">
-              <span class="ico">💳</span><span>Cuenta corriente</span>
-            </button>
-            <button class="pos-pago-btn" id="btn-deb" onclick="cobrar('debito')" title="Tarjeta de débito por posnet">
-              <span class="ico">💳</span><span>Débito</span>
-            </button>
-            <button class="pos-pago-btn" id="btn-cre" onclick="cobrar('credito')" title="Tarjeta de crédito por posnet">
-              <span class="ico">💳</span><span>Crédito</span>
-            </button>
-            <button class="pos-pago-btn full" id="btn-mix" onclick="abrirCobroMixto()">
-              <span class="ico">🔀</span><span>Mixto (combinar métodos)</span>
-            </button>
-            <button class="pos-pago-btn full" id="btn-reservar" onclick="crearReserva()" style="background:rgba(245,158,11,.06);border-color:rgba(245,158,11,.3);color:#b45309">
-              <span class="ico">📌</span><span>Reservar (cobrar después)</span>
-            </button>
-          </div>
-        </div>
-      </aside>
-    </div>
-  </div>
-
-  <!-- ═══ REPORTES ═══ -->
-  <div class="screen" id="screen-reportes">
-    <div class="ventas-wrap" style="padding:20px;max-width:1000px;margin:0 auto">
-      <div style="margin-bottom:26px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
-          <h2 style="margin:0;font-size:20px">📅 Corte global del día</h2>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <input id="corte-global-fecha" type="date" onchange="cargarCorteGlobal()" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px">
-            <button onclick="cargarCorteGlobal()" style="padding:8px 14px;border:1px solid var(--border);background:white;color:var(--ink);border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">↻ Ver</button>
-            <button onclick="imprimirCorteGlobal()" style="padding:8px 14px;border:1px solid rgba(124,58,237,.3);background:rgba(124,58,237,.08);color:#7c3aed;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">🖨 Imprimir</button>
-          </div>
-        </div>
-        <div style="font-size:12px;color:var(--ink);background:rgba(124,58,237,.06);border-radius:8px;padding:8px 10px;margin-bottom:12px">ℹ️ Consolidado de <b>TODOS los cortes del día</b> (todas las cajas y cajeros): aperturas, ventas por método, ingresos/egresos y diferencia total. Cambiá la fecha para ver días pasados.</div>
-        <div id="corte-global-content"><div style="text-align:center;padding:20px;color:var(--muted)">Cargando…</div></div>
+      <div class="feat">
+        <div class="ic">💳</div>
+        <h3>Todos los medios de pago</h3>
+        <p>Cobrá como el cliente quiera, incluso combinando métodos.</p>
+        <ul>
+          <li>Efectivo, transferencia y QR de Mercado Pago</li>
+          <li>Débito y crédito (con recargo por cuotas)</li>
+          <li>Cuenta corriente (fiado) por cliente</li>
+          <li>Cobro mixto: varios métodos en una venta</li>
+        </ul>
       </div>
 
-      <div style="margin-bottom:26px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
-          <h2 style="margin:0;font-size:20px">🧾 Cortes de caja</h2>
-          <button onclick="cargarCortesCaja()" style="padding:8px 14px;border:1px solid var(--border);background:white;color:var(--ink);border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">↻ Refrescar</button>
-        </div>
-        <div style="font-size:12px;color:var(--ink);background:rgba(124,58,237,.06);border-radius:8px;padding:8px 10px;margin-bottom:12px">ℹ️ Cajas ya cerradas. Tocá <b>Ver Z</b> para abrir y reimprimir el corte (ventas por método de pago, productos y movimientos), aunque la caja se haya cerrado hace días.</div>
-        <div id="cortes-content"><div style="text-align:center;padding:20px;color:var(--muted)">Cargando…</div></div>
+      <div class="feat">
+        <div class="ic">💵</div>
+        <h3>Caja y cierres</h3>
+        <p>Cerrá la caja con confianza y sin sorpresas.</p>
+        <ul>
+          <li>Apertura/cierre con arrastre de efectivo</li>
+          <li>Ingresos y egresos de caja</li>
+          <li>Reportes X, Z, cierre del día y corte global</li>
+          <li>Ventas por cajero y por método de pago</li>
+        </ul>
       </div>
 
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
-        <h2 style="margin:0;font-size:20px">📊 Reportes históricos</h2>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <input type="date" id="rep-desde" class="prod-form-i" style="padding:6px 10px">
-          <span style="color:var(--muted)">→</span>
-          <input type="date" id="rep-hasta" class="prod-form-i" style="padding:6px 10px">
-          <select id="rep-cajero" class="prod-form-i" style="padding:6px 10px">
-            <option value="">Todos los cajeros</option>
-          </select>
-          <button onclick="cargarReportes()" style="padding:8px 14px;border:none;background:var(--primary);color:white;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">Generar</button>
-          <button onclick="imprimirReportes()" style="padding:8px 14px;border:1px solid var(--border);background:white;color:var(--ink);border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">🖨 Imprimir</button>
-        </div>
+      <div class="feat">
+        <div class="ic">📦</div>
+        <h3>Stock y mercadería</h3>
+        <p>Sabé siempre qué tenés y qué te falta.</p>
+        <ul>
+          <li>Stock por tienda en tiempo real</li>
+          <li>Carga masiva y ajustes con motivo</li>
+          <li>Alertas de stock bajo o negativo</li>
+          <li>Bloqueo de venta si no alcanza el stock</li>
+        </ul>
       </div>
-      <div id="rep-content"></div>
-    </div>
-  </div>
 
-  <div class="screen" id="screen-reservas">
-    <div class="ventas-wrap" style="padding:20px;max-width:900px;margin:0 auto">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <h2 style="margin:0;font-size:20px">📌 Reservas pendientes</h2>
-        <button class="btn-ghost" onclick="cargarReservas()" style="padding:8px 14px;border:1px solid var(--border);background:white;border-radius:8px;cursor:pointer;font-size:12px">↻ Refrescar</button>
+      <div class="feat">
+        <div class="ic">🎁</div>
+        <h3>Promos y combos</h3>
+        <p>Subí el ticket promedio con ofertas que se aplican solas.</p>
+        <ul>
+          <li>2x1, 3x2 y NxM</li>
+          <li>Precio fijo por cantidad y % por volumen</li>
+          <li>Combos que descuentan stock de sus componentes</li>
+          <li>Descuentos manuales por venta</li>
+        </ul>
       </div>
-      <div id="reservas-list" style="display:flex;flex-direction:column;gap:10px"></div>
-    </div>
-  </div>
 
-  <div class="screen" id="screen-ventas">
-    <div class="ventas-wrap">
-      <div class="ventas-kpis" id="ventas-kpis"></div>
-      <h3 style="font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Operaciones del día</h3>
-      <div class="ventas-list" id="ventas-list"></div>
-    </div>
-  </div>
-
-  <!-- ═══ ENVASES RETORNADOS ═══ -->
-  <div class="screen" id="screen-envases">
-    <div class="envases-wrap" id="envases-wrap">
-      <div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>
-    </div>
-  </div>
-
-  <!-- ═══ CAJA ═══ -->
-  <div class="screen" id="screen-caja">
-    <div class="caja-wrap" id="caja-wrap">
-      <div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>
-    </div>
-  </div>
-
-  <!-- ═══ TIENDAS ═══ -->
-  <div class="screen" id="screen-tiendas">
-    <div class="tiendas-wrap" id="tiendas-wrap">
-      <div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>
-    </div>
-  </div>
-
-  <!-- ═══ RECIBO CONFIG ═══ -->
-  <div class="screen" id="screen-recibo">
-    <div class="recibo-wrap" id="recibo-wrap">
-      <div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>
-    </div>
-  </div>
-
-  <!-- ═══ CUOTAS / RECARGO TARJETA DE CRÉDITO ═══ -->
-  <div class="screen" id="screen-cuotas">
-    <div class="recibo-wrap" id="cuotas-wrap">
-      <div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>
-    </div>
-  </div>
-
-  <!-- ═══ PROMOS ═══ -->
-  <div class="screen" id="screen-promos">
-    <div class="recibo-wrap" id="promos-wrap">
-      <div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>
-    </div>
-  </div>
-
-  <!-- ═══ TRANSFERIR ENVASES MODAL ═══ -->
-  <div class="qr-overlay" id="transf-overlay">
-    <div class="qr-modal" style="max-width:480px">
-      <div class="qr-modal-h">
-        <div class="qr-modal-title">↔ Transferir envases</div>
-        <button class="qr-modal-close" id="transf-close" type="button" title="Cancelar">×</button>
+      <div class="feat">
+        <div class="ic">👥</div>
+        <h3>Clientes y fiado</h3>
+        <p>Conocé a tu cliente y manejá su cuenta corriente.</p>
+        <ul>
+          <li>Alta de clientes con historial de compras</li>
+          <li>Saldo, deuda y abonos a cuenta</li>
+          <li>Listas de precios y precios especiales</li>
+          <li>Venta a "Mostrador" para el cliente de paso</li>
+        </ul>
       </div>
-      <div class="qr-modal-body" style="align-items:stretch;text-align:left">
-        <form id="transf-form" autocomplete="off" style="display:flex;flex-direction:column;gap:10px">
-          <label class="prod-form-l">Tipo de envase</label>
-          <select id="transf-tipo" class="prod-form-i"></select>
 
-          <div style="display:grid;grid-template-columns:1fr 30px 1fr;gap:8px;align-items:end">
-            <div>
-              <label class="prod-form-l">Desde</label>
-              <select id="transf-origen" class="prod-form-i">
-                <option value="deposito">🏭 Depósito</option>
-                <option value="mostrador">🛒 Mostrador</option>
-                <option value="repartidor">🚚 Repartidor</option>
-                <option value="cliente">🏠 Cliente</option>
-                <option value="ajuste">➕ Ajuste (entrada)</option>
-              </select>
-            </div>
-            <div style="text-align:center;font-size:24px;color:var(--muted);padding-bottom:10px">→</div>
-            <div>
-              <label class="prod-form-l">Hacia</label>
-              <select id="transf-destino" class="prod-form-i">
-                <option value="mostrador">🛒 Mostrador</option>
-                <option value="deposito">🏭 Depósito</option>
-                <option value="repartidor">🚚 Repartidor</option>
-                <option value="cliente">🏠 Cliente</option>
-                <option value="rotos">⚠ Rotos</option>
-                <option value="perdidos">❓ Perdidos</option>
-                <option value="vendidos">💰 Vendidos</option>
-              </select>
-            </div>
-          </div>
+      <div class="feat">
+        <div class="ic">📊</div>
+        <h3>Reportes que se entienden</h3>
+        <p>Mirá cómo va el negocio cuando quieras.</p>
+        <ul>
+          <li>Ventas por día, cajero y producto</li>
+          <li>Productos más vendidos</li>
+          <li>Histórico filtrable por rango y cajero</li>
+          <li>Exportá / imprimí cualquier reporte</li>
+        </ul>
+      </div>
 
-          <div id="transf-rep-wrap" style="display:none">
-            <label class="prod-form-l">Repartidor</label>
-            <select id="transf-rep" class="prod-form-i"><option value="">— Elegí un repartidor —</option></select>
-          </div>
+      <div class="feat">
+        <div class="ic">🧾</div>
+        <h3>Comprobantes y facturación</h3>
+        <p>Entregá el ticket por donde el cliente prefiera.</p>
+        <ul>
+          <li>Recibo configurable (58mm, 80mm o A4)</li>
+          <li>Envío por WhatsApp y email</li>
+          <li>Emisión de factura (A / B / C)</li>
+          <li>Datos fiscales y logo en el ticket</li>
+        </ul>
+      </div>
 
-          <div id="transf-cli-wrap" style="display:none">
-            <label class="prod-form-l">Cliente</label>
-            <input id="transf-cli-q" type="text" placeholder="Buscar cliente…" class="prod-form-i">
-            <div id="transf-cli-suggest" class="pos-cliente-suggest"></div>
-            <div id="transf-cli-sel" style="font-size:12px;color:var(--muted);margin-top:4px"></div>
-          </div>
+      <div class="feat">
+        <div class="ic">📌</div>
+        <h3>Reservas y devoluciones</h3>
+        <p>Resolvé los casos del día a día sin trabarte.</p>
+        <ul>
+          <li>Reservas: tomar el pedido y cobrar después</li>
+          <li>Prepagos y entregas parciales</li>
+          <li>Devoluciones parciales o totales</li>
+          <li>Anulación de ventas con reposición de stock</li>
+        </ul>
+      </div>
 
-          <label class="prod-form-l">Cantidad</label>
-          <input id="transf-cant" type="number" min="1" step="1" required placeholder="0" class="prod-form-i">
-
-          <label class="prod-form-l">Notas (opcional)</label>
-          <input id="transf-notas" type="text" maxlength="120" placeholder="Ej: Cargué del depósito a la tienda" class="prod-form-i">
-
-          <button type="submit" id="transf-confirm" style="margin-top:6px;padding:14px;border-radius:50px;border:none;background:var(--primary);color:#fff;font-weight:700;font-size:14px;cursor:pointer">Aplicar transferencia</button>
-        </form>
+      <div class="feat">
+        <div class="ic">🏪</div>
+        <h3>Multi-tienda y hardware</h3>
+        <p>Crecé a varias sucursales con el mismo sistema.</p>
+        <ul>
+          <li>Varias tiendas con stock y caja propios</li>
+          <li>Impresora térmica y apertura de cajón monedero</li>
+          <li>Roles y permisos por usuario</li>
+          <li>Bloqueo por inactividad en el mostrador</li>
+        </ul>
       </div>
     </div>
   </div>
+</section>
 
-  <!-- ═══ ALTA PRODUCTO MODAL ═══ -->
-  <div class="qr-overlay" id="prod-overlay">
-    <div class="qr-modal" style="max-width:480px">
-      <div class="qr-modal-h">
-        <div class="qr-modal-title">+ Nuevo producto</div>
-        <button class="qr-modal-close" id="prod-close" type="button" title="Cancelar">×</button>
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker">Cobros</div>
+      <h2>Aceptá cualquier forma de pago</h2>
+    </div>
+    <div class="pay-strip">
+      <div class="chip">💵 Efectivo</div>
+      <div class="chip">🏦 Transferencia</div>
+      <div class="chip">📱 Mercado Pago QR</div>
+      <div class="chip">💳 Débito</div>
+      <div class="chip">💳 Crédito en cuotas</div>
+      <div class="chip">📒 Cuenta corriente</div>
+      <div class="chip">🔀 Cobro mixto</div>
+    </div>
+  </div>
+</section>
+
+<section id="como">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker">Cómo funciona</div>
+      <h2>Empezá a vender en 3 pasos</h2>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <h3>Creá tu cuenta</h3>
+        <p>Registrate gratis con tu email. Tu negocio queda listo al instante, con 14 días de prueba completa.</p>
       </div>
-      <div class="qr-modal-body" style="align-items:stretch;text-align:left">
-        <form id="prod-form" autocomplete="off" style="display:flex;flex-direction:column;gap:10px">
-          <label class="prod-form-l">Nombre *</label>
-          <input id="prod-nombre" type="text" required placeholder="Ej: Coca-Cola 600ml" class="prod-form-i">
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <div>
-              <label class="prod-form-l">Precio *</label>
-              <input id="prod-precio" type="number" min="0" step="0.01" required placeholder="0" class="prod-form-i">
-            </div>
-            <div>
-              <label class="prod-form-l">Unidad</label>
-              <input id="prod-unidad" type="text" placeholder="u." value="u." class="prod-form-i">
-            </div>
-          </div>
-
-          <label class="prod-form-l">Código de barras (opcional)</label>
-          <input id="prod-barcode" type="text" placeholder="Escaneá o tipeá" class="prod-form-i" autocomplete="off">
-
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 0;font-size:13px">
-            <input id="prod-tiene-envase" type="checkbox">
-            <span>Es retornable (descuenta envases del cliente)</span>
-          </label>
-
-          <div id="prod-tipo-envase-wrap" style="display:none">
-            <label class="prod-form-l">Tipo de envase</label>
-            <select id="prod-tipo-envase" class="prod-form-i">
-              <option value="">— Sin asignar (usa fallback) —</option>
-            </select>
-          </div>
-
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 0;font-size:13px">
-            <input id="prod-peso-variable" type="checkbox">
-            <span>⚖ Peso variable (pide cantidad al sumar al carrito)</span>
-          </label>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
-            <div>
-              <label class="prod-form-l">Vencimiento</label>
-              <input id="prod-vencimiento" type="date" class="prod-form-i">
-            </div>
-            <div>
-              <label class="prod-form-l">Promo volumen</label>
-              <div style="display:flex;gap:4px">
-                <input id="prod-promo-qty" type="number" min="0" placeholder="Qty" class="prod-form-i" style="flex:1" title="Cantidad mínima para activar promo">
-                <input id="prod-promo-pct" type="number" min="0" max="100" placeholder="% off" class="prod-form-i" style="flex:1" title="Descuento % cuando alcanza la qty">
-              </div>
-            </div>
-          </div>
-
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 0;font-size:13px;border-top:1px dashed var(--border);margin-top:6px">
-            <input id="prod-es-combo" type="checkbox">
-            <span>🎁 Es combo (descuenta stock de los componentes al vender)</span>
-          </label>
-
-          <div id="prod-combo-wrap" style="display:none;background:rgba(124,58,237,.04);border:1px solid rgba(124,58,237,.2);border-radius:10px;padding:10px">
-            <div style="font-size:11px;font-weight:700;color:#7c3aed;text-transform:uppercase;margin-bottom:6px">Componentes del combo</div>
-            <div id="prod-combo-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
-            <button type="button" id="prod-combo-add" style="padding:6px 10px;border:1px dashed rgba(124,58,237,.4);background:white;color:#7c3aed;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;width:100%">+ Agregar componente</button>
-          </div>
-
-          <button type="submit" id="prod-confirm" style="margin-top:6px;padding:14px;border-radius:50px;border:none;background:var(--primary);color:#fff;font-weight:700;font-size:14px;cursor:pointer">Crear producto</button>
-        </form>
+      <div class="step">
+        <h3>Cargá tus productos</h3>
+        <p>Agregá productos con su precio y código de barras, o creálos al vuelo escaneando en la caja.</p>
+      </div>
+      <div class="step">
+        <h3>Vendé y cobrá</h3>
+        <p>Escaneá, cobrá con el medio que el cliente quiera, entregá el ticket y cerrá la caja al final del día.</p>
       </div>
     </div>
   </div>
+</section>
 
-  <!-- ═══ CARGA STOCK BULK MODAL ═══ -->
-  <div class="qr-overlay" id="carga-overlay">
-    <div class="qr-modal" style="max-width:560px;max-height:88vh">
-      <div class="qr-modal-h">
-        <div class="qr-modal-title" id="carga-title">📦 Cargar mercadería</div>
-        <button class="qr-modal-close" id="carga-close" type="button" title="Cancelar">×</button>
-      </div>
-      <div class="qr-modal-body" style="align-items:stretch;text-align:left;overflow-y:auto">
-        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Tipeá la cantidad a sumar al stock de cada producto. Dejá en cero los que no querés cargar. Negativos sirven para corregir o ajustar.</div>
-        <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Motivo</label>
-        <select id="carga-motivo" class="prod-form-i" style="margin-bottom:12px">
-          <option value="carga">Carga (recibí mercadería)</option>
-          <option value="ajuste">Ajuste (rotura, hurto, vencido)</option>
-          <option value="correccion">Corrección de stock</option>
-        </select>
-        <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Origen del stock</label>
-        <select id="carga-origen" class="prod-form-i" style="margin-bottom:12px">
-          <option value="compra">🛒 Compra a proveedor (no descuenta)</option>
-          <option value="deposito">🏪 Sale del depósito central</option>
-          <option value="tienda">🏬 Sale de otra tienda</option>
-          <option value="vehiculo">🚚 Sale del vehículo</option>
-        </select>
-        <div id="carga-origen-tienda-wrap" style="display:none;margin-bottom:12px">
-          <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Tienda origen</label>
-          <select id="carga-origen-tienda" class="prod-form-i"></select>
-        </div>
-        <div id="carga-origen-vehiculo-wrap" style="display:none;margin-bottom:12px">
-          <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Vehículo origen</label>
-          <select id="carga-origen-vehiculo" class="prod-form-i"></select>
-        </div>
-        <div id="carga-list" style="display:flex;flex-direction:column;gap:6px"></div>
-        <button id="carga-confirm" type="button" style="margin-top:12px;padding:14px;border-radius:50px;border:none;background:var(--primary);color:#fff;font-weight:700;font-size:14px;cursor:pointer">Aplicar carga</button>
+<section>
+  <div class="wrap">
+    <div class="final">
+      <h2>Tu mostrador, más rápido y bajo control</h2>
+      <p>Probá el POS Mostrador gratis por 14 días. Sin tarjeta, sin instalaciones complicadas.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="signup.html">Crear mi cuenta gratis →</a>
+        <a class="btn btn-ghost" href="login.html">Ingresar</a>
       </div>
     </div>
   </div>
+</section>
 
-  <!-- ═══ STOCK ═══ -->
-  <div class="screen" id="screen-stock">
-    <div class="stock-wrap">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap">
-        <h3 style="font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Stock de mostrador</h3>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none">
-          <input type="checkbox" id="stock-strict-toggle" checked>
-          <span>Bloquear ventas si el stock no alcanza</span>
-        </label>
-      </div>
-
-      <div id="stock-envases-card" style="margin-bottom:18px"></div>
-
-      <div class="stock-list" id="stock-list"></div>
+<footer>
+  <div class="wrap foot-in">
+    <div class="logo" style="font-size:16px">⚡ POS Mostrador</div>
+    <div style="display:flex;gap:18px;flex-wrap:wrap">
+      <a href="#funciones">Funciones</a>
+      <a href="#como">Cómo funciona</a>
+      <a href="login.html">Ingresar</a>
+      <a href="signup.html">Crear cuenta</a>
     </div>
+    <div>© <span id="year"></span> POS Mostrador</div>
   </div>
-</div>
+</footer>
 
-<!-- ═══ RECEIPT MODAL ═══ -->
-<div class="receipt-overlay" id="receipt-overlay">
-  <div class="receipt" id="receipt"></div>
-</div>
-
-<!-- ═══ COBRO MIXTO MODAL ═══ -->
-<div class="qr-overlay" id="mix-overlay">
-  <div class="qr-modal" style="max-width:440px">
-    <div class="qr-modal-h">
-      <div class="qr-modal-title">🔀 Cobro mixto</div>
-      <button class="qr-modal-close" id="mix-close" title="Cancelar">×</button>
-    </div>
-    <div class="qr-modal-body" style="align-items:stretch;text-align:left">
-      <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Total a cobrar: <b id="mix-total" style="color:var(--ink);font-size:16px">$0</b></div>
-      <div class="mix-row">
-        <span>💵 Efectivo</span>
-        <input id="mix-efe" type="number" min="0" step="1" value="0" inputmode="numeric">
-      </div>
-      <div class="mix-row">
-        <span>🏦 Transferencia</span>
-        <input id="mix-trs" type="number" min="0" step="1" value="0" inputmode="numeric">
-      </div>
-      <div class="mix-row">
-        <span>📱 MercadoPago</span>
-        <input id="mix-mp" type="number" min="0" step="1" value="0" inputmode="numeric">
-      </div>
-      <div class="mix-row">
-        <span>💳 Débito</span>
-        <input id="mix-deb" type="number" min="0" step="1" value="0" inputmode="numeric">
-      </div>
-      <div class="mix-row">
-        <span>💳 Crédito</span>
-        <input id="mix-cre" type="number" min="0" step="1" value="0" inputmode="numeric">
-      </div>
-      <div id="mix-balance" class="caja-diff zero" style="margin-top:8px">Falta: $0</div>
-      <button id="mix-confirm" style="margin-top:14px;padding:14px;border-radius:50px;border:none;background:var(--primary);color:#fff;font-weight:700;font-size:14px;cursor:pointer">Confirmar venta</button>
-      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px">⚠ Los pagos MP se confirman manualmente. Para QR escaneable usá el botón MP directo.</div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ LOCK POR INACTIVIDAD ═══ -->
-<div class="lock-overlay" id="lock-overlay">
-  <div class="lock-modal">
-    <div class="lock-icon">🔒</div>
-    <div class="lock-title">POS bloqueado</div>
-    <div class="lock-sub" id="lock-sub">Sesión bloqueada por inactividad</div>
-    <form id="lock-form" autocomplete="off">
-      <input id="lock-pass" type="password" name="password" placeholder="Contraseña" autocomplete="current-password" required>
-      <button type="submit" id="lock-btn">Desbloquear</button>
-    </form>
-    <button id="lock-logout" class="lock-logout" type="button">Cerrar sesión y salir</button>
-  </div>
-</div>
-
-<!-- ═══ QR MERCADOPAGO MODAL ═══ -->
-<div class="qr-overlay" id="qr-overlay">
-  <div class="qr-modal">
-    <div class="qr-modal-h">
-      <div class="qr-modal-title">📱 Cobro MercadoPago</div>
-      <button class="qr-modal-close" id="qr-close" title="Cancelar">×</button>
-    </div>
-    <div class="qr-modal-body">
-      <div class="qr-img-wrap" id="qr-img"><div class="spinner-lg"></div></div>
-      <div class="qr-status wait" id="qr-status">⏳ Generando QR…</div>
-      <div class="qr-monto" id="qr-monto">$0</div>
-      <div class="qr-link-wrap" id="qr-link"></div>
-    </div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<script src="js/config.js"></script>
-<script src="js/pos.js"></script>
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+</script>
 </body>
 </html>

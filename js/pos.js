@@ -109,11 +109,31 @@ async function init(){
     if (!orgRow) { toast('Sin organizaciones disponibles', 'err'); return; }
     orgId = orgRow.id; orgName = orgRow.name; orgPais = orgRow.pais || null;
   } else {
-    const { data: ur } = await sb.from('user_roles')
+    const _fetchRole = () => sb.from('user_roles')
       .select('role, organization_id, organizations(name, pais)')
       .eq('user_id', session.user.id)
       .eq('activo', true)
       .maybeSingle();
+
+    let { data: ur } = await _fetchRole();
+
+    // Self-service: si el usuario autenticado todavía no tiene organización
+    // (recién se registró o acaba de confirmar su email), provisionamos su
+    // org de prueba (trial 14 días, rol client_admin) y reintentamos. La RPC
+    // es idempotente: si ya estaba provisionada, devuelve la existente.
+    if (!ur) {
+      toast('Preparando tu cuenta…', 'info');
+      try {
+        const { data: prov, error: provErr } = await sb.rpc('provision_trial_org_for_user', {
+          p_business_name: null, p_owner_name: null, p_phone: null, p_country: null,
+        });
+        if (provErr) throw provErr;
+        if (prov?.ok) ({ data: ur } = await _fetchRole());
+      } catch (e) {
+        console.warn('provision_trial_org_for_user:', e);
+      }
+    }
+
     if (!ur) {
       toast('Tu usuario no tiene rol asignado', 'err');
       setTimeout(() => sb.auth.signOut().then(() => window.location.replace('login.html')), 2000);
