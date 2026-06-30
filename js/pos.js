@@ -72,6 +72,27 @@ function _isAdmin() {
   return ['client_admin','account_manager','super_admin'].includes(userRole);
 }
 
+// Recalcula el costo de un producto al recibir una entrega cuyo costo unitario
+// puede diferir del anterior. Modos:
+//   'promedio'  → costo promedio ponderado: mezcla el stock que ya había (a su
+//                 costo anterior) con la entrega nueva (a su costo nuevo).
+//   'reemplazar'→ toma el costo de esta entrega como costo actual.
+//   'no'        → no cambia el costo.
+// Devuelve el nuevo costo (redondeado a 2 decimales) o null si no hay cambio.
+function _costoNuevoPonderado(mode, qActual, costoActual, qNueva, costoNuevo) {
+  costoNuevo = Number(costoNuevo) || 0;
+  if (mode === 'no' || costoNuevo <= 0) return null;
+  if (mode === 'reemplazar') return Math.round(costoNuevo * 100) / 100;
+  // promedio ponderado
+  const qa = Math.max(0, Number(qActual) || 0);
+  const ca = Number(costoActual) || 0;
+  const qn = Math.max(0, Number(qNueva) || 0);
+  if (qa <= 0 || ca <= 0) return Math.round(costoNuevo * 100) / 100; // sin base previa
+  if (qn <= 0) return null;
+  const avg = (qa * ca + qn * costoNuevo) / (qa + qn);
+  return Math.round(avg * 100) / 100;
+}
+
 // ── Helpers UI ───────────────────────────────────────
 function fmtARS(n){ return '$' + Number(n||0).toLocaleString('es-AR', {maximumFractionDigits:0}); }
 function fmtTime(ts){
@@ -2453,6 +2474,18 @@ async function reponer(p){
         <input id="pos-rep-cant" type="number" inputmode="numeric" placeholder="+10 ó -3" value="10" step="1"
           style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;margin-top:5px;margin-bottom:6px">
         <div style="font-size:10px;color:var(--muted);margin-bottom:14px">+ suma · − resta (merma, corrección, rotura)</div>
+        <div id="pos-rep-costo-wrap" style="display:none;background:rgba(16,185,129,.05);border:1px solid rgba(16,185,129,.2);border-radius:9px;padding:10px;margin-bottom:14px">
+          <label style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.04em">💲 Costo unitario de esta entrega</label>
+          <input id="pos-rep-costo" type="number" min="0" step="0.01" placeholder="0" autocomplete="off"
+            style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;margin-top:5px;margin-bottom:8px">
+          <label style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Cómo actualizar el costo del producto</label>
+          <select id="pos-rep-costo-modo" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;margin-top:5px">
+            <option value="promedio" selected>Promedio ponderado (recomendado)</option>
+            <option value="reemplazar">Reemplazar por este costo</option>
+            <option value="no">No cambiar el costo</option>
+          </select>
+          <div id="pos-rep-costo-hint" style="font-size:11px;color:var(--muted);margin-top:6px"></div>
+        </div>
         <div id="pos-rep-motivo-wrap" style="display:none;margin-bottom:14px">
           <label style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Motivo *</label>
           <input id="pos-rep-motivo" type="text" placeholder="Ej: rotura, faltante en inventario, corrección"
@@ -2493,11 +2526,42 @@ async function reponer(p){
 
   const cantInp = document.getElementById('pos-rep-cant');
   const btnSave = document.getElementById('pos-rep-save');
+
+  // Costo de la entrega (solo admin; visible al sumar stock).
+  const costoInp  = document.getElementById('pos-rep-costo');
+  const costoModo = document.getElementById('pos-rep-costo-modo');
+  const costoHint = document.getElementById('pos-rep-costo-hint');
+  if (costoInp) costoInp.value = (p.costo != null && p.costo !== '') ? p.costo : '';
+  const recalcCosto = () => {
+    if (!costoHint) return;
+    const cant = parseInt(cantInp.value, 10) || 0;
+    const cn = parseFloat(costoInp.value) || 0;
+    const modo = costoModo.value;
+    if (cant <= 0) { costoHint.textContent = ''; return; }
+    const nuevo = _costoNuevoPonderado(modo, cur, p.costo, cant, cn);
+    if (nuevo == null) {
+      costoHint.textContent = modo === 'no'
+        ? 'El costo del producto no se modifica.'
+        : 'Ingresá el costo de esta entrega para actualizar el costo del producto.';
+      return;
+    }
+    const precio = Number(p.precio) || 0;
+    const mg = precio > 0 ? ((precio - nuevo) / precio * 100) : 0;
+    costoHint.innerHTML = 'Costo anterior: <b>' + fmtARS(p.costo || 0) + '</b> → nuevo costo: ' +
+      '<b style="color:#059669">' + fmtARS(nuevo) + '</b>' +
+      (precio > 0 ? ' · margen <b>' + mg.toFixed(0) + '%</b>' : '') +
+      (modo === 'promedio' ? ' <span style="color:var(--muted)">(promedio sobre ' + cur + ' + ' + cant + ' u.)</span>' : '');
+  };
+  if (costoInp)  costoInp.addEventListener('input', recalcCosto);
+  if (costoModo) costoModo.addEventListener('change', recalcCosto);
+
   const updateMode = () => {
     const v = parseInt(cantInp.value, 10) || 0;
     const esResta = v < 0;
     document.getElementById('pos-rep-origen-wrap').style.display = esResta ? 'none' : '';
     document.getElementById('pos-rep-motivo-wrap').style.display = esResta ? '' : 'none';
+    // El costo solo aplica al SUMAR stock (recibir mercadería), no al restar.
+    document.getElementById('pos-rep-costo-wrap').style.display = esResta ? 'none' : '';
     if (esResta) {
       document.getElementById('pos-rep-tienda-wrap').style.display = 'none';
       document.getElementById('pos-rep-vehiculo-wrap').style.display = 'none';
@@ -2506,6 +2570,7 @@ async function reponer(p){
     }
     btnSave.textContent = esResta ? 'Descontar' : 'Reponer';
     btnSave.style.background = esResta ? '#dc2626' : 'var(--primary)';
+    recalcCosto();
   };
   cantInp.addEventListener('input', updateMode);
   updateMode();
@@ -2538,12 +2603,31 @@ async function reponer(p){
       p_origen_repartidor_id:  origenVehiculo,
     });
     if (error) { toast(error.message, 'err'); btnSave.disabled = false; updateMode(); return; }
+
+    // Actualizar el costo del producto con el costo de esta entrega (al sumar).
+    let costoMsg = '';
+    if (!esResta) {
+      const cn = parseFloat(costoInp?.value) || 0;
+      const modo = costoModo?.value || 'no';
+      const nuevoCosto = _costoNuevoPonderado(modo, cur, p.costo, cant, cn);
+      if (nuevoCosto != null) {
+        const { error: cErr } = await sb.from('productos').update({ costo: nuevoCosto }).eq('id', p.id);
+        if (cErr) { console.warn('update costo:', cErr); }
+        else {
+          p.costo = nuevoCosto;
+          const idx = productos.findIndex(x => x.id === p.id);
+          if (idx >= 0) productos[idx].costo = nuevoCosto;
+          costoMsg = ' · costo ' + fmtARS(nuevoCosto);
+        }
+      }
+    }
+
     document.getElementById('pos-rep-overlay').remove();
     const post = data?.detalle?.[0]?.cantidad_post ?? (cur + cant);
     stockMap.set(p.id, post);
     renderStock();
     renderProductGrid();
-    toast('✓ Stock actualizado: ' + p.nombre + ' = ' + post, 'ok');
+    toast('✓ Stock actualizado: ' + p.nombre + ' = ' + post + costoMsg, 'ok');
   });
 }
 
@@ -5245,15 +5329,20 @@ window.abrirCargaStock = () => {
     const cur = stockMap.has(p.id) ? stockMap.get(p.id) : 0;
     const row = document.createElement('div');
     row.className = 'carga-row';
+    row.style.gridTemplateColumns = '1fr 58px 60px 84px';
+    const costoActual = (p.costo != null && p.costo !== '') ? Number(p.costo) : null;
     row.innerHTML =
-      '<div><div class="carga-row-name"></div></div>' +
-      '<div class="carga-row-cur">Actual: <b>' + cur + '</b></div>' +
-      '<input class="carga-row-input" type="number" step="1" placeholder="0" data-prod="' + p.id + '">';
+      '<div><div class="carga-row-name"></div>' +
+        '<div style="font-size:10px;color:var(--muted)">' + (costoActual ? 'costo ' + fmtARS(costoActual) : 'sin costo') + '</div></div>' +
+      '<div class="carga-row-cur">x<b>' + cur + '</b></div>' +
+      '<input class="carga-row-input" type="number" step="1" placeholder="0" data-prod="' + p.id + '" title="Cantidad a sumar (o negativo para restar)">' +
+      '<input class="carga-row-costo" type="number" min="0" step="0.01" placeholder="costo" data-prod="' + p.id + '" data-cur="' + cur + '" title="Costo unitario de esta entrega (opcional)" style="padding:8px 8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;text-align:right;width:100%">';
     row.querySelector('.carga-row-name').textContent = p.nombre;
     list.appendChild(row);
   });
   document.getElementById('carga-motivo').value = 'carga';
   document.getElementById('carga-origen').value = 'compra';
+  const cm = document.getElementById('carga-costo-modo'); if (cm) cm.value = 'promedio';
   document.getElementById('carga-origen-tienda-wrap').style.display = 'none';
   document.getElementById('carga-origen-vehiculo-wrap').style.display = 'none';
   ov.classList.add('show');
@@ -5326,11 +5415,34 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       if (error) throw error;
       if (!data?.ok) throw new Error('No se aplicó la carga');
+
+      // Actualizar el costo de los productos cuya entrega trajo un costo nuevo.
+      // Usamos el stock previo (data-cur) para el promedio ponderado.
+      const modoCosto = document.getElementById('carga-costo-modo')?.value || 'no';
+      let costosActualizados = 0;
+      if (modoCosto !== 'no') {
+        const costoInputs = document.querySelectorAll('#carga-list .carga-row-costo');
+        for (const ci of costoInputs) {
+          const cn = parseFloat(ci.value) || 0;
+          if (cn <= 0) continue;
+          const prodId = ci.dataset.prod;
+          const it = items.find(x => x.producto_id === prodId);
+          if (!it || it.delta <= 0) continue;  // el costo solo aplica al sumar
+          const curStock = parseInt(ci.dataset.cur, 10) || 0;
+          const prod = productos.find(x => x.id === prodId);
+          const nuevo = _costoNuevoPonderado(modoCosto, curStock, prod?.costo, it.delta, cn);
+          if (nuevo == null) continue;
+          const { error: cErr } = await sb.from('productos').update({ costo: nuevo }).eq('id', prodId);
+          if (!cErr) { if (prod) prod.costo = nuevo; costosActualizados++; }
+        }
+      }
+
       document.getElementById('carga-overlay').classList.remove('show');
       await cargarStock();
       renderStock();
       renderProductGrid();
-      toast('✓ ' + data.aplicados + ' producto' + (data.aplicados>1?'s':'') + ' actualizado' + (data.aplicados>1?'s':''), 'ok');
+      toast('✓ ' + data.aplicados + ' producto' + (data.aplicados>1?'s':'') + ' actualizado' + (data.aplicados>1?'s':'') +
+            (costosActualizados > 0 ? ' · ' + costosActualizados + ' costo' + (costosActualizados>1?'s':'') + ' actualizado' + (costosActualizados>1?'s':'') : ''), 'ok');
     } catch (err) {
       tmvShowError(err, { title: 'No se pudo cargar el stock' });
     } finally {
