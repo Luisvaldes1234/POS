@@ -365,10 +365,28 @@ async function cargarEnvasesTienda() {
 let tiendaLocked = false;
 async function cargarTiendas() {
   const { data, error } = await sb.rpc('pos_listar_tiendas', { p_organization_id: orgId });
-  if (error) { console.warn('cargarTiendas:', error); tiendas = []; return; }
-  tiendas = (data || []).filter(t => t.activo);
+  if (error) { console.warn('cargarTiendas:', error); tiendas = []; }
+  else tiendas = (data || []).filter(t => t.activo);
+
+  // Onboarding: una organización nueva no tiene tiendas. Si es admin, creamos
+  // una tienda principal por defecto para que el POS quede operativo desde el
+  // primer ingreso (sin esto el selector queda en "Cargando tiendas…").
+  if (!tiendas.length && _isAdmin()) {
+    try {
+      const { error: cErr } = await sb.rpc('pos_crear_tienda', {
+        p_organization_id: orgId, p_nombre: 'Casa central', p_direccion: null, p_telefono: null,
+      });
+      if (!cErr) {
+        const { data: d2 } = await sb.rpc('pos_listar_tiendas', { p_organization_id: orgId });
+        tiendas = (d2 || []).filter(t => t.activo);
+      }
+    } catch (_) {}
+  }
+
   if (!tiendas.length) {
     tiendaId = null;
+    const sel = document.getElementById('t-tienda');
+    if (sel) sel.innerHTML = '<option value="">— Sin tiendas —</option>';
     return;
   }
   tiendaLocked = !!(tiendas[0]?.lock);
