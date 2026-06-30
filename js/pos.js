@@ -6291,8 +6291,8 @@ function renderConfig() {
       b.addEventListener('click', () => _cfgShow(b.dataset.cfg));
     });
   }
-  // Mostrar el panel activo actual (usuarios por defecto la primera vez).
-  const activo = subnav?.querySelector('button.active')?.dataset.cfg || 'usuarios';
+  // Mostrar el panel activo actual (Negocio por defecto la primera vez).
+  const activo = subnav?.querySelector('button.active')?.dataset.cfg || 'negocio';
   _cfgShow(activo);
 }
 
@@ -6304,12 +6304,75 @@ function _cfgShow(key) {
   document.querySelectorAll('#screen-config .cfg-panel').forEach(p => {
     p.style.display = p.dataset.panel === key ? '' : 'none';
   });
-  if (key === 'usuarios') renderUsuarios();
+  if (key === 'negocio')  renderNegocio();
+  else if (key === 'usuarios') renderUsuarios();
   else if (key === 'tiendas') renderTiendas();
   else if (key === 'ticket')  renderReciboConfig();
   else if (key === 'promos')  renderPromosConfig();
   else if (key === 'cuotas')  renderCuotasConfig();
   else if (key === 'pagos')   renderConfigMP();
+}
+
+// ── Datos del negocio (nombre de la org + datos fiscales del ticket) ──
+async function renderNegocio() {
+  const wrap = document.getElementById('negocio-wrap');
+  if (!wrap) return;
+  if (!_isAdmin()) { wrap.innerHTML = '<div class="env-empty" style="background:#fff;border:1px solid var(--border);border-radius:14px">Solo administradores.</div>'; return; }
+  // Refrescar datos fiscales por si cambiaron en otra pantalla.
+  await cargarOrgFiscal().catch(() => {});
+  const esc = s => String(s ?? '').replace(/"/g, '&quot;');
+
+  wrap.innerHTML =
+    '<div class="recibo-card">' +
+    '  <div style="font-size:18px;font-weight:800;margin-bottom:6px">🏷 Datos del negocio</div>' +
+    '  <div style="font-size:12.5px;color:var(--muted);margin-bottom:16px">El nombre es el que se ve arriba en el POS y en el encabezado del ticket. Los datos fiscales aparecen en el ticket según lo que actives en la sección Ticket.</div>' +
+    '  <div class="recibo-section">' +
+    '    <div class="recibo-section-h">Nombre del negocio *</div>' +
+    '    <input id="ng-nombre" class="prod-form-i" style="width:100%" maxlength="80" placeholder="Ej: Almacén Don José" value="' + esc(orgName || '') + '">' +
+    '  </div>' +
+    '  <div class="recibo-section">' +
+    '    <div class="recibo-section-h">CUIT / identificación fiscal (opcional)</div>' +
+    '    <input id="ng-cuit" class="prod-form-i" style="width:100%" maxlength="40" placeholder="Ej: 20-12345678-9" value="' + esc(orgFiscal.cuit || '') + '">' +
+    '  </div>' +
+    '  <div class="recibo-section">' +
+    '    <div class="recibo-section-h">Dirección (opcional)</div>' +
+    '    <input id="ng-dir" class="prod-form-i" style="width:100%" maxlength="120" placeholder="Ej: San Martín 1234, San Juan" value="' + esc(orgFiscal.direccion || '') + '">' +
+    '  </div>' +
+    '  <div class="recibo-section">' +
+    '    <div class="recibo-section-h">Teléfono (opcional)</div>' +
+    '    <input id="ng-tel" class="prod-form-i" style="width:100%" maxlength="40" placeholder="Ej: 264 762 1505" value="' + esc(orgFiscal.telefono || '') + '">' +
+    '  </div>' +
+    '  <button id="ng-save" type="button" style="width:100%;padding:14px;border-radius:50px;border:none;background:var(--primary);color:#fff;font-weight:700;font-size:14px;cursor:pointer">Guardar</button>' +
+    '</div>';
+
+  document.getElementById('ng-save').addEventListener('click', async (e) => {
+    const nombre = document.getElementById('ng-nombre').value.trim();
+    if (!nombre) { toast('El nombre no puede quedar vacío', 'warn'); return; }
+    e.target.disabled = true; e.target.textContent = 'Guardando…';
+    try {
+      const { data, error } = await sb.rpc('pos_negocio_set', {
+        p_organization_id: orgId,
+        p_nombre:    nombre,
+        p_cuit:      document.getElementById('ng-cuit').value.trim() || null,
+        p_direccion: document.getElementById('ng-dir').value.trim() || null,
+        p_telefono:  document.getElementById('ng-tel').value.trim() || null,
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error('No se guardó');
+      // Reflejar en memoria + UI al instante.
+      orgName = nombre;
+      const el = document.getElementById('t-org');
+      if (el) { if (el.querySelector('select')) {/* super admin selector: no tocar */} else el.textContent = nombre; }
+      orgFiscal.cuit      = document.getElementById('ng-cuit').value.trim() || null;
+      orgFiscal.direccion = document.getElementById('ng-dir').value.trim() || null;
+      orgFiscal.telefono  = document.getElementById('ng-tel').value.trim() || null;
+      toast('Datos del negocio guardados ✓', 'ok');
+    } catch (err) {
+      tmvShowError(err, { title: 'No se pudo guardar' });
+    } finally {
+      e.target.disabled = false; e.target.textContent = 'Guardar';
+    }
+  });
 }
 
 // ── MercadoPago (sub-sección de Configuración) ──

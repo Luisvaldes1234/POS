@@ -14,8 +14,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <title>POS · Mostrador</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="js/shared/dialogs.js?v=5"></script>
-<script src="js/shared/errors.js?v=5"></script>
+<script src="js/shared/dialogs.js?v=6"></script>
+<script src="js/shared/errors.js?v=6"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -484,7 +484,7 @@
   body.print-a4   @page{size:A4;margin:15mm}
   @page{size:80mm auto;margin:2mm}
 </style>
-  <script src="js/sentry-init.js?v=5" defer></script>
+  <script src="js/sentry-init.js?v=6" defer></script>
 </head>
 <body>
 
@@ -708,14 +708,16 @@
     <div style="max-width:760px;margin:0 auto;padding:18px">
       <h2 style="font-size:20px;margin:0 0 14px">⚙️ Configuración</h2>
       <div class="cfg-subnav" id="cfg-subnav">
-        <button type="button" data-cfg="usuarios" class="active">👤 Usuarios</button>
+        <button type="button" data-cfg="negocio" class="active">🏷 Negocio</button>
+        <button type="button" data-cfg="usuarios">👤 Usuarios</button>
         <button type="button" data-cfg="tiendas">🏪 Tiendas</button>
         <button type="button" data-cfg="ticket">🧾 Ticket</button>
         <button type="button" data-cfg="promos">🎁 Promos</button>
         <button type="button" data-cfg="cuotas">💳 Cuotas</button>
         <button type="button" data-cfg="pagos">📱 MercadoPago</button>
       </div>
-      <div class="cfg-panel" data-panel="usuarios"><div class="tiendas-wrap" id="usuarios-wrap" style="padding:0;max-width:none"><div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div></div></div>
+      <div class="cfg-panel" data-panel="negocio"><div class="recibo-wrap" id="negocio-wrap" style="padding:0;max-width:none"><div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div></div></div>
+      <div class="cfg-panel" data-panel="usuarios" style="display:none"><div class="tiendas-wrap" id="usuarios-wrap" style="padding:0;max-width:none"><div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div></div></div>
       <div class="cfg-panel" data-panel="tiendas" style="display:none"><div class="tiendas-wrap" id="tiendas-wrap" style="padding:0;max-width:none"></div></div>
       <div class="cfg-panel" data-panel="ticket" style="display:none"><div class="recibo-wrap" id="recibo-wrap" style="padding:0;max-width:none"></div></div>
       <div class="cfg-panel" data-panel="promos" style="display:none"><div class="recibo-wrap" id="promos-wrap" style="padding:0;max-width:none"></div></div>
@@ -1008,7 +1010,7 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=5"></script>
-<script src="js/pos.js?v=5"></script>
+<script src="js/config.js?v=6"></script>
+<script src="js/pos.js?v=6"></script>
 </body>
 </html>
