@@ -202,11 +202,9 @@ async function init(){
 
   await cargarTiendas();
   if (_isAdmin()) {
-    document.getElementById('tab-tiendas-btn').style.display = '';
-    document.getElementById('tab-cuotas-btn').style.display = '';
-    document.getElementById('tab-promos-btn').style.display = '';
+    // Todo lo de gestión (usuarios, tiendas, ticket, promos, cuotas y
+    // MercadoPago) vive ahora dentro de la pestaña Configuración.
     document.getElementById('tab-finanzas-btn').style.display = '';
-    document.getElementById('tab-usuarios-btn').style.display = '';
     document.getElementById('tab-config-btn').style.display = '';
     const addBtn = document.getElementById('btn-add-prod-toolbar');
     if (addBtn) addBtn.style.display = '';
@@ -647,11 +645,6 @@ window.goTab = (tab) => {
   if (tab === 'stock')    renderStock();
   if (tab === 'caja')     renderCaja();
   if (tab === 'envases')  renderEnvases();
-  if (tab === 'recibo')   renderReciboConfig();
-  if (tab === 'cuotas')   renderCuotasConfig();
-  if (tab === 'promos')   renderPromosConfig();
-  if (tab === 'tiendas') renderTiendas();
-  if (tab === 'usuarios') renderUsuarios();
   if (tab === 'finanzas') renderFinanzas();
   if (tab === 'config')   renderConfig();
 };
@@ -6143,10 +6136,43 @@ async function _cargarFinanzas() {
 }
 
 // ════════════════════════════════════════════════════════════════════
-//  CONFIGURACIÓN — credenciales de MercadoPago (para generar los QR)
+//  CONFIGURACIÓN — hub de admin: Usuarios, Tiendas, Ticket, Promos,
+//  Cuotas y MercadoPago, todo en un solo apartado con sub-navegación.
 // ════════════════════════════════════════════════════════════════════
-async function renderConfig() {
-  const wrap = document.getElementById('config-wrap');
+let _cfgWired = false;
+function renderConfig() {
+  if (!_isAdmin()) return;
+  const subnav = document.getElementById('cfg-subnav');
+  if (subnav && !_cfgWired) {
+    _cfgWired = true;
+    subnav.querySelectorAll('button[data-cfg]').forEach(b => {
+      b.addEventListener('click', () => _cfgShow(b.dataset.cfg));
+    });
+  }
+  // Mostrar el panel activo actual (usuarios por defecto la primera vez).
+  const activo = subnav?.querySelector('button.active')?.dataset.cfg || 'usuarios';
+  _cfgShow(activo);
+}
+
+// Muestra un panel de configuración y dispara su render correspondiente.
+function _cfgShow(key) {
+  document.querySelectorAll('#cfg-subnav button[data-cfg]').forEach(b => {
+    b.classList.toggle('active', b.dataset.cfg === key);
+  });
+  document.querySelectorAll('#screen-config .cfg-panel').forEach(p => {
+    p.style.display = p.dataset.panel === key ? '' : 'none';
+  });
+  if (key === 'usuarios') renderUsuarios();
+  else if (key === 'tiendas') renderTiendas();
+  else if (key === 'ticket')  renderReciboConfig();
+  else if (key === 'promos')  renderPromosConfig();
+  else if (key === 'cuotas')  renderCuotasConfig();
+  else if (key === 'pagos')   renderConfigMP();
+}
+
+// ── MercadoPago (sub-sección de Configuración) ──
+async function renderConfigMP() {
+  const wrap = document.getElementById('mp-config-wrap');
   if (!wrap) return;
   if (!_isAdmin()) { wrap.innerHTML = '<div class="env-empty" style="background:#fff;border:1px solid var(--border);border-radius:14px">Solo administradores.</div>'; return; }
   wrap.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>';
@@ -6230,7 +6256,7 @@ async function renderConfig() {
       if (!data?.ok) throw new Error('No se guardó');
       toast('Configuración guardada ✓', 'ok');
       res.innerHTML = '<span style="color:#059669">✓ Guardado. Tocá "Verificar conexión" para confirmar que el token es válido.</span>';
-      renderConfig();
+      renderConfigMP();
     } catch (err) {
       tmvShowError(err, { title: 'No se pudo guardar' });
     } finally {
@@ -6260,7 +6286,7 @@ async function renderConfig() {
       res.innerHTML = '<div style="color:#059669;font-weight:700">✓ Conexión OK · ' + (out.nombre || '') + (out.email ? ' (' + out.email + ')' : '') + '</div>' + posLine;
       toast('MercadoPago verificado ✓', 'ok');
       // Refrescar para mostrar el estado "verificado"
-      setTimeout(renderConfig, 1200);
+      setTimeout(renderConfigMP, 1200);
     } catch (err) {
       res.innerHTML = '<span style="color:var(--danger)">❌ ' + err.message + '</span>';
     } finally {

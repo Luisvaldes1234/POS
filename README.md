@@ -58,10 +58,12 @@ icon.svg                Ícono de la app
 - **Cajero** (`client_pos`): solo vende. Ve la pantalla de venta, ventas del
   día, caja y reservas. El stock lo ve en **modo lectura** (las ventas igual lo
   descuentan). No ve costos, márgenes ni finanzas.
-- **Administrador** (`client_admin`): acceso total. Además gestiona:
+- **Administrador** (`client_admin`): acceso total. La gestión vive en la
+  pestaña **⚙️ Configuración** (solo admins), con sub-secciones: **Usuarios,
+  Tiendas, Ticket, Promos, Cuotas y MercadoPago**. Además gestiona:
   - **Usuarios**: crear cajeros/administradores y darlos de alta/baja
-    (pestaña *Usuarios* → RPC `pos_listar_usuarios` / `pos_set_usuario_activo`
-    + edge function `crear-usuario`).
+    (Configuración → Usuarios → RPC `pos_listar_usuarios` /
+    `pos_set_usuario_activo` + edge function `crear-usuario`).
   - **Stock**: reponer, cargar mercadería, ajustar, **agregar y dar de baja
     productos** (reversible) — todo desde la pestaña *Stock*.
   - **Costo y margen**: al alta/edición de producto se carga el **costo**

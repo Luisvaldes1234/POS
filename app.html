@@ -342,6 +342,12 @@
   .env-period button{padding:6px 14px;border-radius:50px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);font-family:inherit}
   .env-period button.active{background:var(--primary);color:#fff;border-color:var(--primary)}
 
+  /* ── Configuración: sub-navegación ──────────────────── */
+  .cfg-subnav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .cfg-subnav button{padding:8px 16px;border-radius:50px;border:1.5px solid var(--border);background:#fff;font-family:inherit;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;transition:all .15s}
+  .cfg-subnav button:hover{border-color:var(--primary);color:var(--primary)}
+  .cfg-subnav button.active{background:var(--grad);border-color:transparent;color:#fff;box-shadow:0 4px 12px rgba(124,58,237,.3)}
+
   /* ── Tab Recibo (config) ────────────────────────────── */
   .recibo-wrap{max-width:560px;margin:0 auto;padding:20px}
   .recibo-card{background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:22px}
@@ -494,13 +500,8 @@
     <button class="topbar-tab"        data-tab="stock"   onclick="goTab('stock')">Stock</button>
     <button class="topbar-tab"        data-tab="envases" onclick="goTab('envases')">Envases</button>
     <button class="topbar-tab"        data-tab="caja"    onclick="goTab('caja')">Caja</button>
-    <button class="topbar-tab"        data-tab="tiendas" onclick="goTab('tiendas')" id="tab-tiendas-btn" style="display:none">Tiendas</button>
-    <button class="topbar-tab"        data-tab="recibo"  onclick="goTab('recibo')">Recibo</button>
-    <button class="topbar-tab"        data-tab="cuotas"  onclick="goTab('cuotas')" id="tab-cuotas-btn" style="display:none">Cuotas</button>
-    <button class="topbar-tab"        data-tab="promos"  onclick="goTab('promos')" id="tab-promos-btn" style="display:none">🎁 Promos</button>
     <button class="topbar-tab"        data-tab="finanzas" onclick="goTab('finanzas')" id="tab-finanzas-btn" style="display:none">📈 Finanzas</button>
-    <button class="topbar-tab"        data-tab="usuarios" onclick="goTab('usuarios')" id="tab-usuarios-btn" style="display:none">👤 Usuarios</button>
-    <button class="topbar-tab"        data-tab="config" onclick="goTab('config')" id="tab-config-btn" style="display:none">⚙️ Config</button>
+    <button class="topbar-tab"        data-tab="config" onclick="goTab('config')" id="tab-config-btn" style="display:none">⚙️ Configuración</button>
   </div>
   <div id="dash-mini" class="dash-mini" title="Tu turno · click para detalle" style="display:none" onclick="goTab('caja')">
     <span id="dash-ventas">0</span> ventas · <span id="dash-monto">$0</span>
@@ -693,34 +694,6 @@
     </div>
   </div>
 
-  <!-- ═══ TIENDAS ═══ -->
-  <div class="screen" id="screen-tiendas">
-    <div class="tiendas-wrap" id="tiendas-wrap">
-      <div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>
-    </div>
-  </div>
-
-  <!-- ═══ RECIBO CONFIG ═══ -->
-  <div class="screen" id="screen-recibo">
-    <div class="recibo-wrap" id="recibo-wrap">
-      <div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>
-    </div>
-  </div>
-
-  <!-- ═══ CUOTAS / RECARGO TARJETA DE CRÉDITO ═══ -->
-  <div class="screen" id="screen-cuotas">
-    <div class="recibo-wrap" id="cuotas-wrap">
-      <div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>
-    </div>
-  </div>
-
-  <!-- ═══ PROMOS ═══ -->
-  <div class="screen" id="screen-promos">
-    <div class="recibo-wrap" id="promos-wrap">
-      <div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>
-    </div>
-  </div>
-
   <!-- ═══ FINANZAS ═══ -->
   <div class="screen" id="screen-finanzas">
     <div class="ventas-wrap" id="finanzas-wrap" style="max-width:1000px">
@@ -728,17 +701,24 @@
     </div>
   </div>
 
-  <!-- ═══ USUARIOS ═══ -->
-  <div class="screen" id="screen-usuarios">
-    <div class="tiendas-wrap" id="usuarios-wrap">
-      <div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>
-    </div>
-  </div>
-
-  <!-- ═══ CONFIGURACIÓN ═══ -->
+  <!-- ═══ CONFIGURACIÓN (hub: solo admins) ═══ -->
   <div class="screen" id="screen-config">
-    <div class="recibo-wrap" id="config-wrap">
-      <div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>
+    <div style="max-width:760px;margin:0 auto;padding:18px">
+      <h2 style="font-size:20px;margin:0 0 14px">⚙️ Configuración</h2>
+      <div class="cfg-subnav" id="cfg-subnav">
+        <button type="button" data-cfg="usuarios" class="active">👤 Usuarios</button>
+        <button type="button" data-cfg="tiendas">🏪 Tiendas</button>
+        <button type="button" data-cfg="ticket">🧾 Ticket</button>
+        <button type="button" data-cfg="promos">🎁 Promos</button>
+        <button type="button" data-cfg="cuotas">💳 Cuotas</button>
+        <button type="button" data-cfg="pagos">📱 MercadoPago</button>
+      </div>
+      <div class="cfg-panel" data-panel="usuarios"><div class="tiendas-wrap" id="usuarios-wrap" style="padding:0;max-width:none"><div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div></div></div>
+      <div class="cfg-panel" data-panel="tiendas" style="display:none"><div class="tiendas-wrap" id="tiendas-wrap" style="padding:0;max-width:none"></div></div>
+      <div class="cfg-panel" data-panel="ticket" style="display:none"><div class="recibo-wrap" id="recibo-wrap" style="padding:0;max-width:none"></div></div>
+      <div class="cfg-panel" data-panel="promos" style="display:none"><div class="recibo-wrap" id="promos-wrap" style="padding:0;max-width:none"></div></div>
+      <div class="cfg-panel" data-panel="cuotas" style="display:none"><div class="recibo-wrap" id="cuotas-wrap" style="padding:0;max-width:none"></div></div>
+      <div class="cfg-panel" data-panel="pagos" style="display:none"><div class="recibo-wrap" id="mp-config-wrap" style="padding:0;max-width:none"></div></div>
     </div>
   </div>
 
