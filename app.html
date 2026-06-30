@@ -500,6 +500,7 @@
     <button class="topbar-tab"        data-tab="promos"  onclick="goTab('promos')" id="tab-promos-btn" style="display:none">🎁 Promos</button>
     <button class="topbar-tab"        data-tab="finanzas" onclick="goTab('finanzas')" id="tab-finanzas-btn" style="display:none">📈 Finanzas</button>
     <button class="topbar-tab"        data-tab="usuarios" onclick="goTab('usuarios')" id="tab-usuarios-btn" style="display:none">👤 Usuarios</button>
+    <button class="topbar-tab"        data-tab="config" onclick="goTab('config')" id="tab-config-btn" style="display:none">⚙️ Config</button>
   </div>
   <div id="dash-mini" class="dash-mini" title="Tu turno · click para detalle" style="display:none" onclick="goTab('caja')">
     <span id="dash-ventas">0</span> ventas · <span id="dash-monto">$0</span>
@@ -730,6 +731,13 @@
   <!-- ═══ USUARIOS ═══ -->
   <div class="screen" id="screen-usuarios">
     <div class="tiendas-wrap" id="usuarios-wrap">
+      <div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>
+    </div>
+  </div>
+
+  <!-- ═══ CONFIGURACIÓN ═══ -->
+  <div class="screen" id="screen-config">
+    <div class="recibo-wrap" id="config-wrap">
       <div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>
     </div>
   </div>

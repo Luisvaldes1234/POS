@@ -207,6 +207,7 @@ async function init(){
     document.getElementById('tab-promos-btn').style.display = '';
     document.getElementById('tab-finanzas-btn').style.display = '';
     document.getElementById('tab-usuarios-btn').style.display = '';
+    document.getElementById('tab-config-btn').style.display = '';
     const addBtn = document.getElementById('btn-add-prod-toolbar');
     if (addBtn) addBtn.style.display = '';
   }
@@ -652,6 +653,7 @@ window.goTab = (tab) => {
   if (tab === 'tiendas') renderTiendas();
   if (tab === 'usuarios') renderUsuarios();
   if (tab === 'finanzas') renderFinanzas();
+  if (tab === 'config')   renderConfig();
 };
 
 // ── PROMOS (configuración) ───────────────────────────
@@ -6138,4 +6140,131 @@ async function _cargarFinanzas() {
   html += '<div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">El costo de mercadería y el margen se calculan con el costo actual cargado en cada producto. El resultado neto es una estimación de gestión (no reemplaza la contabilidad formal).</div>';
 
   cont.innerHTML = html;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  CONFIGURACIÓN — credenciales de MercadoPago (para generar los QR)
+// ════════════════════════════════════════════════════════════════════
+async function renderConfig() {
+  const wrap = document.getElementById('config-wrap');
+  if (!wrap) return;
+  if (!_isAdmin()) { wrap.innerHTML = '<div class="env-empty" style="background:#fff;border:1px solid var(--border);border-radius:14px">Solo administradores.</div>'; return; }
+  wrap.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>';
+
+  let cfg = {};
+  try {
+    const { data, error } = await sb.rpc('pos_mp_credentials_get', { p_organization_id: orgId });
+    if (error) throw error;
+    cfg = data || {};
+  } catch (e) { wrap.innerHTML = '<div style="color:var(--danger);padding:20px">Error: ' + e.message + '</div>'; return; }
+
+  const esc = s => String(s ?? '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  const estado = cfg.configurado
+    ? (cfg.verificado
+        ? '<span style="color:#059669;font-weight:700">✓ Verificado</span>' + (cfg.nombre_cuenta ? ' · ' + esc(cfg.nombre_cuenta) : '')
+        : '<span style="color:#b45309;font-weight:700">⚠ Configurado, sin verificar</span>')
+    : '<span style="color:var(--danger);font-weight:700">Sin configurar</span>';
+
+  wrap.innerHTML =
+    '<div class="recibo-card">' +
+    '  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+    '    <div style="font-size:18px;font-weight:800">💳 Cobros con MercadoPago</div>' +
+    '    <span style="font-size:12px">' + estado + '</span>' +
+    '  </div>' +
+    '  <div style="font-size:12.5px;color:var(--muted);margin-bottom:16px;line-height:1.5">Ingresá las credenciales de tu cuenta de MercadoPago para generar los <b>QR de cobro</b> en el POS. Conseguilas en <b>mercadopago → Tu negocio → Configuración → Gestión y administración → Credenciales de producción</b>.</div>' +
+
+    '  <div class="recibo-section">' +
+    '    <div class="recibo-section-h">Access Token (producción)</div>' +
+    '    <input id="mp-token" type="password" class="prod-form-i" style="width:100%;font-family:monospace" autocomplete="off" placeholder="' + (cfg.token_preview ? esc(cfg.token_preview) + ' (dejá vacío para mantener)' : 'APP_USR-...') + '">' +
+    '    <div style="font-size:11px;color:var(--muted);margin-top:6px">Empieza con <code>APP_USR-</code>. No lo compartas: se guarda cifrado en el servidor y nunca se muestra de nuevo.</div>' +
+    '  </div>' +
+
+    '  <div class="recibo-section">' +
+    '    <div class="recibo-section-h">Public Key (opcional)</div>' +
+    '    <input id="mp-pubkey" type="text" class="prod-form-i" style="width:100%;font-family:monospace" autocomplete="off" placeholder="APP_USR-... (opcional)" value="' + esc(cfg.public_key || '') + '">' +
+    '  </div>' +
+
+    '  <div class="recibo-section">' +
+    '    <div class="recibo-section-h">Nombre del POS (caja) para el QR</div>' +
+    '    <input id="mp-posname" type="text" class="prod-form-i" style="width:100%" autocomplete="off" placeholder="POS01" value="' + esc(cfg.pos_name || 'POS01') + '">' +
+    '    <div style="font-size:11px;color:var(--muted);margin-top:6px">Para el QR fijo "en caja" creá un punto de venta <b>Dinámico</b> en MP (Tu negocio → Puntos de venta) con este mismo nombre. Si no, el sistema genera igual un link/QR de pago automáticamente.</div>' +
+    '  </div>' +
+
+    '  <div class="recibo-section">' +
+    '    <label class="recibo-toggle"><span>Modo prueba (sandbox)</span><input id="mp-sandbox" type="checkbox"' + (cfg.sandbox_mode ? ' checked' : '') + '></label>' +
+    '    <div id="mp-sandbox-wrap" style="display:' + (cfg.sandbox_mode ? '' : 'none') + '">' +
+    '      <div style="font-size:11px;color:var(--muted);margin:4px 0 6px">Access Token de prueba (TEST-...). Solo para testear sin cobrar de verdad.</div>' +
+    '      <input id="mp-sandbox-token" type="password" class="prod-form-i" style="width:100%;font-family:monospace" autocomplete="off" placeholder="' + (cfg.tiene_sandbox_token ? '•••• (dejá vacío para mantener)' : 'TEST-...') + '">' +
+    '    </div>' +
+    '  </div>' +
+
+    '  <div class="recibo-section">' +
+    '    <label class="recibo-toggle"><span>Cobros con MP habilitados</span><input id="mp-activo" type="checkbox"' + (cfg.activo !== false ? ' checked' : '') + '></label>' +
+    '  </div>' +
+
+    '  <div style="display:flex;gap:8px;flex-wrap:wrap">' +
+    '    <button id="mp-save" type="button" style="flex:1;min-width:160px;padding:14px;border-radius:50px;border:none;background:var(--primary);color:#fff;font-weight:700;font-size:14px;cursor:pointer">Guardar</button>' +
+    '    <button id="mp-verify" type="button" style="flex:1;min-width:160px;padding:14px;border-radius:50px;border:1.5px solid #009ee3;background:rgba(0,158,227,.08);color:#009ee3;font-weight:700;font-size:14px;cursor:pointer">Verificar conexión</button>' +
+    '  </div>' +
+    '  <div id="mp-result" style="font-size:12.5px;margin-top:12px;line-height:1.5"></div>' +
+    '</div>';
+
+  document.getElementById('mp-sandbox').addEventListener('change', (e) => {
+    document.getElementById('mp-sandbox-wrap').style.display = e.target.checked ? '' : 'none';
+  });
+
+  document.getElementById('mp-save').addEventListener('click', async (e) => {
+    e.target.disabled = true; e.target.textContent = 'Guardando…';
+    const res = document.getElementById('mp-result');
+    try {
+      const { data, error } = await sb.rpc('pos_mp_credentials_set', {
+        p_organization_id:      orgId,
+        p_access_token:         document.getElementById('mp-token').value.trim() || null,
+        p_public_key:           document.getElementById('mp-pubkey').value.trim(),
+        p_pos_name:             document.getElementById('mp-posname').value.trim() || null,
+        p_sandbox_mode:         document.getElementById('mp-sandbox').checked,
+        p_sandbox_access_token: document.getElementById('mp-sandbox-token').value.trim() || null,
+        p_activo:               document.getElementById('mp-activo').checked,
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error('No se guardó');
+      toast('Configuración guardada ✓', 'ok');
+      res.innerHTML = '<span style="color:#059669">✓ Guardado. Tocá "Verificar conexión" para confirmar que el token es válido.</span>';
+      renderConfig();
+    } catch (err) {
+      tmvShowError(err, { title: 'No se pudo guardar' });
+    } finally {
+      e.target.disabled = false; e.target.textContent = 'Guardar';
+    }
+  });
+
+  document.getElementById('mp-verify').addEventListener('click', async (e) => {
+    e.target.disabled = true; e.target.textContent = 'Verificando…';
+    const res = document.getElementById('mp-result');
+    res.innerHTML = '<span style="color:var(--muted)">Consultando MercadoPago…</span>';
+    try {
+      const token = await _freshAccessToken();
+      if (!token) { res.innerHTML = '<span style="color:var(--danger)">Sesión expirada, recargá la página.</span>'; return; }
+      const r = await fetch(SB_URL + '/functions/v1/mp-verificar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'apikey': SB_KEY },
+      });
+      const out = await r.json().catch(() => ({}));
+      if (!r.ok || !out.ok) {
+        res.innerHTML = '<span style="color:var(--danger)">❌ ' + (out.error || ('Error ' + r.status)) + '</span>';
+        return;
+      }
+      const posLine = out.pos_ok
+        ? '<div style="color:#059669">✓ ' + (out.pos_msg || 'POS configurado') + '</div>'
+        : '<div style="color:#b45309">⚠ ' + (out.pos_msg || 'POS no encontrado (el QR igual funciona vía link de pago)') + '</div>';
+      res.innerHTML = '<div style="color:#059669;font-weight:700">✓ Conexión OK · ' + (out.nombre || '') + (out.email ? ' (' + out.email + ')' : '') + '</div>' + posLine;
+      toast('MercadoPago verificado ✓', 'ok');
+      // Refrescar para mostrar el estado "verificado"
+      setTimeout(renderConfig, 1200);
+    } catch (err) {
+      res.innerHTML = '<span style="color:var(--danger)">❌ ' + err.message + '</span>';
+    } finally {
+      e.target.disabled = false; e.target.textContent = 'Verificar conexión';
+    }
+  });
 }
