@@ -89,6 +89,23 @@
   .final h2{font-size:clamp(26px,4vw,38px);font-weight:900;letter-spacing:-.02em}
   .final p{color:var(--muted);font-size:16px;margin:14px auto 0;max-width:520px;line-height:1.6}
 
+  /* PRICING */
+  .price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:stretch}
+  @media(max-width:860px){.price-grid{grid-template-columns:1fr;max-width:420px;margin:0 auto}}
+  .price{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px 24px;display:flex;flex-direction:column;position:relative}
+  .price.feat-pop{border-color:rgba(124,58,237,.6);background:rgba(124,58,237,.07);box-shadow:0 14px 40px -10px rgba(124,58,237,.4)}
+  .price-pop{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:5px 14px;border-radius:50px;white-space:nowrap}
+  .price-name{font-size:15px;font-weight:800;letter-spacing:.02em}
+  .price-for{font-size:12.5px;color:var(--muted);margin-top:4px;min-height:34px}
+  .price-amt{font-size:38px;font-weight:900;letter-spacing:-.02em;margin-top:14px;line-height:1}
+  .price-amt small{font-size:14px;font-weight:600;color:var(--muted)}
+  .price-note{font-size:12px;color:var(--muted2);margin-top:6px;min-height:18px}
+  .price ul{list-style:none;padding:0;margin:18px 0 22px;flex:1}
+  .price li{font-size:13.5px;color:#cbd5e1;padding:5px 0 5px 22px;position:relative;line-height:1.4}
+  .price li::before{content:'✓';position:absolute;left:0;color:var(--primary2);font-weight:800}
+  .price .btn{width:100%}
+  .price-foot{text-align:center;color:var(--muted);font-size:13px;margin-top:26px;line-height:1.6}
+
   footer{border-top:1px solid var(--border);padding:34px 0;margin-top:72px}
   .foot-in{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;color:var(--muted2);font-size:13px}
   .foot-in a{color:var(--muted)}
@@ -102,6 +119,7 @@
     <div class="logo">⚡ POS Mostrador</div>
     <div class="nav-links">
       <a class="lnk nav-hide" href="#funciones">Funciones</a>
+      <a class="lnk nav-hide" href="#precios">Precios</a>
       <a class="lnk nav-hide" href="#como">Cómo funciona</a>
       <a class="lnk" href="login.html">Ingresar</a>
       <a class="btn btn-primary" href="signup.html" style="padding:9px 18px;font-size:14px">Crear cuenta</a>
@@ -279,6 +297,72 @@
   </div>
 </section>
 
+<section id="precios">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker">Precios</div>
+      <h2>Planes simples, sin sorpresas</h2>
+      <p>Elegí el plan según tu negocio. Todos arrancan con <b>14 días de prueba gratis</b> y el <b>primer mes a mitad de precio</b>.</p>
+    </div>
+
+    <div class="price-grid">
+      <div class="price">
+        <div class="price-name">Mostrador</div>
+        <div class="price-for">Para kioscos y negocios que arrancan</div>
+        <div class="price-amt">$40.000 <small>/ mes</small></div>
+        <div class="price-note">Primer mes $20.000 · hasta 8 usuarios</div>
+        <ul>
+          <li>Venta con scanner de código de barras</li>
+          <li>Cobros: efectivo, transferencia, MP QR, débito/crédito</li>
+          <li>Caja diaria y cortes X / Z / del día</li>
+          <li>Stock con alertas y reportes</li>
+          <li>Recibo configurable (58/80mm o A4)</li>
+          <li>Hasta 8 usuarios</li>
+        </ul>
+        <a class="btn btn-ghost" href="signup.html">Empezar gratis</a>
+      </div>
+
+      <div class="price feat-pop">
+        <div class="price-pop">★ Más elegido</div>
+        <div class="price-name">Negocio</div>
+        <div class="price-for">Para almacenes y ferreterías en crecimiento</div>
+        <div class="price-amt">$60.000 <small>/ mes</small></div>
+        <div class="price-note">Primer mes $30.000 · usuarios ilimitados</div>
+        <ul>
+          <li>Todo lo de Mostrador</li>
+          <li><b>Usuarios ilimitados</b> (cajeros y admins)</li>
+          <li><b>Costos y márgenes</b> + módulo de Finanzas</li>
+          <li>Promos (2x1, NxM, % volumen) y combos</li>
+          <li>Clientes con cuenta corriente (fiado)</li>
+          <li>Facturación, devoluciones, reservas y prepagos</li>
+        </ul>
+        <a class="btn btn-primary" href="signup.html">Empezar gratis</a>
+      </div>
+
+      <div class="price">
+        <div class="price-name">Cadena</div>
+        <div class="price-for">Para varias tiendas o sucursales</div>
+        <div class="price-amt">$90.000 <small>/ mes</small></div>
+        <div class="price-note">Incluye 3 tiendas · +$24.900 por tienda extra</div>
+        <ul>
+          <li>Todo lo de Negocio</li>
+          <li><b>Multi-tienda</b>: stock y caja por sucursal</li>
+          <li>Corte global y finanzas consolidadas</li>
+          <li>Transferencias de stock entre tiendas</li>
+          <li>Cajeros asignados por tienda</li>
+          <li>Soporte prioritario</li>
+        </ul>
+        <a class="btn btn-ghost" href="signup.html">Empezar gratis</a>
+      </div>
+    </div>
+
+    <div class="price-foot">
+      ¿Más de 6 tiendas o necesidades especiales? <a href="signup.html" style="color:var(--primary2);font-weight:700">Hablemos de un plan a medida.</a><br>
+      Pagás por mes, sin permanencia. Podés cambiar de plan cuando quieras.
+    </div>
+  </div>
+</section>
+
 <section id="como">
   <div class="wrap">
     <div class="sec-head">
@@ -320,6 +404,7 @@
     <div class="logo" style="font-size:16px">⚡ POS Mostrador</div>
     <div style="display:flex;gap:18px;flex-wrap:wrap">
       <a href="#funciones">Funciones</a>
+      <a href="#precios">Precios</a>
       <a href="#como">Cómo funciona</a>
       <a href="login.html">Ingresar</a>
       <a href="signup.html">Crear cuenta</a>
