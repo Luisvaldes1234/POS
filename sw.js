@@ -7,7 +7,7 @@
 // El POS está en mostrador con WiFi estable, pero igual cacheamos el
 // shell para tolerar cortes de red/luz.
 
-const CACHE_VERSION = 'pos-retail-v2-2026-06-30';
+const CACHE_VERSION = 'pos-retail-v3-2026-06-30';
 
 const PRECACHE = [
   './',
@@ -68,12 +68,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   if (url.origin === self.location.origin) {
-    const isShell = url.pathname.endsWith('/') ||
-                    url.pathname.endsWith('/index.html') ||
-                    url.pathname.endsWith('/login.html') ||
-                    (req.headers.get('Accept') || '').includes('text/html');
-    if (isShell) event.respondWith(networkFirst(req));
-    else event.respondWith(cacheFirst(req));
+    // Todo lo propio (HTML, JS, CSS, manifest) va network-first: así un deploy
+    // nuevo se ve en la próxima carga y no queda código viejo en caché. La
+    // caché queda solo como respaldo offline.
+    event.respondWith(networkFirst(req));
   }
 });
 
