@@ -50,8 +50,11 @@
     <div class="trial-wrap"><span class="trial">🎁 14 días de prueba · sin tarjeta</span></div>
 
     <form id="signup-form" autocomplete="on">
-      <label for="business">Nombre del negocio *</label>
-      <input id="business" type="text" required placeholder="Almacén Don José" autocomplete="organization">
+      <label for="business">Nombre de la organización / empresa *</label>
+      <input id="business" type="text" required placeholder="Ej: Distribuidora Don José" autocomplete="organization">
+
+      <label for="tienda">Nombre de la tienda / local *</label>
+      <input id="tienda" type="text" required placeholder="Ej: Sucursal Centro" autocomplete="off">
 
       <div class="row">
         <div>
@@ -114,6 +117,7 @@
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const business = document.getElementById('business').value.trim();
+    const tienda   = document.getElementById('tienda').value.trim();
     const owner    = document.getElementById('owner').value.trim();
     let   country  = document.getElementById('country').value;
     const phone    = document.getElementById('phone').value.trim();
@@ -121,7 +125,7 @@
     const password = document.getElementById('password').value;
     if (country === 'OT') country = '';  // país desconocido → el backend usa default
 
-    if (!business || !owner || !email || password.length < 6) {
+    if (!business || !tienda || !owner || !email || password.length < 6) {
       msg.className = 'msg err';
       msg.textContent = 'Completá los campos obligatorios (contraseña de 6+ caracteres)';
       return;
@@ -136,7 +140,7 @@
       email,
       password,
       options: {
-        data: { business_name: business, owner_name: owner, phone, country, product: 'pos' },
+        data: { business_name: business, tienda_name: tienda, owner_name: owner, phone, country, product: 'pos' },
         emailRedirectTo: new URL('login.html', window.location.href).href,
       },
     });
