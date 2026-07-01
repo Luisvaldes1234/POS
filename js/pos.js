@@ -158,6 +158,7 @@ async function init(){
       try {
         const { data: prov, error: provErr } = await sb.rpc('provision_trial_org_for_user', {
           p_business_name: null, p_owner_name: null, p_phone: null, p_country: null,
+          p_product: 'pos',
         });
         if (provErr) throw provErr;
         if (prov?.ok) ({ data: ur } = await _fetchRole());

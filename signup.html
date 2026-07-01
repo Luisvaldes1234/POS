@@ -160,6 +160,7 @@
       try {
         await sb.rpc('provision_trial_org_for_user', {
           p_business_name: business, p_owner_name: owner, p_phone: phone, p_country: country || null,
+          p_product: 'pos',
         });
       } catch (e) { console.warn('provision:', e); }
       window.location.replace('app.html');
