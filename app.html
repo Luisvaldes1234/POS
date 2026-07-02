@@ -14,8 +14,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <title>POS · Mostrador</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="js/shared/dialogs.js?v=9"></script>
-<script src="js/shared/errors.js?v=9"></script>
+<script src="js/shared/dialogs.js?v=10"></script>
+<script src="js/shared/errors.js?v=10"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -409,11 +409,27 @@
   .qr-overlay{position:fixed;inset:0;background:rgba(10,10,20,.78);z-index:250;display:none;align-items:center;justify-content:center;padding:20px}
   .qr-overlay.show{display:flex}
   .qr-modal{background:#fff;border-radius:24px;width:100%;max-width:480px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.35)}
-  .qr-modal-h{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)}
+  .qr-modal-h{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0}
   .qr-modal-title{font-size:16px;font-weight:800}
   .qr-modal-close{background:rgba(239,68,68,.08);color:var(--danger);border:1.5px solid rgba(239,68,68,.2);width:36px;height:36px;border-radius:50%;font-size:22px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
   .qr-modal-close:hover{background:rgba(239,68,68,.15)}
-  .qr-modal-body{padding:24px;display:flex;flex-direction:column;align-items:center;gap:14px}
+  /* El cuerpo hace auto-fit: header fijo y el contenido scrollea dentro del
+     alto máximo del modal (así en tablet/notebook nunca se recorta el form
+     ni el botón de guardar). */
+  .qr-modal-body{padding:24px;display:flex;flex-direction:column;align-items:center;gap:14px;flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  /* Pantallas de poca altura (tablet/notebook en horizontal): usar casi toda
+     la pantalla y compactar padding. */
+  @media (max-height:680px){
+    .qr-overlay{padding:10px}
+    .qr-modal{max-height:96vh}
+    .qr-modal-body{padding:16px 20px}
+  }
+  /* Celulares y tablets angostas: modal casi a pantalla completa. */
+  @media (max-width:560px){
+    .qr-overlay{padding:8px}
+    .qr-modal{max-height:94vh;border-radius:18px}
+    .qr-modal-body{padding:18px}
+  }
   .qr-img-wrap{width:280px;height:280px;display:flex;align-items:center;justify-content:center;background:#f8f9ff;border-radius:18px;border:1.5px solid var(--border);overflow:hidden}
   .qr-img-wrap img{width:100%;height:100%;object-fit:contain}
   .qr-status{font-size:13px;font-weight:700;padding:8px 16px;border-radius:50px;text-align:center}
@@ -506,7 +522,7 @@
   body.print-a4   @page{size:A4;margin:15mm}
   @page{size:80mm auto;margin:2mm}
 </style>
-  <script src="js/sentry-init.js?v=9" defer></script>
+  <script src="js/sentry-init.js?v=10" defer></script>
 </head>
 <body>
 
@@ -1032,7 +1048,7 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=9"></script>
-<script src="js/pos.js?v=9"></script>
+<script src="js/config.js?v=10"></script>
+<script src="js/pos.js?v=10"></script>
 </body>
 </html>
