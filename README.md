@@ -81,15 +81,27 @@ campo.
 ## Registro (sign up) y provisión de cuenta
 
 `signup.html` crea el usuario con **Supabase Auth** (`signUp`) guardando el
-nombre del negocio, dueño, teléfono y país en el metadata. La organización se
-crea con la RPC **`provision_trial_org_for_user`** (trial de 14 días, rol
-`client_admin`), que también dispara el email de bienvenida vía la edge
-function `notify-signup`.
+nombre de la **organización** (`business_name`) y de la **tienda**
+(`tienda_name`), dueño, teléfono, país y `product: 'pos'` en el metadata.
 
-- Si el proyecto auto-confirma el email, se provisiona y entra directo al POS.
-- Si requiere confirmación, se provisiona en el primer ingreso: `app.html`
-  detecta al usuario autenticado sin organización y llama a la RPC
-  automáticamente (es idempotente).
+La organización se crea con trial de 14 días y al usuario se le asigna
+**siempre** el rol `client_admin` (administrador). El nombre de la org es
+exactamente el que indicó el cliente en el signup. La provisión ocurre por
+**tres vías redundantes e idempotentes** (la primera que corra gana; las demás
+detectan que ya existe y no hacen nada):
+
+1. **Trigger server-side** `trg_pos_auto_provision` sobre `auth.users`: al
+   crearse una cuenta con `product='pos'` se provisiona la org + rol admin
+   automáticamente, **sin depender del JavaScript del navegador** (evita que un
+   front cacheado deje usuarios sin rol). No afecta a los cajeros creados por un
+   admin (la edge `crear-usuario` no manda `product`) ni a Reparto/callibri.
+2. **RPC en el signup**: `signup.html` llama `provision_trial_org_for_user`
+   (con `p_product:'pos'`) si el proyecto auto-confirma el email.
+3. **Fallback en el primer login**: `app.html`/`pos.js` detecta al usuario
+   autenticado sin organización y llama la misma RPC.
+
+El email de bienvenida se dispara una sola vez vía la edge function
+`notify-signup` desde la vía que efectivamente crea la org.
 
 ## Backend
 
