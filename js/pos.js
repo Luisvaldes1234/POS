@@ -6157,25 +6157,61 @@ async function renderFinanzas() {
   // Estructura base con selector de período (solo la primera vez)
   if (!document.getElementById('fin-desde')) {
     const [d0, d1] = _finRango('mes');
+    const escT = s => String(s ?? '').replace(/[<>&"]/g, '');
+    // Selector de tienda: solo si hay más de una (para no confundir en tiendas únicas).
+    const tiendaSelHtml = (tiendas.length > 1)
+      ? '<select id="fin-tienda" class="prod-form-i" style="padding:6px 10px">' +
+          '<option value="">🏪 Todas las tiendas</option>' +
+          tiendas.map(t => '<option value="' + t.id + '">🏪 ' + escT(t.nombre || 'Tienda') + '</option>').join('') +
+        '</select>'
+      : '';
     wrap.innerHTML =
       '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">' +
         '<h2 style="margin:0;font-size:20px">📈 Finanzas</h2>' +
         '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+          tiendaSelHtml +
           '<input type="date" id="fin-desde" class="prod-form-i" style="padding:6px 10px" value="' + d0 + '">' +
           '<span style="color:var(--muted)">→</span>' +
           '<input type="date" id="fin-hasta" class="prod-form-i" style="padding:6px 10px" value="' + d1 + '">' +
           '<button id="fin-go" style="padding:8px 14px;border:none;background:var(--primary);color:#fff;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">Ver</button>' +
         '</div>' +
       '</div>' +
-      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="fin-presets">' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center" id="fin-presets">' +
         '<button data-p="hoy" style="padding:6px 14px;border-radius:50px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:12px;font-weight:600">Hoy</button>' +
         '<button data-p="7" style="padding:6px 14px;border-radius:50px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:12px;font-weight:600">7 días</button>' +
         '<button data-p="mes" style="padding:6px 14px;border-radius:50px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:12px;font-weight:600">Este mes</button>' +
         '<button data-p="30" style="padding:6px 14px;border-radius:50px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:12px;font-weight:600">30 días</button>' +
+        '<button id="fin-add-gasto" style="margin-left:auto;padding:6px 14px;border-radius:50px;border:1px solid rgba(220,38,38,.3);background:rgba(220,38,38,.05);color:#dc2626;cursor:pointer;font-size:12px;font-weight:700">＋ Registrar gasto</button>' +
+      '</div>' +
+      '<div id="fin-gasto-form" style="display:none;background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px">' +
+        '<div style="font-weight:700;margin-bottom:10px">Registrar gasto</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">' +
+          '<div><label class="prod-form-l">Fecha</label><input type="date" id="fg-fecha" class="prod-form-i" value="' + d1 + '"></div>' +
+          '<div><label class="prod-form-l">Categoría</label><input type="text" id="fg-cat" class="prod-form-i" list="fg-cats" placeholder="Ej: Alquiler" autocomplete="off">' +
+            '<datalist id="fg-cats"><option>Sueldos</option><option>Alquiler</option><option>Servicios</option><option>Impuestos</option><option>Mercadería</option><option>Mantenimiento</option><option>Otros</option></datalist></div>' +
+          '<div><label class="prod-form-l">Monto</label><input type="number" min="0" step="0.01" id="fg-monto" class="prod-form-i" placeholder="0"></div>' +
+          '<div><label class="prod-form-l">Detalle (opcional)</label><input type="text" id="fg-desc" class="prod-form-i" placeholder="Ej: Sueldo de Juan"></div>' +
+        '</div>' +
+        '<label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;cursor:pointer"><input type="checkbox" id="fg-fijo"> <span>💡 Es un gasto fijo / mensual (sueldos, alquiler…)</span></label>' +
+        '<div style="display:flex;gap:8px;margin-top:12px">' +
+          '<button id="fg-save" style="padding:10px 16px;border:none;background:var(--primary);color:#fff;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px">Guardar gasto</button>' +
+          '<button id="fg-cancel" style="padding:10px 16px;border:1px solid var(--border);background:#fff;border-radius:8px;cursor:pointer;font-size:13px">Cancelar</button>' +
+        '</div>' +
+        '<div id="fg-msg" style="font-size:12px;margin-top:8px"></div>' +
       '</div>' +
       '<div id="fin-content"></div>';
     document.getElementById('fin-go').addEventListener('click', _cargarFinanzas);
-    wrap.querySelectorAll('#fin-presets button').forEach(b => b.addEventListener('click', () => {
+    document.getElementById('fin-tienda')?.addEventListener('change', _cargarFinanzas);
+    document.getElementById('fin-add-gasto').addEventListener('click', () => {
+      const f = document.getElementById('fin-gasto-form');
+      f.style.display = f.style.display === 'none' ? '' : 'none';
+      if (f.style.display === '') document.getElementById('fg-monto').focus();
+    });
+    document.getElementById('fg-cancel').addEventListener('click', () => {
+      document.getElementById('fin-gasto-form').style.display = 'none';
+    });
+    document.getElementById('fg-save').addEventListener('click', _guardarGasto);
+    wrap.querySelectorAll('#fin-presets button[data-p]').forEach(b => b.addEventListener('click', () => {
       const [a, c] = _finRango(b.dataset.p);
       document.getElementById('fin-desde').value = a;
       document.getElementById('fin-hasta').value = c;
@@ -6193,9 +6229,11 @@ async function _cargarFinanzas() {
   if (!desde || !hasta) { toast('Elegí el rango', 'warn'); return; }
   cont.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>';
 
-  // 1) Ventas del rango (reusa la RPC existente, no la modifica)
+  // 1) Ventas del rango, opcionalmente filtradas por tienda (#8).
+  const tiendaSel = document.getElementById('fin-tienda')?.value || null;
   const { data: vr, error: vErr } = await sb.rpc('pos_get_ventas_rango', {
-    p_organization_id: orgId, p_fecha_desde: desde, p_fecha_hasta: hasta, p_cajero_id: null,
+    p_organization_id: orgId, p_fecha_desde: desde, p_fecha_hasta: hasta,
+    p_cajero_id: null, p_tienda_id: tiendaSel,
   });
   if (vErr) { cont.innerHTML = '<div style="color:var(--danger);padding:20px">Error: ' + vErr.message + '</div>'; return; }
   const t = vr.totales || {};
@@ -6219,7 +6257,7 @@ async function _cargarFinanzas() {
   let gastos = [], ingresos = [];
   try {
     const { data } = await sb.from('gastos')
-      .select('monto, fecha, descripcion, proveedor, metodo_pago, categorias_gasto(nombre)')
+      .select('id, monto, fecha, descripcion, proveedor, metodo_pago, es_recurrente, categorias_gasto(nombre)')
       .eq('organization_id', orgId).gte('fecha', desde).lte('fecha', hasta).order('fecha', { ascending: false });
     gastos = data || [];
   } catch (_) {}
@@ -6270,17 +6308,58 @@ async function _cargarFinanzas() {
   html += '</div>';
 
   // Detalle de gastos
-  html += '<div style="background:white;border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:14px"><div style="font-weight:700;margin-bottom:8px">Gastos del período (' + gastos.length + ')</div>';
-  if (!gastos.length) html += '<div style="font-size:12px;color:var(--muted)">Sin gastos registrados en este rango. Los gastos se cargan desde el panel de administración.</div>';
-  else html += '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="color:var(--muted)"><th style="text-align:left;padding:4px">Fecha</th><th style="text-align:left">Categoría</th><th style="text-align:left">Detalle</th><th style="text-align:right">Monto</th></tr></thead><tbody>' +
-    gastos.slice(0, 50).map(g => '<tr style="border-top:1px solid #f1f5f9"><td style="padding:4px">' + (g.fecha||'') + '</td><td>' + String(g.categorias_gasto?.nombre||'—').replace(/[<>&]/g,'') + '</td><td>' + String(g.descripcion||g.proveedor||'').replace(/[<>&]/g,'') + '</td><td style="text-align:right;font-weight:600;color:#dc2626">' + fmtARS(g.monto) + '</td></tr>').join('') +
-    '<tr style="border-top:2px solid var(--border)"><td colspan="3" style="padding:6px;font-weight:700">Total gastos</td><td style="text-align:right;font-weight:800;padding:6px">' + fmtARS(totGastos) + '</td></tr>' +
+  const notaTienda = tiendaSel ? ' <span style="font-weight:400;color:var(--muted)">· los gastos son generales (no se dividen por tienda)</span>' : '';
+  html += '<div style="background:white;border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:14px"><div style="font-weight:700;margin-bottom:8px">Gastos del período (' + gastos.length + ')' + notaTienda + '</div>';
+  if (!gastos.length) html += '<div style="font-size:12px;color:var(--muted)">Sin gastos registrados en este rango. Usá el botón “＋ Registrar gasto” de arriba para cargar sueldos, alquiler y otros gastos.</div>';
+  else html += '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="color:var(--muted)"><th style="text-align:left;padding:4px">Fecha</th><th style="text-align:left">Categoría</th><th style="text-align:left">Detalle</th><th style="text-align:right">Monto</th><th></th></tr></thead><tbody>' +
+    gastos.slice(0, 50).map(g => '<tr style="border-top:1px solid #f1f5f9"><td style="padding:4px">' + (g.fecha||'') + '</td><td>' + String(g.categorias_gasto?.nombre||'—').replace(/[<>&]/g,'') + (g.es_recurrente ? ' <span style="font-size:9px;font-weight:800;background:rgba(124,58,237,.1);color:#7c3aed;padding:1px 6px;border-radius:50px">FIJO</span>' : '') + '</td><td>' + String(g.descripcion||g.proveedor||'').replace(/[<>&]/g,'') + '</td><td style="text-align:right;font-weight:600;color:#dc2626">' + fmtARS(g.monto) + '</td><td style="text-align:right"><button class="fin-del-gasto" data-id="' + g.id + '" title="Eliminar gasto" style="background:none;border:none;color:#cbd5e1;font-size:15px;cursor:pointer;padding:0 4px">🗑</button></td></tr>').join('') +
+    '<tr style="border-top:2px solid var(--border)"><td colspan="3" style="padding:6px;font-weight:700">Total gastos</td><td style="text-align:right;font-weight:800;padding:6px">' + fmtARS(totGastos) + '</td><td></td></tr>' +
     '</tbody></table>';
   html += '</div>';
 
   html += '<div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">El costo de mercadería y el margen se calculan con el costo actual cargado en cada producto. El resultado neto es una estimación de gestión (no reemplaza la contabilidad formal).</div>';
 
   cont.innerHTML = html;
+
+  cont.querySelectorAll('.fin-del-gasto').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      if (!id) return;
+      const ok = await tmvDialog.confirm('¿Eliminar este gasto del registro?', { title: 'Eliminar gasto', severity: 'danger', okLabel: 'Eliminar' });
+      if (!ok) return;
+      const { data, error } = await sb.rpc('pos_eliminar_gasto', { p_gasto_id: id });
+      if (error || !data?.ok) { toast('No se pudo eliminar', 'err'); return; }
+      toast('Gasto eliminado', 'ok');
+      _cargarFinanzas();
+    });
+  });
+}
+
+// Registra un gasto (incluye gastos fijos como sueldos o alquiler) — #7.
+async function _guardarGasto() {
+  const monto = parseFloat(document.getElementById('fg-monto').value) || 0;
+  const cat   = document.getElementById('fg-cat').value.trim();
+  const desc  = document.getElementById('fg-desc').value.trim();
+  const fecha = document.getElementById('fg-fecha').value || null;
+  const fijo  = document.getElementById('fg-fijo').checked;
+  const msg   = document.getElementById('fg-msg');
+  if (monto <= 0) { msg.style.color = 'var(--danger)'; msg.textContent = 'Ingresá un monto válido.'; return; }
+  const btn = document.getElementById('fg-save');
+  btn.disabled = true; btn.textContent = 'Guardando…';
+  const { data, error } = await sb.rpc('pos_registrar_gasto', {
+    p_organization_id: orgId, p_monto: monto,
+    p_descripcion: desc || null, p_categoria_nombre: cat || null,
+    p_fecha: fecha, p_es_recurrente: fijo, p_recurrencia: fijo ? 'mensual' : null,
+  });
+  btn.disabled = false; btn.textContent = 'Guardar gasto';
+  if (error || !data?.ok) { msg.style.color = 'var(--danger)'; msg.textContent = 'Error: ' + (error?.message || 'no se pudo registrar'); return; }
+  toast('✓ Gasto registrado', 'ok');
+  document.getElementById('fg-monto').value = '';
+  document.getElementById('fg-desc').value = '';
+  document.getElementById('fg-cat').value = '';
+  document.getElementById('fg-fijo').checked = false;
+  document.getElementById('fin-gasto-form').style.display = 'none';
+  _cargarFinanzas();
 }
 
 // ════════════════════════════════════════════════════════════════════
