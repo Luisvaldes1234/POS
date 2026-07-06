@@ -162,6 +162,7 @@ const INFO = {
   fin_gastos:     'Suma de los gastos del período (sueldos, alquiler, servicios, etc.) cargados en Finanzas.',
   fin_otros_ing:  'Otros ingresos del período que no son ventas (ej. reintegros, ingresos varios).',
   fin_resultado:  'Resultado neto estimado = Margen bruto − Gastos + Otros ingresos. Es una estimación de gestión, no reemplaza la contabilidad formal.',
+  fin_comisiones: 'Incentivo de cada cajero calculado sobre lo que vendió en el período: ventas × % de comisión + bono fijo. El % y el bono se guardan para la próxima vez. Podés registrarlas como gasto (categoría Comisiones) para que impacten en el resultado.',
   // Envases
   env_hoy:        'Envases retornables movidos hoy (entregados/devueltos) en esta tienda.',
   env_periodo:    'Envases retornables movidos en el período seleccionado.',
@@ -6320,6 +6321,8 @@ async function _cargarFinanzas() {
   if (vErr) { cont.innerHTML = '<div style="color:var(--danger);padding:20px">Error: ' + vErr.message + '</div>'; return; }
   const t = vr.totales || {};
   const porProd = vr.por_producto || [];
+  // Ventas por cajero (para el cálculo de comisiones/incentivos).
+  const porCajeroFin = (vr.por_cajero || []).filter(c => c.cajero_id && (Number(c.monto) || 0) > 0);
 
   // 2) COGS (costo de mercadería vendida) estimado con el costo del catálogo
   const costoMap = new Map(productos.map(p => [p.id, Number(p.costo) || 0]));
@@ -6427,9 +6430,40 @@ async function _cargarFinanzas() {
     '</tbody></table>';
   html += '</div>';
 
+  // Comisiones / incentivos de cajeros (sobre lo vendido en el período).
+  if (porCajeroFin.length) {
+    const escN = s => String(s ?? '—').replace(/[<>&"]/g, '');
+    const getCfg = cid => { try { return JSON.parse(localStorage.getItem('pos_com_' + orgId + '_' + cid) || '{}'); } catch (_) { return {}; } };
+    html += '<div id="fin-comisiones" style="background:white;border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:14px">' +
+      '<div style="font-weight:700;margin-bottom:4px;display:flex;align-items:center">🧑‍💼 Comisiones / incentivos de cajeros' + iHelp(INFO.fin_comisiones) + '</div>' +
+      '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">Comisión = ventas del cajero × % + bono fijo. Ajustá el % y el bono (se guardan para la próxima). Con “Registrar” se cargan como gasto del período (categoría Comisiones).</div>' +
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
+      '<thead><tr style="color:var(--muted);text-align:right"><th style="text-align:left;padding:4px">Cajero</th><th style="padding:4px">Ventas</th><th style="padding:4px">% comisión</th><th style="padding:4px">Bono fijo</th><th style="padding:4px">A pagar</th></tr></thead><tbody>' +
+      porCajeroFin.map(c => {
+        const cfg = getCfg(c.cajero_id);
+        const pct = (cfg.pct != null) ? cfg.pct : '';
+        const bono = (cfg.bono != null) ? cfg.bono : '';
+        const monto = Number(c.monto) || 0;
+        const tot = monto * (Number(pct) || 0) / 100 + (Number(bono) || 0);
+        return '<tr data-cid="' + c.cajero_id + '" data-monto="' + monto + '" data-nombre="' + escN(c.cajero_nombre) + '" style="border-top:1px solid #f1f5f9;text-align:right">' +
+          '<td style="text-align:left;padding:5px 4px;font-weight:600">' + escN(c.cajero_nombre) + '</td>' +
+          '<td style="padding:5px 4px">' + fmtARS(monto) + '</td>' +
+          '<td style="padding:5px 4px"><input type="number" min="0" step="0.1" class="com-pct" value="' + pct + '" placeholder="0" style="width:68px;text-align:right;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:13px"></td>' +
+          '<td style="padding:5px 4px"><input type="number" min="0" step="0.01" class="com-bono" value="' + bono + '" placeholder="0" style="width:92px;text-align:right;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:13px"></td>' +
+          '<td class="com-tot" style="padding:5px 4px;font-weight:700;color:#dc2626">' + fmtARS(tot) + '</td>' +
+        '</tr>';
+      }).join('') +
+      '<tr style="border-top:2px solid var(--border);text-align:right;font-weight:800"><td style="text-align:left;padding:6px 4px">Total comisiones</td><td></td><td></td><td></td><td id="com-grand" style="padding:6px 4px;color:#dc2626">' + fmtARS(0) + '</td></tr>' +
+      '</tbody></table></div>' +
+      '<button id="com-registrar" style="margin-top:12px;padding:9px 16px;border:none;background:var(--primary);color:#fff;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px">Registrar comisiones como gasto</button>' +
+    '</div>';
+  }
+
   html += '<div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">El costo de mercadería y el margen se calculan con el costo actual cargado en cada producto. El resultado neto es una estimación de gestión (no reemplaza la contabilidad formal).</div>';
 
   cont.innerHTML = html;
+
+  _wireComisiones(desde, hasta);
 
   cont.querySelectorAll('.fin-del-gasto').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -6469,6 +6503,69 @@ async function _guardarGasto() {
   document.getElementById('fg-cat').value = '';
   document.getElementById('fg-tipo').value = 'variable';
   document.getElementById('fin-gasto-form').style.display = 'none';
+  _cargarFinanzas();
+}
+
+// Comisiones/incentivos de cajeros: recálculo en vivo + guardado del % y bono.
+function _wireComisiones(desde, hasta){
+  const box = document.getElementById('fin-comisiones');
+  if (!box) return;
+  const recalc = () => {
+    let grand = 0;
+    box.querySelectorAll('tr[data-cid]').forEach(tr => {
+      const monto = Number(tr.dataset.monto) || 0;
+      const pct  = Number(tr.querySelector('.com-pct').value) || 0;
+      const bono = Number(tr.querySelector('.com-bono').value) || 0;
+      const tot = monto * pct / 100 + bono;
+      tr.querySelector('.com-tot').textContent = fmtARS(tot);
+      grand += tot;
+    });
+    const g = document.getElementById('com-grand'); if (g) g.textContent = fmtARS(grand);
+  };
+  box.querySelectorAll('.com-pct, .com-bono').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const tr = inp.closest('tr[data-cid]');
+      const pct = tr.querySelector('.com-pct').value;
+      const bono = tr.querySelector('.com-bono').value;
+      try {
+        localStorage.setItem('pos_com_' + orgId + '_' + tr.dataset.cid,
+          JSON.stringify({ pct: pct === '' ? null : Number(pct), bono: bono === '' ? null : Number(bono) }));
+      } catch (_) {}
+      recalc();
+    });
+  });
+  recalc();
+  document.getElementById('com-registrar')?.addEventListener('click', () => _registrarComisiones(desde, hasta));
+}
+
+async function _registrarComisiones(desde, hasta){
+  const box = document.getElementById('fin-comisiones');
+  if (!box) return;
+  const items = [];
+  box.querySelectorAll('tr[data-cid]').forEach(tr => {
+    const monto = Number(tr.dataset.monto) || 0;
+    const pct  = Number(tr.querySelector('.com-pct').value) || 0;
+    const bono = Number(tr.querySelector('.com-bono').value) || 0;
+    const tot = monto * pct / 100 + bono;
+    if (tot > 0) items.push({ nombre: tr.dataset.nombre || 'Cajero', tot, pct, bono });
+  });
+  if (!items.length) { toast('Cargá un % o un bono para registrar comisiones', 'warn'); return; }
+  const total = items.reduce((s, i) => s + i.tot, 0);
+  const ok = await tmvDialog.confirm(
+    'Se registrarán ' + items.length + ' comisión(es) por un total de ' + fmtARS(total) +
+    ' como gasto (categoría Comisiones), con fecha ' + hasta + '. ¿Confirmás?',
+    { title: 'Registrar comisiones', severity: 'question', okLabel: 'Registrar' });
+  if (!ok) return;
+  let okc = 0;
+  for (const it of items) {
+    const { data, error } = await sb.rpc('pos_registrar_gasto', {
+      p_organization_id: orgId, p_monto: Math.round(it.tot * 100) / 100,
+      p_descripcion: 'Comisión ' + it.nombre + ' (' + desde + ' a ' + hasta + ' · ' + it.pct + '%' + (it.bono ? ' + bono ' + fmtARS(it.bono) : '') + ')',
+      p_categoria_nombre: 'Comisiones', p_fecha: hasta, p_es_recurrente: false, p_recurrencia: null,
+    });
+    if (!error && data?.ok) okc++;
+  }
+  toast('✓ ' + okc + ' comisión(es) registrada(s) como gasto', 'ok');
   _cargarFinanzas();
 }
 
