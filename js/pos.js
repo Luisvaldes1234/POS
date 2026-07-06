@@ -2031,9 +2031,7 @@ function renderProductGrid(){
       (p.peso_variable ? '<div class="prod-card-peso" title="Peso variable: pide cantidad al sumar">⚖</div>' : '') +
       (favKey ? '<div class="prod-card-fav" title="Atajo: presioná ' + favKey + '">' + favKey + '</div>' : '') +
       '<div class="prod-card-name"></div>' +
-      '<div class="prod-card-precio">' + fmtARS(p.precio) +
-        (p.precio_pos_falta ? ' <span title="Sin precio POS propio: se está usando el precio de reparto. Editá el producto para configurar uno." style="font-size:10px;color:#f59e0b;font-weight:600;letter-spacing:.02em">⚠ precio reparto</span>' : '') +
-      '</div>' +
+      '<div class="prod-card-precio">' + fmtARS(p.precio) + '</div>' +
       (tienePromo ? '<div style="font-size:10px;color:#7c3aed;font-weight:700">🎟 ' + p.descuento_volumen_qty + '+ → ' + p.descuento_volumen_pct + '% off</div>' : '') +
       '<div class="prod-card-stock ' + stockClass + '">' +
         '<span>' + (p.es_combo ? 'Stock por componentes' : stockTxt) + '</span>' +
