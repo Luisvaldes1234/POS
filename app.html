@@ -14,8 +14,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <title>POS · Mostrador</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="js/shared/dialogs.js?v=12"></script>
-<script src="js/shared/errors.js?v=12"></script>
+<script src="js/shared/dialogs.js?v=13"></script>
+<script src="js/shared/errors.js?v=13"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -444,6 +444,10 @@
   .qr-foot-btn{flex:1;padding:14px;border-radius:50px;border:none;background:var(--primary);color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}
   .qr-foot-btn:active{transform:scale(.98)}
   .qr-foot-btn:disabled{opacity:.5;cursor:not-allowed}
+  /* Ícono de información (ⓘ): al pasar el cursor muestra cómo se calcula la
+     métrica (tooltip nativo del navegador vía title). */
+  .info-i{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;font-size:9px;font-weight:800;font-style:normal;font-family:Georgia,'Times New Roman',serif;color:var(--muted);border:1.3px solid currentColor;cursor:help;vertical-align:middle;opacity:.55;line-height:1;user-select:none;margin-left:4px;flex:0 0 auto}
+  .info-i:hover,.info-i:focus{opacity:1;color:var(--primary);outline:none}
   .qr-img-wrap{width:280px;height:280px;display:flex;align-items:center;justify-content:center;background:#f8f9ff;border-radius:18px;border:1.5px solid var(--border);overflow:hidden}
   .qr-img-wrap img{width:100%;height:100%;object-fit:contain}
   .qr-status{font-size:13px;font-weight:700;padding:8px 16px;border-radius:50px;text-align:center}
@@ -536,7 +540,7 @@
   body.print-a4   @page{size:A4;margin:15mm}
   @page{size:80mm auto;margin:2mm}
 </style>
-  <script src="js/sentry-init.js?v=12" defer></script>
+  <script src="js/sentry-init.js?v=13" defer></script>
 </head>
 <body>
 
@@ -700,7 +704,7 @@
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
-        <h2 style="margin:0;font-size:20px">📊 Reportes históricos</h2>
+        <h2 style="margin:0;font-size:20px;display:flex;align-items:center">📊 Reportes históricos<span class="info-i" tabindex="0" title="Ventas y cobros de un rango de fechas que elegís. Podés filtrar por cajero. Cada tarjeta muestra cuánto se cobró por cada forma de pago; abajo se detallan las ventas, el desglose por cajero y por producto.">i</span></h2>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <input type="date" id="rep-desde" class="prod-form-i" style="padding:6px 10px">
           <span style="color:var(--muted)">→</span>
@@ -729,7 +733,7 @@
   <div class="screen" id="screen-ventas">
     <div class="ventas-wrap">
       <div class="ventas-kpis" id="ventas-kpis"></div>
-      <h3 style="font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Operaciones del día</h3>
+      <h3 style="font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center">Operaciones del día<span class="info-i" tabindex="0" title="Listado de cada venta hecha hoy en esta tienda, con hora, cliente, forma de pago y total. Las tarjetas de arriba resumen los totales del día.">i</span></h3>
       <div class="ventas-list" id="ventas-list"></div>
     </div>
   </div>
@@ -977,10 +981,11 @@
   <div class="screen" id="screen-stock">
     <div class="stock-wrap">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap">
-        <h3 style="font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Stock de mostrador</h3>
+        <h3 style="font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;display:flex;align-items:center">Stock de mostrador<span class="info-i" tabindex="0" title="Existencias por tienda. El stock se descuenta automáticamente con cada venta. Solo los administradores pueden reponer, cargar mercadería, ajustar cantidades o dar de baja productos; los cajeros lo ven en modo lectura.">i</span></h3>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none">
           <input type="checkbox" id="stock-strict-toggle" checked>
           <span>Bloquear ventas si el stock no alcanza</span>
+          <span class="info-i" tabindex="0" title="Si está activo, el POS no deja completar una venta cuando no hay stock suficiente del producto. Si lo desactivás, permite vender igual y el stock puede quedar en negativo.">i</span>
         </label>
       </div>
 
@@ -1064,7 +1069,7 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=12"></script>
-<script src="js/pos.js?v=12"></script>
+<script src="js/config.js?v=13"></script>
+<script src="js/pos.js?v=13"></script>
 </body>
 </html>

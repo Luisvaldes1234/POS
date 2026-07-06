@@ -102,6 +102,42 @@ function fmtTime(ts){
   if (!ts) return '—';
   return new Date(ts).toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
 }
+// ── Info tooltips (ⓘ) ────────────────────────────────
+// Devuelve un iconito "i" que, al pasar el cursor, explica cómo se calcula la
+// métrica (usa el title nativo: fiable, no se recorta dentro de paneles que
+// scrollean). Pasar el texto explicativo.
+function iHelp(text){
+  if (!text) return '';
+  const t = String(text).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return '<span class="info-i" tabindex="0" role="img" aria-label="Cómo se calcula" title="' + t + '">i</span>';
+}
+// Explicaciones reutilizables (qué es y cómo se calcula cada métrica).
+const INFO = {
+  total_cobrado:  'Suma de TODO lo efectivamente cobrado en el período, sumando todas las formas de pago. No incluye ventas anuladas.',
+  ventas_count:   'Cantidad de ventas registradas en el período (sin contar las anuladas).',
+  efectivo:       'Total cobrado en efectivo.',
+  mercadopago:    'Total cobrado con MercadoPago (QR o link de pago).',
+  transferencia:  'Total cobrado por transferencia bancaria.',
+  debito:         'Total cobrado con tarjeta de débito.',
+  credito:        'Total cobrado con tarjeta de crédito (incluye el recargo por cuotas si se aplicó).',
+  cuenta_corriente:'Ventas fiadas: se anotan en la cuenta del cliente para cobrarse después. Todavía NO es dinero recibido; no suma al total cobrado.',
+  egresos:        'Dinero que salió de la caja (retiros, pagos, gastos cargados en la caja) en el período.',
+  ingresos_extra: 'Dinero que entró a la caja por fuera de las ventas (ej. aporte de cambio, cobros varios).',
+  anuladas:       'Ventas que se anularon/cancelaron. No suman al total cobrado.',
+  operaciones:    'Cantidad de cobros realizados en este turno de caja.',
+  // Finanzas
+  fin_ventas:     'Ventas efectivamente cobradas en el período (mismo criterio que Total cobrado).',
+  fin_costo:      'Costo de la mercadería vendida (CMV): unidades vendidas × costo de compra cargado en cada producto. Es estimado; si un producto no tiene costo cargado, no se computa.',
+  fin_margen:     'Margen bruto = Ventas − Costo de mercadería. El porcentaje es sobre las ventas.',
+  fin_gastos:     'Suma de los gastos del período (sueldos, alquiler, servicios, etc.) cargados en Finanzas.',
+  fin_otros_ing:  'Otros ingresos del período que no son ventas (ej. reintegros, ingresos varios).',
+  fin_resultado:  'Resultado neto estimado = Margen bruto − Gastos + Otros ingresos. Es una estimación de gestión, no reemplaza la contabilidad formal.',
+  // Envases
+  env_hoy:        'Envases retornables movidos hoy (entregados/devueltos) en esta tienda.',
+  env_periodo:    'Envases retornables movidos en el período seleccionado.',
+  env_clientes:   'Cantidad de clientes distintos con movimientos de envases en el período.',
+};
+
 let _toastT;
 function toast(msg, type=''){
   const el = document.getElementById('toast');
@@ -927,15 +963,15 @@ function _renderCajaAbierta(wrap, caja) {
     '<div class="caja-h"><div class="caja-title">Caja general</div><span class="caja-badge abierta">Abierta</span></div>' +
     '<div class="caja-meta">Abierta por <b>' + (caja.abierta_por_nombre || '—') + '</b> · <b>' + abiertaStr + '</b><br>Apertura: <b>' + fmtARS(caja.monto_apertura) + '</b> · <span style="color:var(--primary)">Caja única compartida por toda la tienda</span></div>' +
     '<div class="caja-stats">' +
-    '  <div class="caja-stat"><div class="caja-stat-l">💵 Efectivo cobrado</div><div class="caja-stat-v">' + fmtARS(caja.cobrado_efectivo) + '</div></div>' +
-    '  <div class="caja-stat"><div class="caja-stat-l">📱 MercadoPago</div><div class="caja-stat-v">' + fmtARS(caja.cobrado_mp) + '</div></div>' +
-    '  <div class="caja-stat"><div class="caja-stat-l">🏦 Transferencia</div><div class="caja-stat-v">' + fmtARS(caja.cobrado_transferencia) + '</div></div>' +
-    '  <div class="caja-stat"><div class="caja-stat-l">💳 Débito</div><div class="caja-stat-v">' + fmtARS(caja.cobrado_debito || 0) + '</div></div>' +
-    '  <div class="caja-stat"><div class="caja-stat-l">💳 Crédito</div><div class="caja-stat-v">' + fmtARS(caja.cobrado_credito || 0) + '</div></div>' +
-    '  <div class="caja-stat"><div class="caja-stat-l">💳 Cuenta corriente</div><div class="caja-stat-v">' + fmtARS(cobradoCC) + '</div></div>' +
-    (ingresos > 0 ? '  <div class="caja-stat"><div class="caja-stat-l">↑ Ingresos extra</div><div class="caja-stat-v">' + fmtARS(ingresos) + '</div></div>' : '') +
-    (egresos  > 0 ? '  <div class="caja-stat"><div class="caja-stat-l">↓ Egresos / gastos</div><div class="caja-stat-v">' + fmtARS(egresos) + '</div></div>' : '') +
-    '  <div class="caja-stat"><div class="caja-stat-l">Operaciones</div><div class="caja-stat-v">' + caja.cobros_count + '</div></div>' +
+    '  <div class="caja-stat"><div class="caja-stat-l">💵 Efectivo cobrado' + iHelp(INFO.efectivo) + '</div><div class="caja-stat-v">' + fmtARS(caja.cobrado_efectivo) + '</div></div>' +
+    '  <div class="caja-stat"><div class="caja-stat-l">📱 MercadoPago' + iHelp(INFO.mercadopago) + '</div><div class="caja-stat-v">' + fmtARS(caja.cobrado_mp) + '</div></div>' +
+    '  <div class="caja-stat"><div class="caja-stat-l">🏦 Transferencia' + iHelp(INFO.transferencia) + '</div><div class="caja-stat-v">' + fmtARS(caja.cobrado_transferencia) + '</div></div>' +
+    '  <div class="caja-stat"><div class="caja-stat-l">💳 Débito' + iHelp(INFO.debito) + '</div><div class="caja-stat-v">' + fmtARS(caja.cobrado_debito || 0) + '</div></div>' +
+    '  <div class="caja-stat"><div class="caja-stat-l">💳 Crédito' + iHelp(INFO.credito) + '</div><div class="caja-stat-v">' + fmtARS(caja.cobrado_credito || 0) + '</div></div>' +
+    '  <div class="caja-stat"><div class="caja-stat-l">💳 Cuenta corriente' + iHelp(INFO.cuenta_corriente) + '</div><div class="caja-stat-v">' + fmtARS(cobradoCC) + '</div></div>' +
+    (ingresos > 0 ? '  <div class="caja-stat"><div class="caja-stat-l">↑ Ingresos extra' + iHelp(INFO.ingresos_extra) + '</div><div class="caja-stat-v">' + fmtARS(ingresos) + '</div></div>' : '') +
+    (egresos  > 0 ? '  <div class="caja-stat"><div class="caja-stat-l">↓ Egresos / gastos' + iHelp(INFO.egresos) + '</div><div class="caja-stat-v">' + fmtARS(egresos) + '</div></div>' : '') +
+    '  <div class="caja-stat"><div class="caja-stat-l">Operaciones' + iHelp(INFO.operaciones) + '</div><div class="caja-stat-v">' + caja.cobros_count + '</div></div>' +
     '</div>' +
     porCajeroHtml +
     '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">' +
@@ -1095,14 +1131,14 @@ window.cargarReportes = async () => {
   const ventas = data.ventas || [];
 
   let html = '<div class="kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px">' +
-    kpiCard('Total cobrado', fmtARS(t.total || 0), (t.count || 0) + ' ventas', '#10b981') +
-    kpiCard('Efectivo',      fmtARS(t.efectivo || 0), '', '#374151') +
-    kpiCard('MercadoPago',   fmtARS(t.mp || 0), '', '#009ee3') +
-    kpiCard('Transferencia', fmtARS(t.transf || 0), '', '#7C3AED') +
-    kpiCard('Débito',        fmtARS(t.debito || 0), '', '#0ea5e9') +
-    kpiCard('Crédito',       fmtARS(t.credito || 0), '', '#0284c7') +
-    kpiCard('Cuenta corriente', fmtARS(t.cc || 0), '', '#f59e0b') +
-    kpiCard('Egresos',       '-' + fmtARS(t.egresos || 0), '', '#dc2626') +
+    kpiCard('Total cobrado', fmtARS(t.total || 0), (t.count || 0) + ' ventas', '#10b981', INFO.total_cobrado) +
+    kpiCard('Efectivo',      fmtARS(t.efectivo || 0), '', '#374151', INFO.efectivo) +
+    kpiCard('MercadoPago',   fmtARS(t.mp || 0), '', '#009ee3', INFO.mercadopago) +
+    kpiCard('Transferencia', fmtARS(t.transf || 0), '', '#7C3AED', INFO.transferencia) +
+    kpiCard('Débito',        fmtARS(t.debito || 0), '', '#0ea5e9', INFO.debito) +
+    kpiCard('Crédito',       fmtARS(t.credito || 0), '', '#0284c7', INFO.credito) +
+    kpiCard('Cuenta corriente', fmtARS(t.cc || 0), '', '#f59e0b', INFO.cuenta_corriente) +
+    kpiCard('Egresos',       '-' + fmtARS(t.egresos || 0), '', '#dc2626', INFO.egresos) +
     '</div>';
 
   if (!cajeroId && porCajero.length) {
@@ -3993,14 +4029,14 @@ async function cargarVentasHoy(){
   const totales = data?.totales || {};
 
   kpis.innerHTML =
-    kpiCard('Total cobrado', fmtARS(totales.total || 0), totales.count + ' ventas', '#10b981') +
-    kpiCard('Efectivo',      fmtARS(totales.efectivo || 0), '', '#374151') +
-    kpiCard('MercadoPago',   fmtARS(totales.mp || 0),       '', '#009ee3') +
-    kpiCard('Transferencia', fmtARS(totales.transf || 0),   '', '#7C3AED') +
-    kpiCard('Débito',        fmtARS(totales.debito || 0),   '', '#0ea5e9') +
-    kpiCard('Crédito',       fmtARS(totales.credito || 0),  '', '#0284c7') +
-    kpiCard('Cuenta corriente', fmtARS(totales.cc || 0),    '', '#f59e0b') +
-    (totales.anuladas ? kpiCard('Anuladas', totales.anuladas, '', '#ef4444') : '');
+    kpiCard('Total cobrado', fmtARS(totales.total || 0), totales.count + ' ventas', '#10b981', INFO.total_cobrado) +
+    kpiCard('Efectivo',      fmtARS(totales.efectivo || 0), '', '#374151', INFO.efectivo) +
+    kpiCard('MercadoPago',   fmtARS(totales.mp || 0),       '', '#009ee3', INFO.mercadopago) +
+    kpiCard('Transferencia', fmtARS(totales.transf || 0),   '', '#7C3AED', INFO.transferencia) +
+    kpiCard('Débito',        fmtARS(totales.debito || 0),   '', '#0ea5e9', INFO.debito) +
+    kpiCard('Crédito',       fmtARS(totales.credito || 0),  '', '#0284c7', INFO.credito) +
+    kpiCard('Cuenta corriente', fmtARS(totales.cc || 0),    '', '#f59e0b', INFO.cuenta_corriente) +
+    (totales.anuladas ? kpiCard('Anuladas', totales.anuladas, '', '#ef4444', INFO.anuladas) : '');
 
   if (!ventas.length) {
     list.innerHTML = '<div style="background:#fff;border:1px dashed var(--border);border-radius:12px;padding:30px;text-align:center;color:var(--muted)">Sin ventas hoy todavía.</div>';
@@ -4045,9 +4081,9 @@ async function cargarVentasHoy(){
   });
 }
 
-function kpiCard(label, value, detail, color){
+function kpiCard(label, value, detail, color, info){
   return '<div class="ventas-kpi" style="--ka:' + color + '">' +
-    '<div class="ventas-kpi-l">' + label + '</div>' +
+    '<div class="ventas-kpi-l" style="display:flex;align-items:center">' + label + iHelp(info) + '</div>' +
     '<div class="ventas-kpi-v">' + value + '</div>' +
     (detail ? '<div style="font-size:10px;color:var(--muted);margin-top:2px">' + detail + '</div>' : '') +
     '</div>';
@@ -5542,9 +5578,9 @@ async function renderEnvases() {
     });
     html += '</div>';
     html += '<div class="env-kpis">' +
-      '<div class="env-kpi hl"><div class="env-kpi-l">Hoy</div><div class="env-kpi-v">' + (data.total_hoy || 0) + '</div></div>' +
-      '<div class="env-kpi"><div class="env-kpi-l">' + _envPeriodo + ' días</div><div class="env-kpi-v">' + (data.total_periodo || 0) + '</div></div>' +
-      '<div class="env-kpi"><div class="env-kpi-l">Clientes</div><div class="env-kpi-v">' + (data.clientes_unicos || 0) + '</div></div>' +
+      '<div class="env-kpi hl"><div class="env-kpi-l">Hoy' + iHelp(INFO.env_hoy) + '</div><div class="env-kpi-v">' + (data.total_hoy || 0) + '</div></div>' +
+      '<div class="env-kpi"><div class="env-kpi-l">' + _envPeriodo + ' días' + iHelp(INFO.env_periodo) + '</div><div class="env-kpi-v">' + (data.total_periodo || 0) + '</div></div>' +
+      '<div class="env-kpi"><div class="env-kpi-l">Clientes' + iHelp(INFO.env_clientes) + '</div><div class="env-kpi-v">' + (data.clientes_unicos || 0) + '</div></div>' +
       '</div>';
 
     const top = data.top_clientes || [];
@@ -6273,15 +6309,15 @@ async function _cargarFinanzas() {
   const cajaEgr = Number(t.egresos) || 0;
   const resultado = margenBruto - totGastos + totIngresos;
 
-  const kpi = (lbl, val, color, sub) => '<div style="background:white;border:1px solid var(--border);border-radius:12px;padding:14px 16px;flex:1;min-width:150px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">' + lbl + '</div><div style="font-size:22px;font-weight:800;margin-top:3px;color:' + (color||'var(--ink)') + '">' + val + '</div>' + (sub ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + sub + '</div>' : '') + '</div>';
+  const kpi = (lbl, val, color, sub, info) => '<div style="background:white;border:1px solid var(--border);border-radius:12px;padding:14px 16px;flex:1;min-width:150px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center">' + lbl + iHelp(info) + '</div><div style="font-size:22px;font-weight:800;margin-top:3px;color:' + (color||'var(--ink)') + '">' + val + '</div>' + (sub ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + sub + '</div>' : '') + '</div>';
 
   let html = '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">' +
-    kpi('Ventas (cobrado)', fmtARS(ventas), '#059669', (t.count||0) + ' ventas') +
-    kpi('Costo mercadería', fmtARS(cogs), '#dc2626', 'estimado') +
-    kpi('Margen bruto', fmtARS(margenBruto), margenBruto<0?'#dc2626':'#059669', ventas>0 ? (margenBruto/ventas*100).toFixed(0) + '% s/ventas' : '') +
-    kpi('Gastos', fmtARS(totGastos), '#dc2626', gastos.length + ' registros') +
-    kpi('Otros ingresos', fmtARS(totIngresos), '#059669', ingresos.length + ' registros') +
-    kpi('Resultado neto', fmtARS(resultado), resultado<0?'#dc2626':'#059669', 'margen − gastos + ingresos') +
+    kpi('Ventas (cobrado)', fmtARS(ventas), '#059669', (t.count||0) + ' ventas', INFO.fin_ventas) +
+    kpi('Costo mercadería', fmtARS(cogs), '#dc2626', 'estimado', INFO.fin_costo) +
+    kpi('Margen bruto', fmtARS(margenBruto), margenBruto<0?'#dc2626':'#059669', ventas>0 ? (margenBruto/ventas*100).toFixed(0) + '% s/ventas' : '', INFO.fin_margen) +
+    kpi('Gastos', fmtARS(totGastos), '#dc2626', gastos.length + ' registros', INFO.fin_gastos) +
+    kpi('Otros ingresos', fmtARS(totIngresos), '#059669', ingresos.length + ' registros', INFO.fin_otros_ing) +
+    kpi('Resultado neto', fmtARS(resultado), resultado<0?'#dc2626':'#059669', 'margen − gastos + ingresos', INFO.fin_resultado) +
   '</div>';
 
   if (sinCosto > 0) {
