@@ -14,8 +14,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <title>POS · Mostrador</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="js/shared/dialogs.js?v=14"></script>
-<script src="js/shared/errors.js?v=14"></script>
+<script src="js/shared/dialogs.js?v=15"></script>
+<script src="js/shared/errors.js?v=15"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -542,7 +542,7 @@
   body.print-a4   @page{size:A4;margin:15mm}
   @page{size:80mm auto;margin:2mm}
 </style>
-  <script src="js/sentry-init.js?v=14" defer></script>
+  <script src="js/sentry-init.js?v=15" defer></script>
 </head>
 <body>
 
@@ -685,7 +685,7 @@
     <div class="ventas-wrap" style="padding:20px;max-width:1000px;margin:0 auto">
       <div style="margin-bottom:26px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
-          <h2 style="margin:0;font-size:20px">📅 Corte global del día</h2>
+          <h2 style="margin:0;font-size:20px;display:flex;align-items:center">📅 Corte global del día<span class="info-i" tabindex="0" data-tip="Consolidado de TODOS los cortes de un día (todas las cajas y cajeros): cajas cerradas, ventas, efectivo declarado, diferencia total, ingresos/egresos y facturas. Cambiá la fecha para ver días pasados.">i</span></h2>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <input id="corte-global-fecha" type="date" onchange="cargarCorteGlobal()" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px">
             <button onclick="cargarCorteGlobal()" style="padding:8px 14px;border:1px solid var(--border);background:white;color:var(--ink);border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">↻ Ver</button>
@@ -698,7 +698,7 @@
 
       <div style="margin-bottom:26px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
-          <h2 style="margin:0;font-size:20px">🧾 Cortes de caja</h2>
+          <h2 style="margin:0;font-size:20px;display:flex;align-items:center">🧾 Cortes de caja<span class="info-i" tabindex="0" data-tip="Cajas ya cerradas (cierres Z). Cada fila muestra el cierre, el cajero, el horario del turno, lo declarado y la diferencia. Tocá &quot;Ver Z&quot; para reimprimir el corte aunque la caja se haya cerrado hace días.">i</span></h2>
           <button onclick="cargarCortesCaja()" style="padding:8px 14px;border:1px solid var(--border);background:white;color:var(--ink);border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">↻ Refrescar</button>
         </div>
         <div style="font-size:12px;color:var(--ink);background:rgba(124,58,237,.06);border-radius:8px;padding:8px 10px;margin-bottom:12px">ℹ️ Cajas ya cerradas. Tocá <b>Ver Z</b> para abrir y reimprimir el corte (ventas por método de pago, productos y movimientos), aunque la caja se haya cerrado hace días.</div>
@@ -1071,7 +1071,7 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=14"></script>
-<script src="js/pos.js?v=14"></script>
+<script src="js/config.js?v=15"></script>
+<script src="js/pos.js?v=15"></script>
 </body>
 </html>

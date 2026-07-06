@@ -166,6 +166,21 @@ const INFO = {
   env_hoy:        'Envases retornables movidos hoy (entregados/devueltos) en esta tienda.',
   env_periodo:    'Envases retornables movidos en el período seleccionado.',
   env_clientes:   'Cantidad de clientes distintos con movimientos de envases en el período.',
+  // Reportes históricos — secciones
+  rep_por_cajero: 'Desglose de ventas y cobros por cada cajero en el período. "Total" es lo cobrado por ese cajero; "Egresos" son retiros/gastos de caja que registró.',
+  rep_productos:  'Unidades vendidas y su importe (cantidad × precio, neto de devoluciones) por producto en el período. La barra compara el volumen entre productos. No descuenta promos ni descuentos generales.',
+  rep_por_dia:    'Cantidad de ventas y monto cobrado en cada día del rango. La barra compara el monto entre días.',
+  rep_ventas:     'Detalle de cada venta del período: fecha, cliente, cajero, forma de pago y total. Las que aparecen tachadas son ventas anuladas.',
+  rep_cortes:     'Cierres de caja (Z) del período: apertura, lo declarado al cerrar, lo calculado por el sistema y la diferencia entre ambos.',
+  rep_global:     'Resumen consolidado del período sumando todas las cajas: cajas cerradas, ventas, efectivo declarado, diferencia, ingresos/egresos y facturas.',
+  cg_cortes:      'Cajas cerradas / total de cajas abiertas ese día.',
+  cg_ventas:      'Total vendido en el POS ese día, sumando todas las cajas de la tienda.',
+  cg_efectivo:    'Efectivo declarado (contado físicamente) al cerrar las cajas del día.',
+  cg_diferencia:  'Diferencia entre el efectivo declarado y el que calculó el sistema. Negativo = faltante; positivo = sobrante.',
+  cg_ing_egr:     'Ingresos y egresos de caja del día (aportes de cambio, retiros, pagos/gastos), fuera de las ventas.',
+  cg_facturas:    'Cantidad de facturas emitidas ese día y su importe total.',
+  cg_metodos:     'Total vendido ese día abierto por forma de pago.',
+  cg_cortes_incl: 'Detalle de cada caja cerrada incluida en el corte: apertura, declarado, calculado por el sistema y diferencia.',
 };
 
 let _toastT;
@@ -1178,7 +1193,7 @@ window.cargarReportes = async () => {
     const cell = v => (Number(v)||0) === 0 ? '<span style="color:#cbd5e1">—</span>' : fmtARS(v);
     const egrCell = v => (Number(v)||0) === 0 ? '<span style="color:#cbd5e1">—</span>' : '-' + fmtARS(v);
     html += '<div style="background:white;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px">' +
-      '<div style="font-weight:700;margin-bottom:8px">🧑‍💼 Por cajero</div>' +
+      '<div style="font-weight:700;margin-bottom:8px;display:flex;align-items:center">🧑‍💼 Por cajero' + iHelp(INFO.rep_por_cajero) + '</div>' +
       '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap">' +
       '<thead><tr style="border-bottom:1px solid var(--border);color:var(--muted);text-align:right">' +
       '<th style="text-align:left;padding:4px 6px">Cajero</th><th style="padding:4px 6px">Ventas</th>' +
@@ -1207,7 +1222,7 @@ window.cargarReportes = async () => {
     const totMonto = porProducto.reduce((a, p) => a + (Number(p.monto) || 0), 0);
     const maxQ = Math.max(...porProducto.map(p => Number(p.cantidad) || 0)) || 1;
     html += '<div style="background:white;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px">' +
-      '<div style="font-weight:700;margin-bottom:8px">📦 Productos vendidos</div>' +
+      '<div style="font-weight:700;margin-bottom:8px;display:flex;align-items:center">📦 Productos vendidos' + iHelp(INFO.rep_productos) + '</div>' +
       '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">' +
       '<thead><tr style="border-bottom:1px solid var(--border);color:var(--muted)">' +
       '<th style="text-align:left;padding:4px 6px">Producto</th>' +
@@ -1235,7 +1250,7 @@ window.cargarReportes = async () => {
   if (porDia.length) {
     const max = Math.max(...porDia.map(d => Number(d.monto) || 0)) || 1;
     html += '<div style="background:white;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px">' +
-      '<div style="font-weight:700;margin-bottom:8px">📈 Por día</div>' +
+      '<div style="font-weight:700;margin-bottom:8px;display:flex;align-items:center">📈 Por día' + iHelp(INFO.rep_por_dia) + '</div>' +
       porDia.map(d => {
         const w = Math.max(2, (Number(d.monto) / max) * 100);
         return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:12px">' +
@@ -1249,7 +1264,7 @@ window.cargarReportes = async () => {
 
   if (ventas.length) {
     html += '<div style="background:white;border:1px solid var(--border);border-radius:10px;padding:14px">' +
-      '<div style="font-weight:700;margin-bottom:8px">🧾 Ventas (' + ventas.length + ')</div>' +
+      '<div style="font-weight:700;margin-bottom:8px;display:flex;align-items:center">🧾 Ventas (' + ventas.length + ')' + iHelp(INFO.rep_ventas) + '</div>' +
       '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
       '<thead><tr style="border-bottom:1px solid var(--border);color:var(--muted)">' +
       '<th style="text-align:left;padding:4px">Fecha</th><th style="text-align:left">Cliente</th><th style="text-align:left">Cajero</th><th style="text-align:left">Método</th><th style="text-align:right">Total</th>' +
@@ -1345,7 +1360,7 @@ function renderCorteGlobal(d) {
     return '<div style="background:white;border:1px dashed var(--border);border-radius:10px;padding:26px;text-align:center;color:var(--muted)">No hubo movimientos de caja ese día.</div>';
   const dif = Number(t.diferencia || 0);
   const difColor = dif === 0 ? 'var(--muted)' : dif < 0 ? '#dc2626' : '#059669';
-  const kpi = (lbl, val, color) => '<div style="background:white;border:1px solid var(--border);border-radius:10px;padding:12px 14px;min-width:130px;flex:1"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">' + lbl + '</div><div style="font-size:20px;font-weight:800;color:' + (color || 'var(--ink)') + '">' + val + '</div></div>';
+  const kpi = (lbl, val, color, info) => '<div style="background:white;border:1px solid var(--border);border-radius:10px;padding:12px 14px;min-width:130px;flex:1"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center">' + lbl + iHelp(info) + '</div><div style="font-size:20px;font-weight:800;color:' + (color || 'var(--ink)') + '">' + val + '</div></div>';
   const metodos = (v.metodos || []).map(x => '<tr><td style="padding:4px 6px">' + x.metodo + '</td><td style="text-align:right">' + x.count + '</td><td style="text-align:right">' + fmtARS(x.monto) + '</td></tr>').join('') || '<tr><td colspan="3" style="color:var(--muted);padding:6px">Sin ventas</td></tr>';
   const cajeros = (d.por_cajero || []).map(c => '<tr><td style="padding:4px 6px">' + c.cajero_nombre + '</td><td style="text-align:right">' + c.ventas + '</td><td style="text-align:right">' + fmtARS(c.efectivo) + '</td><td style="text-align:right">' + fmtARS(c.mercadopago) + '</td><td style="text-align:right">' + fmtARS(c.transferencia) + '</td><td style="text-align:right;font-weight:600">' + fmtARS(c.monto_total) + '</td></tr>').join('') || '<tr><td colspan="6" style="color:var(--muted);padding:6px">—</td></tr>';
   const cajas = (d.cajas || []).map(c => {
@@ -1355,20 +1370,20 @@ function renderCorteGlobal(d) {
   }).join('') || '<tr><td colspan="6" style="color:var(--muted);padding:6px">Sin cortes ese día</td></tr>';
   return '' +
     '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">' +
-      kpi('Cortes (cajas)', (t.cerradas || 0) + '/' + (t.total || 0)) +
-      kpi('Ventas POS', fmtARS(v.total || 0)) +
-      kpi('Efectivo declarado', fmtARS(t.declarado || 0)) +
-      kpi('Diferencia', (dif > 0 ? '+' : '') + fmtARS(dif), difColor) +
-      kpi('Ingresos / Egresos', fmtARS(m.ingresos || 0) + ' / ' + fmtARS(m.egresos || 0)) +
-      kpi('Facturas', (f.count || 0) + ' · ' + fmtARS(f.total || 0)) +
+      kpi('Cortes (cajas)', (t.cerradas || 0) + '/' + (t.total || 0), '', INFO.cg_cortes) +
+      kpi('Ventas POS', fmtARS(v.total || 0), '', INFO.cg_ventas) +
+      kpi('Efectivo declarado', fmtARS(t.declarado || 0), '', INFO.cg_efectivo) +
+      kpi('Diferencia', (dif > 0 ? '+' : '') + fmtARS(dif), difColor, INFO.cg_diferencia) +
+      kpi('Ingresos / Egresos', fmtARS(m.ingresos || 0) + ' / ' + fmtARS(m.egresos || 0), '', INFO.cg_ing_egr) +
+      kpi('Facturas', (f.count || 0) + ' · ' + fmtARS(f.total || 0), '', INFO.cg_facturas) +
     '</div>' +
     '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">' +
-      '<div style="background:white;border:1px solid var(--border);border-radius:10px;padding:12px"><div style="font-weight:700;margin-bottom:6px">Ventas por método</div>' +
+      '<div style="background:white;border:1px solid var(--border);border-radius:10px;padding:12px"><div style="font-weight:700;margin-bottom:6px;display:flex;align-items:center">Ventas por método' + iHelp(INFO.cg_metodos) + '</div>' +
         '<table style="width:100%;border-collapse:collapse;font-size:12px"><tbody>' + metodos + '</tbody></table></div>' +
-      '<div style="background:white;border:1px solid var(--border);border-radius:10px;padding:12px;overflow-x:auto"><div style="font-weight:700;margin-bottom:6px">Por cajero</div>' +
+      '<div style="background:white;border:1px solid var(--border);border-radius:10px;padding:12px;overflow-x:auto"><div style="font-weight:700;margin-bottom:6px;display:flex;align-items:center">Por cajero' + iHelp(INFO.rep_por_cajero) + '</div>' +
         '<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="color:var(--muted)"><th style="text-align:left">Cajero</th><th style="text-align:right">Vtas</th><th style="text-align:right">Efvo</th><th style="text-align:right">MP</th><th style="text-align:right">Transf</th><th style="text-align:right">Total</th></tr></thead><tbody>' + cajeros + '</tbody></table></div>' +
     '</div>' +
-    '<div style="background:white;border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:14px;overflow-x:auto"><div style="font-weight:700;margin-bottom:6px">Cortes incluidos (' + (d.cajas || []).length + ')</div>' +
+    '<div style="background:white;border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:14px;overflow-x:auto"><div style="font-weight:700;margin-bottom:6px;display:flex;align-items:center">Cortes incluidos (' + (d.cajas || []).length + ')' + iHelp(INFO.cg_cortes_incl) + '</div>' +
       '<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="color:var(--muted)"><th style="text-align:left">Cajero</th><th style="text-align:left">Estado</th><th style="text-align:right">Apertura</th><th style="text-align:right">Declarado</th><th style="text-align:right">Calculado</th><th style="text-align:right">Dif</th></tr></thead><tbody>' + cajas + '</tbody></table></div>';
 }
 
