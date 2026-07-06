@@ -103,14 +103,44 @@ function fmtTime(ts){
   return new Date(ts).toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
 }
 // ── Info tooltips (ⓘ) ────────────────────────────────
-// Devuelve un iconito "i" que, al pasar el cursor, explica cómo se calcula la
-// métrica (usa el title nativo: fiable, no se recorta dentro de paneles que
-// scrollean). Pasar el texto explicativo.
+// Devuelve un iconito "i" que, al pasar el cursor (o tocar en móvil), muestra un
+// tooltip propio explicando qué es y cómo se calcula la métrica.
 function iHelp(text){
   if (!text) return '';
   const t = String(text).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  return '<span class="info-i" tabindex="0" role="img" aria-label="Cómo se calcula" title="' + t + '">i</span>';
+  return '<span class="info-i" tabindex="0" role="button" aria-label="' + t + '" data-tip="' + t + '">i</span>';
 }
+
+// Tooltip propio para los iconos ⓘ: aparece al instante y se posiciona con
+// position:fixed, así nunca se recorta dentro de paneles que scrollean (el
+// title nativo del navegador era lento y a veces no aparecía).
+(function initInfoTips(){
+  let tip = null;
+  const ensure = () => { if (!tip) { tip = document.createElement('div'); tip.id = 'pos-tip'; document.body.appendChild(tip); } return tip; };
+  const iconOf = (e) => (e.target && e.target.closest) ? e.target.closest('.info-i') : null;
+  function show(el){
+    const txt = el.getAttribute('data-tip'); if (!txt) return;
+    const t = ensure(); t.textContent = txt; t.classList.add('show');
+    const r = el.getBoundingClientRect();
+    const tw = t.offsetWidth, th = t.offsetHeight;
+    let left = r.left + r.width / 2 - tw / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - tw - 8));
+    let top = r.top - th - 8;
+    if (top < 8) top = r.bottom + 8;   // si no entra arriba, va abajo
+    t.style.left = left + 'px'; t.style.top = top + 'px';
+  }
+  const hide = () => { if (tip) tip.classList.remove('show'); };
+  document.addEventListener('pointerover', (e) => { const el = iconOf(e); if (el) show(el); });
+  document.addEventListener('pointerout',  (e) => { const el = iconOf(e); if (el) hide(); });
+  document.addEventListener('focusin',     (e) => { const el = iconOf(e); if (el) show(el); });
+  document.addEventListener('focusout', hide);
+  document.addEventListener('click', (e) => {   // móvil: tocar para ver/ocultar
+    const el = iconOf(e);
+    if (el) { (tip && tip.classList.contains('show')) ? hide() : show(el); }
+    else hide();
+  });
+  window.addEventListener('scroll', hide, true);
+})();
 // Explicaciones reutilizables (qué es y cómo se calcula cada métrica).
 const INFO = {
   total_cobrado:  'Suma de TODO lo efectivamente cobrado en el período, sumando todas las formas de pago. No incluye ventas anuladas.',
@@ -1800,7 +1830,7 @@ async function abrirReporteCaja(cajaId, tipo) {
     '<br>Apertura caja: ' + fmtARS(data.monto_apertura) +
     '</div>';
 
-  html += '<div style="font-weight:700;margin-bottom:6px">Por método de pago</div>';
+  html += '<div style="font-weight:700;margin-bottom:6px;display:flex;align-items:center">Por método de pago' + iHelp('Total cobrado en este reporte, abierto por cada forma de pago (efectivo, MercadoPago, transferencia, débito, crédito, cuenta corriente). La cuenta corriente es lo fiado, todavía no cobrado.') + '</div>';
   if (metodos.length) {
     html += '<table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:13px">';
     let totalGral = 0;
