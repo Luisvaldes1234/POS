@@ -6268,12 +6268,13 @@ async function renderFinanzas() {
         '<div style="font-weight:700;margin-bottom:10px">Registrar gasto</div>' +
         '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">' +
           '<div><label class="prod-form-l">Fecha</label><input type="date" id="fg-fecha" class="prod-form-i" value="' + d1 + '"></div>' +
+          '<div><label class="prod-form-l">Tipo de costo</label><select id="fg-tipo" class="prod-form-i"><option value="fijo">Fijo (mensual)</option><option value="variable" selected>Variable</option></select></div>' +
           '<div><label class="prod-form-l">Categoría</label><input type="text" id="fg-cat" class="prod-form-i" list="fg-cats" placeholder="Ej: Alquiler" autocomplete="off">' +
-            '<datalist id="fg-cats"><option>Sueldos</option><option>Alquiler</option><option>Servicios</option><option>Impuestos</option><option>Mercadería</option><option>Mantenimiento</option><option>Otros</option></datalist></div>' +
+            '<datalist id="fg-cats"><option>Alquiler</option><option>Servicios (luz/agua/gas)</option><option>Internet / Teléfono</option><option>Nómina / Sueldos</option><option>Cargas sociales</option><option>Impuestos y tasas</option><option>Mercadería / Insumos</option><option>Fletes / Envíos</option><option>Mantenimiento</option><option>Comisiones</option><option>Marketing / Publicidad</option><option>Otros</option></datalist></div>' +
           '<div><label class="prod-form-l">Monto</label><input type="number" min="0" step="0.01" id="fg-monto" class="prod-form-i" placeholder="0"></div>' +
           '<div><label class="prod-form-l">Detalle (opcional)</label><input type="text" id="fg-desc" class="prod-form-i" placeholder="Ej: Sueldo de Juan"></div>' +
         '</div>' +
-        '<label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;cursor:pointer"><input type="checkbox" id="fg-fijo"> <span>💡 Es un gasto fijo / mensual (sueldos, alquiler…)</span></label>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5">💡 <b>Fijo</b>: se repite todos los meses (alquiler, sueldos/nómina, servicios). <b>Variable</b>: cambia o es puntual (mercadería, fletes, arreglos).</div>' +
         '<div style="display:flex;gap:8px;margin-top:12px">' +
           '<button id="fg-save" style="padding:10px 16px;border:none;background:var(--primary);color:#fff;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px">Guardar gasto</button>' +
           '<button id="fg-cancel" style="padding:10px 16px;border:1px solid var(--border);background:#fff;border-radius:8px;cursor:pointer;font-size:13px">Cancelar</button>' +
@@ -6350,6 +6351,18 @@ async function _cargarFinanzas() {
   } catch (_) {}
   const totGastos = gastos.reduce((s, g) => s + (Number(g.monto) || 0), 0);
   const totIngresos = ingresos.reduce((s, g) => s + (Number(g.monto) || 0), 0);
+  // Clasificación fijos vs variables + desglose por categoría.
+  const totFijos = gastos.filter(g => g.es_recurrente).reduce((s, g) => s + (Number(g.monto) || 0), 0);
+  const totVariables = totGastos - totFijos;
+  const _catMap = new Map();
+  gastos.forEach(g => {
+    const nombre = g.categorias_gasto?.nombre || 'Sin categoría';
+    const cur = _catMap.get(nombre) || { nombre, total: 0, fijo: false };
+    cur.total += (Number(g.monto) || 0);
+    if (g.es_recurrente) cur.fijo = true;
+    _catMap.set(nombre, cur);
+  });
+  const gastosPorCat = [..._catMap.values()].sort((a, b) => b.total - a.total);
   const cajaIng = Number(t.ingresos) || 0;
   const cajaEgr = Number(t.egresos) || 0;
   const resultado = margenBruto - totGastos + totIngresos;
@@ -6360,7 +6373,7 @@ async function _cargarFinanzas() {
     kpi('Ventas (cobrado)', fmtARS(ventas), '#059669', (t.count||0) + ' ventas', INFO.fin_ventas) +
     kpi('Costo mercadería', fmtARS(cogs), '#dc2626', 'estimado', INFO.fin_costo) +
     kpi('Margen bruto', fmtARS(margenBruto), margenBruto<0?'#dc2626':'#059669', ventas>0 ? (margenBruto/ventas*100).toFixed(0) + '% s/ventas' : '', INFO.fin_margen) +
-    kpi('Gastos', fmtARS(totGastos), '#dc2626', gastos.length + ' registros', INFO.fin_gastos) +
+    kpi('Gastos', fmtARS(totGastos), '#dc2626', (totGastos > 0 ? fmtARS(totFijos) + ' fijos · ' + fmtARS(totVariables) + ' var.' : gastos.length + ' registros'), INFO.fin_gastos) +
     kpi('Otros ingresos', fmtARS(totIngresos), '#059669', ingresos.length + ' registros', INFO.fin_otros_ing) +
     kpi('Resultado neto', fmtARS(resultado), resultado<0?'#dc2626':'#059669', 'margen − gastos + ingresos', INFO.fin_resultado) +
   '</div>';
@@ -6387,6 +6400,22 @@ async function _cargarFinanzas() {
     '</tbody></table>';
   html += '</div>';
   html += '</div>';
+
+  // Desglose de gastos por categoría (con clasificación fijo/variable).
+  if (gastos.length) {
+    html += '<div style="background:white;border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:14px">' +
+      '<div style="font-weight:700;margin-bottom:8px;display:flex;align-items:center">Gastos por categoría' + iHelp('Gastos del período agrupados por categoría. La etiqueta indica si es un costo FIJO (se repite cada mes: alquiler, sueldos, servicios) o VARIABLE (puntual: mercadería, fletes, arreglos).') + '</div>' +
+      '<table style="width:100%;border-collapse:collapse;font-size:13px"><tbody>' +
+      gastosPorCat.map(c => '<tr style="border-top:1px solid #f1f5f9"><td style="padding:5px 0">' + String(c.nombre).replace(/[<>&]/g,'') +
+        (c.fijo
+          ? ' <span style="font-size:9px;font-weight:800;background:rgba(124,58,237,.1);color:#7c3aed;padding:1px 6px;border-radius:50px">FIJO</span>'
+          : ' <span style="font-size:9px;font-weight:800;background:rgba(2,132,199,.1);color:#0284c7;padding:1px 6px;border-radius:50px">VARIABLE</span>') +
+        '</td><td style="text-align:right;font-weight:700;color:#dc2626">' + fmtARS(c.total) + '</td></tr>').join('') +
+      '<tr style="border-top:2px solid var(--border)"><td style="padding:6px 0;font-weight:700">🔒 Costos fijos</td><td style="text-align:right;font-weight:800">' + fmtARS(totFijos) + '</td></tr>' +
+      '<tr><td style="padding:2px 0;font-weight:700">📊 Costos variables</td><td style="text-align:right;font-weight:800">' + fmtARS(totVariables) + '</td></tr>' +
+      '<tr style="border-top:1px solid var(--border)"><td style="padding:6px 0;font-weight:800">Total gastos</td><td style="text-align:right;font-weight:900;color:#dc2626">' + fmtARS(totGastos) + '</td></tr>' +
+      '</tbody></table></div>';
+  }
 
   // Detalle de gastos
   const notaTienda = tiendaSel ? ' <span style="font-weight:400;color:var(--muted)">· los gastos son generales (no se dividen por tienda)</span>' : '';
@@ -6422,7 +6451,7 @@ async function _guardarGasto() {
   const cat   = document.getElementById('fg-cat').value.trim();
   const desc  = document.getElementById('fg-desc').value.trim();
   const fecha = document.getElementById('fg-fecha').value || null;
-  const fijo  = document.getElementById('fg-fijo').checked;
+  const fijo  = document.getElementById('fg-tipo').value === 'fijo';
   const msg   = document.getElementById('fg-msg');
   if (monto <= 0) { msg.style.color = 'var(--danger)'; msg.textContent = 'Ingresá un monto válido.'; return; }
   const btn = document.getElementById('fg-save');
@@ -6438,7 +6467,7 @@ async function _guardarGasto() {
   document.getElementById('fg-monto').value = '';
   document.getElementById('fg-desc').value = '';
   document.getElementById('fg-cat').value = '';
-  document.getElementById('fg-fijo').checked = false;
+  document.getElementById('fg-tipo').value = 'variable';
   document.getElementById('fin-gasto-form').style.display = 'none';
   _cargarFinanzas();
 }
