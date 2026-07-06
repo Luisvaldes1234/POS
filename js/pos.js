@@ -193,6 +193,167 @@ function toast(msg, type=''){
   _toastT = setTimeout(() => el.classList.remove('show'), 3000);
 }
 
+// ══════════════════ MODO OFFLINE ══════════════════════
+// Permite seguir vendiendo sin internet (efectivo, transferencia, débito,
+// crédito y cuenta corriente): las ventas se guardan localmente y se
+// sincronizan solas al volver la conexión. MercadoPago (QR) y la facturación
+// requieren conexión. El catálogo/stock se cachea para poder abrir offline.
+let _offSyncing = false;
+
+function _uuid(){
+  try { if (crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (_) {}
+  return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.floor(Math.random() * 16); return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+function _isNetErr(e){
+  if (!e) return false;
+  const m = ((e.message || e.msg || e.error_description || '') + '').toLowerCase();
+  return e.name === 'TypeError' || /failed to fetch|networkerror|load failed|fetch|network|offline|err_internet|timeout/.test(m);
+}
+
+// ── Cola de ventas offline ──
+function _offQueueKey(){ return 'pos_offq_' + (orgId || 'x'); }
+function _offLoadQueue(){ try { return JSON.parse(localStorage.getItem(_offQueueKey()) || '[]'); } catch (_) { return []; } }
+function _offSaveQueue(q){ try { localStorage.setItem(_offQueueKey(), JSON.stringify(q)); } catch (_) {} }
+function _offPending(){ return _offLoadQueue().length; }
+
+// Wrapper del alta de venta: online intenta la RPC real; si no hay red, encola.
+async function _ventaRPC(params){
+  if (navigator.onLine){
+    try {
+      const res = await sb.rpc('pos_registrar_venta', params);
+      if (res.error && _isNetErr(res.error)) throw res.error;
+      return res;                     // incluye respuestas lógicas (stock_insuficiente, etc.)
+    } catch (e){
+      if (!_isNetErr(e)) throw e;      // error real (no de red): propagar
+      // se cortó la red justo al cobrar → encolamos
+    }
+  }
+  return _offEnqueueVenta(params);
+}
+
+function _offEnqueueVenta(params){
+  const q = _offLoadQueue();
+  const localId = 'local-' + _uuid();
+  q.push({ id: localId, params, ts: Date.now() });
+  _offSaveQueue(q);
+  // Descuento optimista de stock local, para que la UI y el modo estricto sigan
+  // reflejando lo vendido mientras estamos sin conexión.
+  try {
+    (params.p_items || []).forEach(it => {
+      const pid = it.producto_id; if (!pid) return;
+      const qty = Number(it.cantidad) || 0;
+      if (stockMap.has(pid)) stockMap.set(pid, (stockMap.get(pid) || 0) - qty);
+    });
+  } catch (_) {}
+  _offUpdateUI();
+  return { data: { ok: true, pedido_id: localId, offline: true, vales_creados: 0 }, error: null };
+}
+
+// Reintenta registrar en el servidor todas las ventas encoladas, en orden.
+async function _offSync(manual){
+  if (_offSyncing) return;
+  let q = _offLoadQueue();
+  if (!q.length){ if (manual) toast('No hay ventas pendientes de sincronizar', 'info'); return; }
+  if (!navigator.onLine){ if (manual) toast('Todavía sin conexión', 'warn'); return; }
+  _offSyncing = true; _offUpdateUI();
+  let ok = 0, fail = 0, netCut = false;
+  for (const sale of [...q]){
+    try {
+      // La venta ya ocurrió físicamente: registrar aunque el stock quede en
+      // negativo (no bloquear por stock estricto al sincronizar).
+      const p = Object.assign({}, sale.params, { p_stock_strict: false });
+      const { data, error } = await sb.rpc('pos_registrar_venta', p);
+      if (error){ if (_isNetErr(error)){ netCut = true; break; } fail++; }
+      else if (data && (data.ok || data.pedido_id)){ ok++; }
+      else { fail++; }
+    } catch (e){
+      if (_isNetErr(e)){ netCut = true; break; }
+      fail++;                          // error no-red: descartar para no loopear
+    }
+    q = _offLoadQueue().filter(s => s.id !== sale.id);
+    _offSaveQueue(q);
+  }
+  _offSyncing = false;
+  const pend = _offPending();
+  if (ok){ try { await cargarStock(); renderStock(); renderProductGrid(); } catch (_) {} }
+  _offUpdateUI();
+  if (ok)   toast('✓ ' + ok + ' venta(s) sincronizada(s)' + (pend ? ' · ' + pend + ' pendiente(s)' : ''), 'ok');
+  else if (fail) toast('⚠ ' + fail + ' venta(s) no se pudieron sincronizar', 'err');
+  else if (manual && pend && !netCut) toast(pend + ' pendiente(s)', 'warn');
+}
+
+// ── Indicador en la barra superior (offline / pendientes) ──
+function _offInitUI(){
+  const bar = document.querySelector('.topbar');
+  if (bar && !document.getElementById('off-pill')){
+    const pill = document.createElement('button');
+    pill.id = 'off-pill';
+    pill.type = 'button';
+    pill.style.cssText = 'display:none;flex:0 0 auto;border:none;border-radius:50px;padding:5px 12px;font-family:inherit;font-size:12px;font-weight:800;color:#fff;cursor:pointer;white-space:nowrap';
+    pill.title = 'Estado de conexión / ventas pendientes';
+    pill.addEventListener('click', () => _offSync(true));
+    const logout = bar.querySelector('.topbar-logout');
+    bar.insertBefore(pill, logout || null);
+  }
+  window.addEventListener('online',  () => { _offUpdateUI(); _offSync(false); });
+  window.addEventListener('offline', () => { _offUpdateUI(); });
+  _offUpdateUI();
+  if (navigator.onLine) _offSync(false);
+}
+
+function _offUpdateUI(){
+  const pill = document.getElementById('off-pill');
+  const online = navigator.onLine;
+  const pend = _offPending();
+  // Aviso arriba de la grilla de venta cuando estamos offline.
+  const scr = document.getElementById('screen-vender') || document.querySelector('.pos-products');
+  if (pill){
+    if (!online){
+      pill.style.display = ''; pill.style.background = '#b45309';
+      pill.textContent = '📴 Offline' + (pend ? ' · ' + pend : '');
+    } else if (_offSyncing){
+      pill.style.display = ''; pill.style.background = '#1d4ed8';
+      pill.textContent = '⏳ Sincronizando…';
+    } else if (pend){
+      pill.style.display = ''; pill.style.background = '#1d4ed8';
+      pill.textContent = '↑ ' + pend + ' sincronizar';
+    } else {
+      pill.style.display = 'none';
+    }
+  }
+  // Bloquear MercadoPago cuando no hay conexión (necesita el servidor).
+  document.querySelectorAll('[data-metodo="mercadopago"], #btn-mp').forEach(b => {
+    if (!online){ b.setAttribute('disabled', 'disabled'); b.title = 'MercadoPago necesita conexión a internet'; }
+    else { b.removeAttribute('disabled'); b.title = ''; }
+  });
+}
+
+// ── Snapshot del catálogo para arrancar offline ──
+function _offSnapKey(uid){ return 'pos_snap_' + uid; }
+function _offSaveSnapshot(uid){
+  try {
+    if (!orgId || !Array.isArray(productos) || !productos.length) return;   // no pisar con datos vacíos
+    localStorage.setItem(_offSnapKey(uid), JSON.stringify({
+      ts: Date.now(), userRole, orgId, orgName, orgPais,
+      tiendas, tiendaId, tiendaLocked,
+      productos, stock: Array.from(stockMap.entries()),
+      clienteMostradorId,
+    }));
+  } catch (_) {}
+}
+function _offHydrate(uid){
+  let s; try { s = JSON.parse(localStorage.getItem(_offSnapKey(uid)) || 'null'); } catch (_) { s = null; }
+  if (!s || !s.orgId || !Array.isArray(s.productos) || !s.productos.length) return false;
+  userRole = s.userRole; orgId = s.orgId; orgName = s.orgName; orgPais = s.orgPais;
+  tiendas = s.tiendas || []; tiendaId = s.tiendaId; tiendaLocked = !!s.tiendaLocked;
+  productos = s.productos || [];
+  stockMap = new Map(s.stock || []);
+  clienteMostradorId = s.clienteMostradorId || null;
+  return true;
+}
+
 // ── Bootstrap ────────────────────────────────────────
 async function init(){
   const { data: { session } } = await sb.auth.getSession();
@@ -201,6 +362,11 @@ async function init(){
   // Nombre de tienda elegido en el registro (para la primera tienda).
   _provisionTiendaNombre = (session.user?.user_metadata?.tienda_name || '').trim() || null;
   _resetLockTimer();
+  const _uid = session.user.id;
+  let _offlineMode = false;
+
+  try {
+  if (!navigator.onLine) throw { message: 'offline' };
 
   const { data: sysRole } = await sb.from('system_roles')
     .select('role').eq('user_id', session.user.id).maybeSingle();
@@ -304,10 +470,27 @@ async function init(){
     cargarOrgFiscal(),
     cargarReciboConfig().catch(()=>{}),
   ]);
+  _offSaveSnapshot(_uid);
+  } catch (_e) {
+    // Falló el arranque online (sin conexión). Intentamos abrir con el snapshot.
+    if (_offHydrate(_uid)) {
+      _offlineMode = true;
+      document.getElementById('t-org').textContent = orgName || '';
+      if (_isAdmin()) {
+        const _fb = document.getElementById('tab-finanzas-btn'); if (_fb) _fb.style.display = '';
+        const _cb = document.getElementById('tab-config-btn');   if (_cb) _cb.style.display = '';
+        const _ab = document.getElementById('btn-add-prod-toolbar'); if (_ab) _ab.style.display = '';
+      }
+    } else {
+      toast('Sin conexión y sin datos guardados todavía. Entrá una vez con internet para poder usar el POS sin conexión.', 'err');
+      return;
+    }
+  }
+
   renderProductGrid();
   renderCart();
   renderStock();
-  startDashMini();
+  if (!_offlineMode) startDashMini();
 
   document.getElementById('prod-q').addEventListener('input', (e) => {
     _searchProd = e.target.value.toLowerCase();
@@ -317,7 +500,7 @@ async function init(){
   document.getElementById('cart-handle')?.addEventListener('click', () => {
     document.getElementById('pos-cart').classList.toggle('open');
   });
-  await _loadTiposEnvase();
+  if (!_offlineMode) await _loadTiposEnvase();
   _wireEnvasesUI();
   const strictCb = document.getElementById('stock-strict-toggle');
   if (strictCb) strictCb.addEventListener('change', () => { _stockStrict = strictCb.checked; });
@@ -335,9 +518,13 @@ async function init(){
   if (descInp)  descInp.addEventListener('input', renderCart);
   if (descTipo) descTipo.addEventListener('change', renderCart);
 
-  sb.rpc('pos_get_or_create_cliente_mostrador', { p_org_id: orgId })
-    .then(({ data }) => { clienteMostradorId = data; })
-    .catch(() => {/* no crítico */});
+  if (!_offlineMode) {
+    sb.rpc('pos_get_or_create_cliente_mostrador', { p_org_id: orgId })
+      .then(({ data }) => { clienteMostradorId = data; })
+      .catch(() => {/* no crítico */});
+  }
+
+  _offInitUI();
 }
 
 async function cargarProductos(){
@@ -4560,6 +4747,7 @@ window.cobrar = async (metodo) => {
   if (!await _confirmarVentaEnvases(items, totalBruto)) return;
 
   if (metodo === 'mercadopago') {
+    if (!navigator.onLine) { toast('MercadoPago necesita conexión. Cobrá en efectivo/tarjeta o esperá a tener internet.', 'warn'); return; }
     return cobrarConQR(items, total, descuento, _envasesMovSnap);
   }
 
@@ -4579,7 +4767,7 @@ window.cobrar = async (metodo) => {
   btnIds.forEach(id => { const b = document.getElementById(id); if (b) b.disabled = true; });
 
   try {
-    const { data, error } = await sb.rpc('pos_registrar_venta', {
+    const { data, error } = await _ventaRPC({
       p_organization_id:    orgId,
       p_items:              items,
       p_cobro_monto:        totalFinal,
@@ -4694,6 +4882,9 @@ function _postVentaOk(data, metodo, totalEstimado, factInfo, envasesMov, recargo
 }
 
 async function _maybeEmitirFactura(ventaData, total) {
+  // Offline: la venta se registra igual, pero la factura se emite después
+  // (la emisión necesita conexión con el servidor de facturación).
+  if (ventaData?.offline || !navigator.onLine) return;
   const toggle = document.getElementById('fact-toggle');
   if (!toggle?.checked) return;
 
@@ -5071,7 +5262,7 @@ window.abrirCobroMixto = () => {
 
     confirmBtn.disabled = true;
     try {
-      const { data, error } = await sb.rpc('pos_registrar_venta', {
+      const { data, error } = await _ventaRPC({
         p_organization_id:    orgId,
         p_items:              items,
         p_cobro_monto:        total,

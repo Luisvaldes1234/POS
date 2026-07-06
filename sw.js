@@ -7,7 +7,7 @@
 // El POS está en mostrador con WiFi estable, pero igual cacheamos el
 // shell para tolerar cortes de red/luz.
 
-const CACHE_VERSION = 'pos-retail-v18-2026-07-06f';
+const CACHE_VERSION = 'pos-retail-v19-2026-07-06g';
 
 const PRECACHE = [
   './',
@@ -18,6 +18,7 @@ const PRECACHE = [
   './manifest.webmanifest',
   './icon.svg',
   './js/config.js',
+  './js/pos.js',
   './js/shared/dialogs.js',
   './js/shared/errors.js',
   './js/sentry-init.js',
@@ -95,7 +96,10 @@ async function networkFirst(req) {
     }
     return res;
   } catch (e) {
-    const cached = await caches.match(req);
+    // Offline: servir de caché. Como los scripts llevan ?v=N, si no hay match
+    // exacto probamos ignorando el query (así un pos.js?v viejo cacheado sigue
+    // sirviendo para arrancar sin conexión).
+    const cached = await caches.match(req) || await caches.match(req, { ignoreSearch: true });
     if (cached) return cached;
     throw e;
   }
