@@ -251,6 +251,35 @@ function _offEnqueueVenta(params){
   return { data: { ok: true, pedido_id: localId, offline: true, vales_creados: 0 }, error: null };
 }
 
+// ── Bloqueo por stock del lado del cliente ──
+// El servidor bloquea solo si el producto tiene fila de stock; y offline no hay
+// servidor. Este chequeo garantiza el bloqueo en ambos casos usando el stock
+// que ve el cajero (stockMap). Solo actúa con el modo estricto activado.
+function _stockFaltante(items){
+  if (!_stockStrict) return [];
+  const probs = [];
+  (items || []).forEach(it => {
+    const p = productos.find(x => x.id === it.producto_id);
+    if (!p || p.es_combo) return;   // los combos descuentan por sus componentes
+    const req = Number(it.cantidad_entregada != null ? it.cantidad_entregada : it.cantidad) || 0;
+    if (req <= 0) return;
+    const disp = stockMap.has(it.producto_id) ? Number(stockMap.get(it.producto_id)) || 0 : 0;
+    if (disp < req) probs.push({ nombre: p.nombre, disp, req });
+  });
+  return probs;
+}
+async function _bloqueoStock(items){
+  const probs = _stockFaltante(items);
+  if (!probs.length) return false;
+  await tmvDialog.detail({
+    title: 'No alcanza el stock del mostrador',
+    body: 'Estos productos no tienen cantidad suficiente para esta venta:',
+    items: probs.map(p => p.nombre + ' — tenés ' + p.disp + ', necesitás ' + p.req),
+    severity: 'warning', okLabel: 'Entendido', cancelLabel: '',
+  });
+  return true;
+}
+
 // Reintenta registrar en el servidor todas las ventas encoladas, en orden.
 async function _offSync(manual){
   if (_offSyncing) return;
@@ -4742,6 +4771,8 @@ window.cobrar = async (metodo) => {
   const descuento = _calcDescuento(totalConPrepago) + _calcPromoOff();
   const total = Math.max(0, totalConPrepago - descuento);
 
+  if (await _bloqueoStock(items)) return;
+
   const _envasesMovSnap = await _capturarMovEnvases(items);
 
   if (!await _confirmarVentaEnvases(items, totalBruto)) return;
@@ -5255,6 +5286,8 @@ window.abrirCobroMixto = () => {
       items.push(item);
       totalBrutoCart += it.cantidad * it.precio;
     });
+
+    if (await _bloqueoStock(items)) return;
 
     if (!await _confirmarVentaEnvases(items, totalBrutoCart)) return;
 
