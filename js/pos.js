@@ -5821,32 +5821,125 @@ document.addEventListener('keydown', (e) => {
 }, true);
 
 // ── CARGA DE STOCK EN BULK ───────────────────────────
+function _esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+// Agrega (o suma sobre) una fila de producto en la lista de carga. Si el
+// producto ya está en la lista, incrementa su cantidad en +1 en vez de
+// duplicar la fila. Las filas nuevas se insertan arriba para que se vea
+// enseguida lo último que se escaneó.
+function _cargaAgregar(p) {
+  if (!p) return;
+  const list = document.getElementById('carga-list');
+  if (!list) return;
+  const existente = list.querySelector('.carga-row-input[data-prod="' + p.id + '"]');
+  if (existente) {
+    const v = parseInt(existente.value, 10);
+    existente.value = String((Number.isFinite(v) ? v : 0) + 1);
+    const row = existente.closest('.carga-row');
+    if (row) { list.prepend(row); row.style.transition = 'background .2s'; row.style.background = 'rgba(124,58,237,.14)'; setTimeout(() => { row.style.background = ''; }, 400); }
+    existente.focus(); existente.select();
+    return;
+  }
+  const cur = stockMap.has(p.id) ? stockMap.get(p.id) : 0;
+  const costoActual = (p.costo != null && p.costo !== '') ? Number(p.costo) : null;
+  const row = document.createElement('div');
+  row.className = 'carga-row';
+  row.style.gridTemplateColumns = '1fr 46px 54px 74px 26px';
+  row.innerHTML =
+    '<div style="min-width:0"><div class="carga-row-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>' +
+      '<div style="font-size:10px;color:var(--muted)">' + (costoActual ? 'costo ' + fmtARS(costoActual) : 'sin costo') + '</div></div>' +
+    '<div class="carga-row-cur">x<b>' + cur + '</b></div>' +
+    '<input class="carga-row-input" type="number" step="1" value="1" placeholder="0" data-prod="' + p.id + '" title="Cantidad a sumar (o negativo para restar)">' +
+    '<input class="carga-row-costo" type="number" min="0" step="0.01" placeholder="costo" data-prod="' + p.id + '" data-cur="' + cur + '" title="Costo unitario de esta entrega (opcional)" style="padding:8px 8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;text-align:right;width:100%">' +
+    '<button type="button" class="carga-row-del" title="Quitar" style="border:none;background:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1;padding:0">×</button>';
+  row.querySelector('.carga-row-name').textContent = p.nombre;
+  row.querySelector('.carga-row-del').addEventListener('click', () => row.remove());
+  list.prepend(row);
+  const qtyInp = row.querySelector('.carga-row-input');
+  qtyInp.focus(); qtyInp.select();
+}
+
+let _cargaBuscWired = false;
+function _wireCargaBuscador() {
+  if (_cargaBuscWired) return;
+  _cargaBuscWired = true;
+  const q = document.getElementById('carga-q');
+  const sug = document.getElementById('carga-sug');
+  if (!q || !sug) return;
+
+  const cerrar = () => { sug.style.display = 'none'; sug.innerHTML = ''; };
+  const buscar = (txt) => {
+    const norm = s => String(s || '').toLowerCase();
+    const terms = norm(txt).split(/\s+/).filter(Boolean);
+    if (!terms.length) return [];
+    return productos.filter(p => {
+      const hay = norm(p.nombre) + ' ' + norm(p.codigo_barra);
+      return terms.every(t => hay.includes(t));
+    }).slice(0, 8);
+  };
+  const pintar = (lista) => {
+    if (!lista.length) { cerrar(); return; }
+    sug.innerHTML = lista.map(p => {
+      const cur = stockMap.has(p.id) ? stockMap.get(p.id) : 0;
+      return '<div class="carga-sug-item" data-prod="' + p.id + '" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:10px;color:#0a0a14">' +
+        '<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + _esc(p.nombre) + (p.codigo_barra ? ' <span style="color:#94a3b8;font-size:11px">' + _esc(p.codigo_barra) + '</span>' : '') + '</span>' +
+        '<span style="color:#94a3b8;font-size:11px;flex-shrink:0">x' + cur + '</span></div>';
+    }).join('');
+    sug.style.display = 'block';
+    sug.querySelectorAll('.carga-sug-item').forEach(it => {
+      it.addEventListener('mousedown', (ev) => {
+        ev.preventDefault();
+        const p = productos.find(x => x.id === it.dataset.prod);
+        if (p) _cargaAgregar(p);
+        q.value = ''; cerrar(); q.focus();
+      });
+    });
+  };
+
+  q.addEventListener('input', () => {
+    const txt = q.value.trim();
+    if (!txt) { cerrar(); return; }
+    // Match exacto de código de barras (escáner o tipeo del código completo).
+    const exacto = productos.find(p => (p.codigo_barra || '') === txt);
+    if (exacto && txt.length >= 6) {
+      _cargaAgregar(exacto);
+      q.value = ''; cerrar();
+      return;
+    }
+    pintar(buscar(txt));
+  });
+  q.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const txt = q.value.trim();
+      if (!txt) return;
+      const exacto = productos.find(p => (p.codigo_barra || '') === txt);
+      const p = exacto || buscar(txt)[0];
+      if (p) { _cargaAgregar(p); q.value = ''; cerrar(); }
+      else toast('No encontré ese producto', 'warn');
+    } else if (e.key === 'Escape') {
+      cerrar();
+    }
+  });
+  q.addEventListener('blur', () => setTimeout(cerrar, 150));
+}
+
 window.abrirCargaStock = () => {
   const ov = document.getElementById('carga-overlay');
   const list = document.getElementById('carga-list');
   if (!list) return;
   list.innerHTML = '';
-  productos.forEach(p => {
-    const cur = stockMap.has(p.id) ? stockMap.get(p.id) : 0;
-    const row = document.createElement('div');
-    row.className = 'carga-row';
-    row.style.gridTemplateColumns = '1fr 58px 60px 84px';
-    const costoActual = (p.costo != null && p.costo !== '') ? Number(p.costo) : null;
-    row.innerHTML =
-      '<div><div class="carga-row-name"></div>' +
-        '<div style="font-size:10px;color:var(--muted)">' + (costoActual ? 'costo ' + fmtARS(costoActual) : 'sin costo') + '</div></div>' +
-      '<div class="carga-row-cur">x<b>' + cur + '</b></div>' +
-      '<input class="carga-row-input" type="number" step="1" placeholder="0" data-prod="' + p.id + '" title="Cantidad a sumar (o negativo para restar)">' +
-      '<input class="carga-row-costo" type="number" min="0" step="0.01" placeholder="costo" data-prod="' + p.id + '" data-cur="' + cur + '" title="Costo unitario de esta entrega (opcional)" style="padding:8px 8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;text-align:right;width:100%">';
-    row.querySelector('.carga-row-name').textContent = p.nombre;
-    list.appendChild(row);
-  });
+  const q = document.getElementById('carga-q');
+  const sug = document.getElementById('carga-sug');
+  if (q) q.value = '';
+  if (sug) { sug.style.display = 'none'; sug.innerHTML = ''; }
   document.getElementById('carga-motivo').value = 'carga';
   document.getElementById('carga-origen').value = 'compra';
   const cm = document.getElementById('carga-costo-modo'); if (cm) cm.value = 'promedio';
   document.getElementById('carga-origen-tienda-wrap').style.display = 'none';
   document.getElementById('carga-origen-vehiculo-wrap').style.display = 'none';
   ov.classList.add('show');
+  _wireCargaBuscador();
+  if (q) setTimeout(() => q.focus(), 50);
   _posPopularOrigenes();
 };
 
