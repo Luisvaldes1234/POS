@@ -515,6 +515,7 @@ async function init(){
     cargarStock(),
     cargarOrgFiscal(),
     cargarReciboConfig().catch(()=>{}),
+    _cargarCombos().catch(()=>{}),
   ]);
   _offSaveSnapshot(_uid);
   } catch (_e) {
@@ -1124,6 +1125,7 @@ window._promoBorrar = async (id) => {
   if (error || !data?.ok) { toast('Error: ' + (error?.message || 'no se pudo'), 'err'); return; }
   toast('Promo borrada', 'ok');
   if (_promoEdit?.id === id) _promoEdit = null;
+  _cargarCombos().catch(()=>{});
   renderPromosConfig();
 };
 window._promoGuardar = async () => {
@@ -1158,6 +1160,7 @@ window._promoGuardar = async () => {
   if (error || !data?.ok) { toast('Error: ' + (error?.message || 'no se pudo guardar'), 'err'); return; }
   toast(_promoEdit ? 'Promo actualizada' : 'Promo creada', 'ok');
   _promoEdit = null;
+  _cargarCombos().catch(()=>{});
   renderPromosConfig();
 };
 
@@ -2601,7 +2604,59 @@ function renderCart(){
   const btnPre = document.getElementById('btn-prepago');
   if (btnPre) btnPre.style.display = (clienteSel?.id && cart.size > 0) ? '' : 'none';
 
+  _renderComboSugerencias(list);
+
   if (typeof _refrescarEnvasesSaldo === 'function') _refrescarEnvasesSaldo();
+}
+
+// ── SUGERENCIA AUTOMÁTICA DE COMBOS ──────────────────
+// Combos vigentes cargados en memoria (para detectar sin abrir el menú).
+let _combosVigentes = [];
+async function _cargarCombos() {
+  if (!orgId) return;
+  const { data } = await sb.rpc('promos_pos_list', { p_organization_id: orgId, p_solo_vigentes: true });
+  _combosVigentes = (data?.promos || []).filter(p => p.tipo === 'combo' && (p.items || []).length >= 2);
+}
+// Devuelve los combos cuyos productos están TODOS en el carrito con la cantidad
+// justa (para no pisar cantidades de más) y que todavía no fueron aplicados.
+function _combosDisponibles() {
+  const out = [];
+  for (const c of (_combosVigentes || [])) {
+    const items = c.items || [];
+    if (items.length < 2) continue;
+    let ok = true, sumaBase = 0;
+    for (const it of items) {
+      const need = Math.max(1, parseInt(it.cantidad) || 1);
+      const line = cart.get(it.producto_id);
+      if (!line || line.cantidad !== need) { ok = false; break; }
+      const prod = (productos || []).find(p => p.id === it.producto_id);
+      const base = parseFloat(prod ? prod.precio : it.producto_precio) || 0;
+      sumaBase += base * need;
+    }
+    if (!ok) continue;
+    const yaAplicado = items.every(it => { const l = cart.get(it.producto_id); return l && l.promo && l.promo.nombre === c.nombre; });
+    if (yaAplicado) continue;
+    const ahorro = Math.round((sumaBase - (parseFloat(c.precio_total) || 0)) * 100) / 100;
+    out.push({ combo: c, ahorro });
+  }
+  return out;
+}
+function _renderComboSugerencias(list) {
+  if (!list || cart.size === 0) return;
+  const disp = _combosDisponibles();
+  if (!disp.length) return;
+  disp.slice(0, 2).forEach(({ combo, ahorro }) => {
+    const banner = document.createElement('div');
+    banner.style.cssText = 'display:flex;align-items:center;gap:8px;justify-content:space-between;background:rgba(245,158,11,.1);border:1.5px solid rgba(245,158,11,.4);border-radius:10px;padding:8px 10px;margin-bottom:8px';
+    banner.innerHTML =
+      '<div style="min-width:0">' +
+        '<div style="font-size:12px;font-weight:800;color:#b45309;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">🎁 ' + _esc(combo.nombre) + '</div>' +
+        '<div style="font-size:10.5px;color:#92400e">Precio combo ' + fmtARS(combo.precio_total) + (ahorro > 0 ? ' · ahorrás ' + fmtARS(ahorro) : '') + '</div>' +
+      '</div>' +
+      '<button type="button" class="combo-aplicar-btn" style="flex-shrink:0;padding:7px 14px;border:none;border-radius:50px;background:#f59e0b;color:#fff;font-weight:800;font-size:12px;cursor:pointer">Aplicar</button>';
+    banner.querySelector('.combo-aplicar-btn').addEventListener('click', () => _aplicarPromoAlCarrito(combo));
+    list.insertBefore(banner, list.firstChild);
+  });
 }
 
 function stepCart(prodId, delta){
