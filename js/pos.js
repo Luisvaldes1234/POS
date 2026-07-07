@@ -652,7 +652,7 @@ async function cargarEnvasesTienda() {
   if (filas.length === 0) {
     card.innerHTML = `
       <div style="background:rgba(102,126,234,.04);border:1px dashed var(--border);border-radius:12px;padding:14px;text-align:center;font-size:12px;color:var(--muted)">
-        🫙 Sin envases retornables todavía en esta tienda.
+        Sin envases retornables todavía en esta tienda.
       </div>`;
     return;
   }
@@ -661,7 +661,7 @@ async function cargarEnvasesTienda() {
   card.innerHTML = `
     <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 14px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">🫙 Envases en esta tienda</div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Envases en esta tienda</div>
         <div style="font-size:12px;color:var(--muted)"><b style="color:var(--primary)">${totL}</b> llenos · <b style="color:#b45309">${totV}</b> vacíos</div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 70px 70px;gap:8px;font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;padding:0 8px 6px">
@@ -3997,7 +3997,7 @@ function _renderHistorialUI(d) {
   h.innerHTML =
     '<div style="display:flex;gap:6px;flex-wrap:wrap;font-size:12px;align-items:center">' +
     '<span class="pos-cli-pill">💰 ' + saldoTxt + '</span>' +
-    (envases > 0 ? '<span class="pos-cli-pill">🫙 ' + envases + ' envase' + (envases > 1 ? 's' : '') + '</span>' : '') +
+    (envases > 0 ? '<span class="pos-cli-pill">' + envases + ' envase' + (envases > 1 ? 's' : '') + '</span>' : '') +
     (compras > 0 ? '<span class="pos-cli-pill">📅 ' + compras + ' / 30d · ' + fmtARS(monto30) + '</span>' : '') +
     ccBadge +
     '</div>' + ultHtml + accionesCC;
@@ -4305,7 +4305,7 @@ function abrirRecibo(v){
     if (hubo) {
       envasesMovHtml =
         '<div style="margin-top:10px;border-top:1px dashed #cbd5e1;padding-top:8px">' +
-          '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px">Movimiento de envases 🫙</div>' +
+          '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px">Movimiento de envases</div>' +
           '<div class="receipt-pago"><span>Tenía</span><span>' + (m.tenia || 0) + '</span></div>' +
           (m.devolvio > 0
             ? '<div class="receipt-pago" style="color:#059669"><span>Devolvió</span><span>− ' + m.devolvio + '</span></div>'
@@ -4313,7 +4313,7 @@ function abrirRecibo(v){
           (m.prestado > 0
             ? '<div class="receipt-pago" style="color:#7c3aed"><span>Se llevó (prestado)</span><span>+ ' + m.prestado + '</span></div>'
             : '') +
-          '<div class="receipt-pago" style="font-weight:800;color:#0f172a;border-top:1px solid #e2e8f0;padding-top:4px;margin-top:4px"><span>Ahora tiene</span><span>' + (m.ahora || 0) + ' 🫙</span></div>' +
+          '<div class="receipt-pago" style="font-weight:800;color:#0f172a;border-top:1px solid #e2e8f0;padding-top:4px;margin-top:4px"><span>Ahora tiene</span><span>' + (m.ahora || 0) + '</span></div>' +
         '</div>';
     }
   }
@@ -4409,7 +4409,7 @@ async function pintarEnvasesDomicilio(clienteId) {
     wrap.style.cssText = 'margin-top:10px;border-top:1px dashed #cbd5e1;padding-top:8px';
     const h = document.createElement('div');
     h.style.cssText = 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px';
-    h.textContent = 'Envases en domicilio 🫙';
+    h.textContent = 'Envases en domicilio';
     wrap.appendChild(h);
     envases.forEach((e) => {
       const row = document.createElement('div');
@@ -4735,7 +4735,7 @@ async function _confirmarVentaEnvases(items, totalBruto) {
   }
 
   return await confirmarOperacionPOS({
-    titulo: avisoComodato ? '⚠ Comodato con prepagos pendientes' : (totalPrestados > 0 ? '🫙 Operación con envases' : '↩️ Devolución de envases'),
+    titulo: avisoComodato ? '⚠ Comodato con prepagos pendientes' : (totalPrestados > 0 ? 'Operación con envases' : '↩️ Devolución de envases'),
     subtitulo: sub,
     lineas,
     btnOkLabel: 'Confirmar y cobrar',
