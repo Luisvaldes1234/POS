@@ -14,8 +14,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <title>POS · Mostrador</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="js/shared/dialogs.js?v=22"></script>
-<script src="js/shared/errors.js?v=22"></script>
+<script src="js/shared/dialogs.js?v=23"></script>
+<script src="js/shared/errors.js?v=23"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -60,7 +60,7 @@
      inferior deslizable (mejor para tocar). Cubre iPad portrait (768/834). */
   @media (max-width:900px){
     .pos-layout{grid-template-columns:1fr}
-    .pos-cart{position:fixed;left:0;right:0;bottom:0;border-radius:24px 24px 0 0;box-shadow:0 -8px 24px rgba(0,0,0,.12);max-height:72vh;transform:translateY(calc(100% - 80px));transition:transform .3s cubic-bezier(.34,1.2,.64,1);z-index:50}
+    .pos-cart{position:fixed;left:0;right:0;bottom:0;border-radius:24px 24px 0 0;box-shadow:0 -8px 24px rgba(0,0,0,.12);max-height:86vh;transform:translateY(calc(100% - 80px));transition:transform .3s cubic-bezier(.34,1.2,.64,1);z-index:50}
     .pos-cart.open{transform:translateY(0)}
     .pos-cart-handle{display:flex !important}
     .pos-products{padding-bottom:100px}
@@ -115,7 +115,7 @@
   .pos-cart-h h2{font-size:17px;font-weight:800;letter-spacing:-.01em}
   .pos-cart-clear{background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;padding:4px 8px}
   .pos-cart-clear:hover{color:var(--danger)}
-  .pos-cart-list{flex:1;overflow-y:auto;padding:12px 22px}
+  .pos-cart-list{flex:1 1 0;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 22px}
   .pos-cart-empty{text-align:center;padding:48px 20px;color:var(--muted);font-size:13px}
   .pos-cart-empty-icon{font-size:48px;opacity:.3;margin-bottom:12px}
   .cart-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9}
@@ -542,7 +542,7 @@
   body.print-a4   @page{size:A4;margin:15mm}
   @page{size:80mm auto;margin:2mm}
 </style>
-  <script src="js/sentry-init.js?v=22" defer></script>
+  <script src="js/sentry-init.js?v=23" defer></script>
 </head>
 <body>
 
@@ -1073,7 +1073,7 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=22"></script>
-<script src="js/pos.js?v=22"></script>
+<script src="js/config.js?v=23"></script>
+<script src="js/pos.js?v=23"></script>
 </body>
 </html>
