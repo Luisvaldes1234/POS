@@ -7,7 +7,7 @@
 // El POS está en mostrador con WiFi estable, pero igual cacheamos el
 // shell para tolerar cortes de red/luz.
 
-const CACHE_VERSION = 'pos-retail-v21-2026-07-07';
+const CACHE_VERSION = 'pos-retail-v22-2026-07-07b';
 
 const PRECACHE = [
   './',

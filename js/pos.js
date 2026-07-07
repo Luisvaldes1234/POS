@@ -6880,6 +6880,183 @@ function _cfgShow(key) {
   else if (key === 'promos')  renderPromosConfig();
   else if (key === 'cuotas')  renderCuotasConfig();
   else if (key === 'pagos')   renderConfigMP();
+  else if (key === 'recibidas') renderFacturasRecibidas();
+}
+
+// Archivo de facturas/remitos recibidos (compras). Foto o PDF + datos.
+// Convierte imágenes a JPEG comprimido (data URL) para no usar Storage; los PDF
+// se guardan tal cual con tope de tamaño.
+function _fileToArchivoDataURL(file){
+  return new Promise((resolve, reject) => {
+    const esImg = file.type.startsWith('image/');
+    const esPdf = file.type === 'application/pdf';
+    if (!esImg && !esPdf) { reject(new Error('Subí una imagen (foto) o un PDF')); return; }
+    if (esPdf && file.size > 4 * 1024 * 1024) { reject(new Error('El PDF es muy grande (máx 4 MB). Sacá una foto en su lugar.')); return; }
+    const fr = new FileReader();
+    fr.onerror = () => reject(new Error('No se pudo leer el archivo'));
+    fr.onload = () => {
+      if (esPdf) { resolve({ url: fr.result, tipo: 'pdf' }); return; }
+      const img = new Image();
+      img.onerror = () => reject(new Error('Imagen inválida'));
+      img.onload = () => {
+        const maxW = 1400;
+        const scale = Math.min(1, maxW / (img.width || maxW));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve({ url: cv.toDataURL('image/jpeg', 0.72), tipo: 'image' });
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+
+let _frecArchivo = null;   // {url, tipo, nombre} pendiente de guardar
+async function renderFacturasRecibidas(){
+  const wrap = document.getElementById('recibidas-wrap');
+  if (!wrap) return;
+  if (!_isAdmin()) { wrap.innerHTML = '<div class="env-empty" style="background:#fff;border:1px solid var(--border);border-radius:14px">Solo administradores.</div>'; return; }
+  wrap.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>';
+  let lista = [];
+  try {
+    const { data, error } = await sb.rpc('pos_frec_listar', { p_organization_id: orgId, p_desde: null, p_hasta: null });
+    if (error) throw error;
+    lista = data || [];
+  } catch (e) { wrap.innerHTML = '<div style="color:var(--danger);padding:20px">Error: ' + (e.message || e) + '</div>'; return; }
+  const esc = s => String(s ?? '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+
+  let html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap">' +
+    '<h3 style="font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:0">📥 Facturas / remitos recibidos</h3>' +
+    '<button id="frec-add" type="button" style="padding:9px 16px;border-radius:50px;border:1.5px solid var(--primary);background:rgba(124,58,237,.06);color:var(--primary);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">＋ Cargar factura/remito</button>' +
+    '</div>' +
+    '<div style="font-size:12px;color:var(--ink);background:rgba(124,58,237,.06);border-radius:8px;padding:8px 10px;margin-bottom:12px">ℹ️ Guardá acá las facturas y remitos de tus <b>compras</b> (foto o PDF), con proveedor, número, fecha y monto. Quedan archivados para consulta. (Próximamente: leer la foto y autocargar el stock.)</div>';
+
+  if (!lista.length) {
+    html += '<div class="env-empty" style="background:#fff;border:1px solid var(--border);border-radius:14px">Todavía no cargaste facturas recibidas.</div>';
+  } else {
+    html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
+      '<thead><tr style="color:var(--muted);text-align:left;border-bottom:1px solid var(--border)">' +
+      '<th style="padding:6px 8px">Fecha</th><th>Tipo</th><th>Proveedor</th><th>Número</th>' +
+      '<th style="text-align:right">Monto</th><th></th></tr></thead><tbody>' +
+      lista.map(f => '<tr style="border-bottom:1px solid #f1f5f9">' +
+        '<td style="padding:6px 8px;white-space:nowrap">' + (f.fecha || '—') + '</td>' +
+        '<td>' + (f.tipo_doc === 'remito' ? '📦 Remito' : '🧾 Factura') + '</td>' +
+        '<td>' + esc(f.proveedor || '—') + '</td>' +
+        '<td>' + esc(f.numero || '—') + '</td>' +
+        '<td style="text-align:right;font-weight:600">' + (f.monto != null ? fmtARS(f.monto) : '—') + '</td>' +
+        '<td style="text-align:right;white-space:nowrap">' +
+          (f.tiene_archivo ? '<button class="frec-ver" data-id="' + f.id + '" title="Ver archivo" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:12px">👁</button> ' : '') +
+          '<button class="frec-del" data-id="' + f.id + '" title="Eliminar" style="background:none;border:none;color:#cbd5e1;font-size:15px;cursor:pointer">🗑</button>' +
+        '</td></tr>').join('') +
+      '</tbody></table></div>';
+  }
+  wrap.innerHTML = html;
+
+  document.getElementById('frec-add')?.addEventListener('click', _abrirCargaFacturaRecibida);
+  wrap.querySelectorAll('.frec-ver').forEach(b => b.addEventListener('click', () => _verFacturaRecibida(b.dataset.id)));
+  wrap.querySelectorAll('.frec-del').forEach(b => b.addEventListener('click', async () => {
+    const ok = await tmvDialog.confirm('¿Eliminar esta factura recibida del archivo?', { title: 'Eliminar', severity: 'danger', okLabel: 'Eliminar' });
+    if (!ok) return;
+    const { data, error } = await sb.rpc('pos_frec_borrar', { p_id: b.dataset.id });
+    if (error || !data?.ok) { toast('No se pudo eliminar', 'err'); return; }
+    toast('Eliminada', 'ok'); renderFacturasRecibidas();
+  }));
+}
+
+async function _verFacturaRecibida(id){
+  toast('Abriendo…', 'info');
+  const { data, error } = await sb.rpc('pos_frec_get', { p_id: id });
+  if (error || !data?.archivo) { toast('No se pudo abrir el archivo', 'err'); return; }
+  const ov = document.createElement('div');
+  ov.className = 'qr-overlay show';
+  ov.style.cssText = 'background:rgba(0,0,0,.75);z-index:260';
+  const body = data.archivo_tipo === 'pdf'
+    ? '<iframe src="' + data.archivo + '" style="width:min(900px,94vw);height:82vh;border:0;border-radius:10px;background:#fff"></iframe>'
+    : '<img src="' + data.archivo + '" style="max-width:94vw;max-height:82vh;border-radius:10px;background:#fff">';
+  ov.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;gap:10px">' + body +
+    '<div style="display:flex;gap:8px"><a href="' + data.archivo + '" download="' + (data.archivo_nombre || ('factura.' + (data.archivo_tipo === 'pdf' ? 'pdf' : 'jpg'))) + '" style="padding:8px 16px;background:#fff;border-radius:8px;color:#111;font-weight:700;font-size:13px;text-decoration:none">⬇ Descargar</a>' +
+    '<button id="frec-close" style="padding:8px 16px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">Cerrar</button></div></div>';
+  document.body.appendChild(ov);
+  const close = () => ov.remove();
+  ov.querySelector('#frec-close').addEventListener('click', close);
+  ov.addEventListener('mousedown', e => { if (e.target === ov) close(); });
+}
+
+function _abrirCargaFacturaRecibida(){
+  _frecArchivo = null;
+  const hoy = new Date().toISOString().slice(0, 10);
+  const tiendasOpts = (tiendas || []).map(t => '<option value="' + t.id + '">' + (t.es_principal ? '★ ' : '') + t.nombre.replace(/[<>&"]/g, '') + '</option>').join('');
+  const ov = document.createElement('div');
+  ov.className = 'qr-overlay show';
+  ov.style.cssText = 'background:rgba(0,0,0,.5);z-index:250';
+  ov.innerHTML =
+    '<div class="qr-modal" style="max-width:480px">' +
+    '<div class="qr-modal-h"><div class="qr-modal-title">＋ Cargar factura / remito</div><button class="qr-modal-close" id="frx-x" type="button">×</button></div>' +
+    '<div class="qr-modal-body" style="align-items:stretch;text-align:left">' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+        '<div><label class="prod-form-l">Tipo</label><select id="frx-tipo" class="prod-form-i"><option value="factura">🧾 Factura</option><option value="remito">📦 Remito</option></select></div>' +
+        '<div><label class="prod-form-l">Fecha</label><input type="date" id="frx-fecha" class="prod-form-i" value="' + hoy + '"></div>' +
+      '</div>' +
+      '<label class="prod-form-l" style="margin-top:8px">Proveedor</label><input id="frx-prov" class="prod-form-i" placeholder="Ej: Distribuidora XX">' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">' +
+        '<div><label class="prod-form-l">Número</label><input id="frx-num" class="prod-form-i" placeholder="0001-00001234"></div>' +
+        '<div><label class="prod-form-l">Monto</label><input id="frx-monto" type="number" min="0" step="0.01" class="prod-form-i" placeholder="0"></div>' +
+      '</div>' +
+      (tiendasOpts ? '<label class="prod-form-l" style="margin-top:8px">Tienda (opcional)</label><select id="frx-tienda" class="prod-form-i"><option value="">—</option>' + tiendasOpts + '</select>' : '') +
+      '<label class="prod-form-l" style="margin-top:8px">Notas (opcional)</label><input id="frx-notas" class="prod-form-i" placeholder="Ej: pagada en efectivo">' +
+      '<label class="prod-form-l" style="margin-top:10px">Foto o PDF de la factura/remito</label>' +
+      '<input id="frx-file" type="file" accept="image/*,application/pdf" capture="environment" class="prod-form-i" style="padding:8px">' +
+      '<div id="frx-file-info" style="font-size:12px;color:var(--muted);margin-top:4px"></div>' +
+      '<div id="frx-msg" style="font-size:12px;margin-top:8px"></div>' +
+    '</div>' +
+    '<div class="qr-modal-foot"><button id="frx-save" class="qr-foot-btn">Guardar</button></div>' +
+    '</div>';
+  document.body.appendChild(ov);
+  const close = () => ov.remove();
+  ov.querySelector('#frx-x').addEventListener('click', close);
+  ov.addEventListener('mousedown', e => { if (e.target === ov) close(); });
+
+  const info = ov.querySelector('#frx-file-info');
+  ov.querySelector('#frx-file').addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    _frecArchivo = null;
+    if (!file) { info.textContent = ''; return; }
+    info.textContent = 'Procesando…';
+    try {
+      const r = await _fileToArchivoDataURL(file);
+      _frecArchivo = { url: r.url, tipo: r.tipo, nombre: file.name };
+      const kb = Math.round((r.url.length * 0.75) / 1024);
+      info.innerHTML = '✓ ' + (r.tipo === 'pdf' ? 'PDF' : 'Imagen') + ' lista (' + kb + ' KB)';
+      info.style.color = '#059669';
+    } catch (err) { info.textContent = err.message; info.style.color = 'var(--danger)'; }
+  });
+
+  ov.querySelector('#frx-save').addEventListener('click', async () => {
+    const msg = ov.querySelector('#frx-msg');
+    const monto = parseFloat(ov.querySelector('#frx-monto').value);
+    const btn = ov.querySelector('#frx-save');
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    const { data, error } = await sb.rpc('pos_frec_crear', {
+      p_organization_id: orgId,
+      p_proveedor: ov.querySelector('#frx-prov').value.trim() || null,
+      p_numero: ov.querySelector('#frx-num').value.trim() || null,
+      p_fecha: ov.querySelector('#frx-fecha').value || null,
+      p_monto: isNaN(monto) ? null : monto,
+      p_tipo_doc: ov.querySelector('#frx-tipo').value,
+      p_notas: ov.querySelector('#frx-notas').value.trim() || null,
+      p_archivo: _frecArchivo?.url || null,
+      p_archivo_tipo: _frecArchivo?.tipo || null,
+      p_archivo_nombre: _frecArchivo?.nombre || null,
+      p_tienda_id: ov.querySelector('#frx-tienda')?.value || null,
+    });
+    btn.disabled = false; btn.textContent = 'Guardar';
+    if (error || !data?.ok) { msg.style.color = 'var(--danger)'; msg.textContent = 'Error: ' + (error?.message || 'no se pudo guardar'); return; }
+    toast('✓ Factura recibida guardada', 'ok');
+    close();
+    renderFacturasRecibidas();
+  });
 }
 
 // ── Datos del negocio (nombre de la org + datos fiscales del ticket) ──
