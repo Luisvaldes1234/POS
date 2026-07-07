@@ -5653,6 +5653,14 @@ async function _persistirCombo(comboId) {
   if (error) throw new Error('combo_componentes: ' + error.message);
 }
 
+// Detecta el error de código de barras duplicado que levanta la RPC
+// (RAISE EXCEPTION con SQLSTATE P0001 y el texto "código de barras").
+function _esErrorBarcodeDuplicado(err) {
+  if (!err) return false;
+  const msg = String(err.message || err.details || err.hint || '').toLowerCase();
+  return err.code === 'P0001' && /c[oó]digo de barras/.test(msg);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('prod-close')?.addEventListener('click', () => {
     document.getElementById('prod-overlay')?.classList.remove('show');
@@ -5696,6 +5704,31 @@ document.addEventListener('DOMContentLoaded', () => {
           p_codigo_barra:    document.getElementById('prod-barcode').value.trim() || null,
           p_tipo_envase_id:  tipoEnvId,
         }));
+      }
+      // Código de barras ya usado en la org (al crear): en vez de un error
+      // sin salida, ofrecemos abrir el producto existente para editarlo.
+      if (!_prodEditId && error && _esErrorBarcodeDuplicado(error)) {
+        const cb = document.getElementById('prod-barcode').value.trim();
+        const existente = productos.find(p => (p.codigo_barra || '') === cb);
+        if (existente) {
+          if (confirm('Ya tenés un producto con ese código de barras:\n\n"' + existente.nombre + '"\n\n¿Querés abrirlo para editarlo (precio, stock, etc.) en vez de crear uno nuevo?')) {
+            document.getElementById('prod-overlay').classList.remove('show');
+            abrirAltaProducto({
+              _editId: existente.id, nombre: existente.nombre, precio: existente.precio,
+              costo: existente.costo, unidad: existente.unidad, codigo_barra: existente.codigo_barra,
+              tiene_envase: existente.tiene_envase, tipo_envase_id: existente.tipo_envase_id,
+              es_combo: existente.es_combo, peso_variable: existente.peso_variable,
+              fecha_vencimiento: existente.fecha_vencimiento,
+              descuento_volumen_qty: existente.descuento_volumen_qty,
+              descuento_volumen_pct: existente.descuento_volumen_pct,
+            });
+          }
+          btn.disabled = false;
+          return;
+        }
+        toast('Ya existe un producto con ese código de barras. Buscalo en Stock para editarlo.', 'warn');
+        btn.disabled = false;
+        return;
       }
       if (error) throw error;
       if (!data?.ok) throw new Error('La RPC no confirmó la operación');
