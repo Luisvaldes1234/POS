@@ -2627,12 +2627,20 @@ window.abrirEntregaParcial = () => {
 
 // ── Stock predictivo: avisa qué reponer según el ritmo de venta ──
 let _stockSug = [];
+let _stockVelCache = null;   // {ts, tienda, data} — evita re-consultar en cada tecla del buscador
 async function _stockPrediccionCard(){
   _stockSug = [];
   const UMBRAL = 7, COBERTURA = 14, DIAS = 30;
   try {
-    const { data } = await sb.rpc('pos_stock_velocidad', { p_organization_id: orgId, p_tienda_id: tiendaId || null, p_dias: DIAS });
-    const arr = data || [];
+    let arr;
+    const tk = tiendaId || null;
+    if (_stockVelCache && _stockVelCache.tienda === tk && (Date.now() - _stockVelCache.ts) < 60000) {
+      arr = _stockVelCache.data;
+    } else {
+      const { data } = await sb.rpc('pos_stock_velocidad', { p_organization_id: orgId, p_tienda_id: tk, p_dias: DIAS });
+      arr = data || [];
+      _stockVelCache = { ts: Date.now(), tienda: tk, data: arr };
+    }
     const dias = arr[0]?.dias || DIAS;
     const vel = new Map(arr.map(v => [v.producto_id, Number(v.unidades) || 0]));
     productos.forEach(p => {
@@ -2670,6 +2678,9 @@ async function _stockPrediccionCard(){
 }
 
 let _stockShowInactive = false;
+let _stockPage = 0;
+const _STOCK_PAGE_SIZE = 30;
+let _stockQWired = false;
 async function renderStock(){
   const list = document.getElementById('stock-list');
   if (!list) return;
@@ -2709,6 +2720,30 @@ async function renderStock(){
       + '</div>';
   }
   if (_canRecibirStock()) html += await _stockPrediccionCard();
+
+  // Buscador (input persistente en el header) + paginación.
+  const q = (document.getElementById('stock-q')?.value || '').trim().toLowerCase();
+  const norm = s => String(s || '').toLowerCase();
+  let lista = productos;
+  if (q) {
+    const terms = q.split(/\s+/).filter(Boolean);
+    lista = productos.filter(p => {
+      const hay = norm(p.nombre) + ' ' + norm(p.codigo_barra);
+      return terms.every(t => hay.includes(t));
+    });
+  }
+  const total = lista.length;
+  const totalPags = Math.max(1, Math.ceil(total / _STOCK_PAGE_SIZE));
+  if (_stockPage >= totalPags) _stockPage = totalPags - 1;
+  if (_stockPage < 0) _stockPage = 0;
+  const desde = _stockPage * _STOCK_PAGE_SIZE;
+  const pageItems = lista.slice(desde, desde + _STOCK_PAGE_SIZE);
+
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:12px;color:var(--muted)">' +
+    '<span>' + (q ? total + ' resultado' + (total === 1 ? '' : 's') + ' para “' + String(q).replace(/[<>&]/g, '') + '”' : total + ' producto' + (total === 1 ? '' : 's')) + '</span>' +
+    (totalPags > 1 ? '<span>Página ' + (_stockPage + 1) + ' de ' + totalPags + '</span>' : '') +
+    '</div>';
+
   list.innerHTML = html;
   if (canAny) _wireStockToolbar();
   list.querySelectorAll('.sug-rep').forEach(b => b.addEventListener('click', () => {
@@ -2716,7 +2751,25 @@ async function renderStock(){
     const p = productos.find(x => x.id === s.id); if (p) reponer(p, s.sugerido);
   }));
 
-  productos.forEach(p => {
+  // Conectar el buscador una sola vez (input fuera de la lista → no pierde foco).
+  if (!_stockQWired) {
+    _stockQWired = true;
+    const qi = document.getElementById('stock-q');
+    let _stkQT;
+    if (qi) qi.addEventListener('input', () => {
+      clearTimeout(_stkQT);
+      _stkQT = setTimeout(() => { _stockPage = 0; renderStock(); }, 160);
+    });
+  }
+
+  if (!pageItems.length) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'padding:26px;text-align:center;color:var(--muted)';
+    empty.textContent = q ? 'Sin resultados para tu búsqueda.' : 'Sin productos.';
+    list.appendChild(empty);
+  }
+
+  pageItems.forEach(p => {
     const cant = stockMap.has(p.id) ? stockMap.get(p.id) : 0;
     const cls  = cant < 0 ? 'negativo' : cant <= 5 ? 'bajo' : '';
     // Línea secundaria: precio siempre; costo y margen solo para admin.
@@ -2759,6 +2812,28 @@ async function renderStock(){
     }
     list.appendChild(row);
   });
+
+  // Controles de paginación.
+  if (totalPags > 1) {
+    const pag = document.createElement('div');
+    pag.style.cssText = 'display:flex;justify-content:center;align-items:center;gap:10px;margin-top:14px';
+    const mkBtn = (txt, disabled) => {
+      const b = document.createElement('button');
+      b.textContent = txt;
+      b.disabled = disabled;
+      b.style.cssText = 'padding:8px 16px;border:1.5px solid var(--border);background:#fff;border-radius:50px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;color:var(--ink)' + (disabled ? ';opacity:.4;cursor:not-allowed' : '');
+      return b;
+    };
+    const prev = mkBtn('← Anterior', _stockPage <= 0);
+    const next = mkBtn('Siguiente →', _stockPage >= totalPags - 1);
+    const lbl = document.createElement('span');
+    lbl.style.cssText = 'font-size:13px;color:var(--muted);font-weight:600';
+    lbl.textContent = (_stockPage + 1) + ' / ' + totalPags;
+    prev.addEventListener('click', () => { if (_stockPage > 0) { _stockPage--; renderStock(); } });
+    next.addEventListener('click', () => { if (_stockPage < totalPags - 1) { _stockPage++; renderStock(); } });
+    pag.appendChild(prev); pag.appendChild(lbl); pag.appendChild(next);
+    list.appendChild(pag);
+  }
 
   // Sección de productos dados de baja (inactivos) — requiere permiso de ajuste.
   if (canAjustar && _stockShowInactive) {
