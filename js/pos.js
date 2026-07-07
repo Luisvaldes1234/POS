@@ -2657,12 +2657,15 @@ async function _stockPrediccionCard(){
     });
     _stockSug.sort((a, b) => a.diasRest - b.diasRest);
   } catch (_) { return ''; }
-  if (!_stockSug.length) return '';
   const esc = s => String(s ?? '').replace(/[<>&]/g, '');
   const puedeRep = _canRecibirStock();
-  return '<div style="background:rgba(245,158,11,.07);border:1.5px solid rgba(245,158,11,.4);border-radius:12px;padding:12px 14px;margin-bottom:14px">' +
-    '<div style="font-weight:700;margin-bottom:8px;display:flex;align-items:center">🔮 Reponé pronto' +
-      iHelp('Predicción según tu ritmo de venta de los últimos ' + DIAS + ' días: estimamos cuántos días de stock te quedan. Se listan los que se agotarían en ' + UMBRAL + ' días o menos, con una cantidad sugerida para cubrir ~' + COBERTURA + ' días.') + '</div>' +
+  const head = '<div style="font-weight:700;margin-bottom:8px;display:flex;align-items:center">Reposición sugerida' +
+      iHelp('Predicción según tu ritmo de venta de los últimos ' + DIAS + ' días: estimamos cuántos días de stock te quedan. Se listan los que se agotarían en ' + UMBRAL + ' días o menos, con una cantidad sugerida para cubrir ~' + COBERTURA + ' días.') + '</div>';
+  if (!_stockSug.length) {
+    return '<div style="background:#f8f9ff;border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:14px">' + head +
+      '<div style="font-size:12.5px;color:var(--muted);line-height:1.5">Por ahora ningún producto con ventas recientes está por agotarse. A medida que registres más ventas, acá te avisamos qué reponer y cuánto, antes de quedarte sin stock.</div></div>';
+  }
+  return '<div style="background:rgba(245,158,11,.07);border:1.5px solid rgba(245,158,11,.4);border-radius:12px;padding:12px 14px;margin-bottom:14px">' + head +
     '<div style="display:flex;flex-direction:column;gap:6px">' +
     _stockSug.map((s, i) => {
       const d = s.diasRest;
