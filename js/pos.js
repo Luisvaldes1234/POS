@@ -2299,15 +2299,27 @@ function renderProductGrid(){
   const norm = s => (s || '').toLowerCase()
     .normalize('NFD').replace(/[̀-ͯ]/g, '');
   const tokens = q ? norm(q).split(/\s+/).filter(Boolean) : [];
+  const buscando = tokens.length > 0;
   const list = productos.filter(p => {
-    if (!tokens.length) return true;
-    const hay = norm(p.nombre);
-    return tokens.every(t => hay.includes(t));
+    if (buscando) {
+      // Al buscar (o escanear) aparece cualquier producto, tenga stock o no.
+      const hay = norm(p.nombre) + ' ' + norm(p.codigo_barra);
+      return tokens.every(t => hay.includes(t));
+    }
+    // Sin búsqueda: no mostramos productos sin stock. Excepciones: los combos
+    // (descuentan de sus componentes) y los que no llevan control de stock.
+    if (p.es_combo) return true;
+    const st = stockMap.has(p.id) ? stockMap.get(p.id) : null;
+    if (st == null) return true;
+    return st > 0;
   });
 
   if (!list.length) {
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">' +
-      (q ? 'Sin productos para "' + q + '"' : 'Sin productos cargados en el catálogo') + '</div>';
+    const hayCatalogo = (productos || []).length > 0;
+    const msg = buscando ? 'Sin productos para "' + q + '"'
+      : hayCatalogo ? 'No hay productos con stock disponible.<br><span style="font-size:12px">Buscá por nombre o escaneá el código para encontrar cualquiera.</span>'
+      : 'Sin productos cargados en el catálogo';
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">' + msg + '</div>';
     return;
   }
 
