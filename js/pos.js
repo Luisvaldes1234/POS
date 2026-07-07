@@ -995,8 +995,14 @@ function _promoResumen(pr) {
   if (pr.tipo === 'nxm')         return 'Llevás ' + pr.llevas + ' · Pagás ' + pr.paga;
   if (pr.tipo === 'precio_fijo') return pr.cantidad + ' u. por ' + fmtARS(pr.precio_total);
   if (pr.tipo === 'pct')         return pr.pct + '% off' + (pr.min_cantidad > 1 ? ' (desde ' + pr.min_cantidad + ')' : '');
+  if (pr.tipo === 'combo') {
+    const names = (pr.items || []).map(i => (i.cantidad > 1 ? i.cantidad + '× ' : '') + _esc(i.producto_nombre)).filter(Boolean);
+    const label = names.length ? names.join(' + ') : ((pr.items || []).length + ' productos');
+    return 'Combo: ' + label + ' por ' + fmtARS(pr.precio_total);
+  }
   return '';
 }
+let _promoComboItems = [];
 async function renderPromosConfig() {
   const wrap = document.getElementById('promos-wrap');
   if (!wrap) return;
@@ -1013,6 +1019,10 @@ async function renderPromosConfig() {
   const opt = (v, t, sel) => '<option value="' + v + '"' + (sel ? ' selected' : '') + '>' + esc(t) + '</option>';
   const prodOpts = prods.map(p => opt(p.id, p.nombre, e.producto_id === p.id)).join('');
   const tipo = e.tipo || 'nxm';
+  // Componentes del combo: al editar un combo se precargan; si no, arranca vacío.
+  _promoComboItems = (tipo === 'combo' && Array.isArray(e.items))
+    ? e.items.map(x => ({ producto_id: x.producto_id, cantidad: x.cantidad || 1 }))
+    : [];
 
   let html = '<div class="recibo-card">' +
     '<div style="font-size:18px;font-weight:800;margin-bottom:14px">🎁 Promos</div>' +
@@ -1021,9 +1031,9 @@ async function renderPromosConfig() {
       '<input id="pm-nombre" class="prod-form-i" style="width:100%;margin-bottom:8px" placeholder="Nombre (ej: 2x1 Gaseosa 600ml)" maxlength="60" value="' + esc(e.nombre) + '">' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">' +
         '<select id="pm-tipo" class="prod-form-i" onchange="window._promoTipoChange()">' +
-          opt('nxm','NxM (2x1, 3x2)', tipo==='nxm') + opt('precio_fijo','Precio fijo por cantidad', tipo==='precio_fijo') + opt('pct','% off por cantidad', tipo==='pct') +
+          opt('nxm','NxM (2x1, 3x2)', tipo==='nxm') + opt('precio_fijo','Precio fijo por cantidad', tipo==='precio_fijo') + opt('pct','% off por cantidad', tipo==='pct') + opt('combo','Combo (varios productos)', tipo==='combo') +
         '</select>' +
-        '<select id="pm-prod" class="prod-form-i">' + prodOpts + '</select>' +
+        '<select id="pm-prod" class="prod-form-i" style="display:' + (tipo==='combo'?'none':'block') + '">' + prodOpts + '</select>' +
       '</div>' +
       '<div id="pm-nxm" style="display:' + (tipo==='nxm'?'grid':'none') + ';grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">' +
         '<label style="font-size:11px;color:var(--muted)">Llevás<input id="pm-llevas" type="number" min="1" class="prod-form-i" style="width:100%" value="' + (e.llevas || 2) + '"></label>' +
@@ -1036,6 +1046,12 @@ async function renderPromosConfig() {
       '<div id="pm-pct" style="display:' + (tipo==='pct'?'grid':'none') + ';grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">' +
         '<label style="font-size:11px;color:var(--muted)">% descuento<input id="pm-pct-val" type="number" min="1" max="100" step="0.01" class="prod-form-i" style="width:100%" value="' + (e.pct != null ? e.pct : '') + '"></label>' +
         '<label style="font-size:11px;color:var(--muted)">Desde (cant.)<input id="pm-min" type="number" min="1" class="prod-form-i" style="width:100%" value="' + (e.min_cantidad || 1) + '"></label>' +
+      '</div>' +
+      '<div id="pm-combo" style="display:' + (tipo==='combo'?'block':'none') + ';margin-bottom:8px">' +
+        '<label style="font-size:11px;color:var(--muted)">Precio del combo (todo junto)<input id="pm-combo-precio" type="number" min="0" step="0.01" class="prod-form-i" style="width:100%" placeholder="Ej: 2500" value="' + (tipo==='combo' && e.precio_total != null ? e.precio_total : '') + '"></label>' +
+        '<div style="font-size:11px;color:var(--muted);margin:10px 0 6px;font-weight:600">Productos del combo</div>' +
+        '<div id="pm-combo-list"></div>' +
+        '<button type="button" onclick="window._promoComboAdd()" style="width:100%;padding:9px;border:1.5px dashed var(--primary);background:rgba(124,58,237,.05);color:var(--primary);border-radius:9px;font-weight:700;cursor:pointer;font-size:12.5px;margin-top:4px">+ Agregar producto al combo</button>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
         '<label style="font-size:11px;color:var(--muted)">Vigente desde<input id="pm-desde" type="date" class="prod-form-i" style="width:100%" value="' + (e.vigente_desde || '') + '"></label>' +
@@ -1061,12 +1077,44 @@ async function renderPromosConfig() {
   ).join('');
   html += '</div></div>';
   wrap.innerHTML = html;
+  _renderPromoComboList();
 }
+// Dibuja las filas de productos del combo (producto + cantidad + quitar).
+function _renderPromoComboList() {
+  const cont = document.getElementById('pm-combo-list');
+  if (!cont) return;
+  const prods = (productos || []).filter(p => p.activo !== false);
+  if (!_promoComboItems.length) {
+    cont.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:4px 0">Agregá al menos 2 productos.</div>';
+    return;
+  }
+  const optsFor = sel => prods.map(p => '<option value="' + p.id + '"' + (sel === p.id ? ' selected' : '') + '>' + _esc(p.nombre) + '</option>').join('');
+  cont.innerHTML = _promoComboItems.map((it, i) =>
+    '<div style="display:grid;grid-template-columns:1fr 60px 30px;gap:6px;align-items:center;margin-bottom:6px">' +
+      '<select class="prod-form-i pm-combo-prod" data-i="' + i + '">' + optsFor(it.producto_id) + '</select>' +
+      '<input type="number" min="1" step="1" class="prod-form-i pm-combo-qty" data-i="' + i + '" value="' + (it.cantidad || 1) + '" title="Cantidad">' +
+      '<button type="button" class="pm-combo-del" data-i="' + i + '" title="Quitar" style="border:none;background:none;color:#dc2626;font-size:18px;cursor:pointer;line-height:1">×</button>' +
+    '</div>'
+  ).join('');
+  cont.querySelectorAll('.pm-combo-prod').forEach(s => s.addEventListener('change', e => { _promoComboItems[+e.target.dataset.i].producto_id = e.target.value; }));
+  cont.querySelectorAll('.pm-combo-qty').forEach(s => s.addEventListener('input', e => { _promoComboItems[+e.target.dataset.i].cantidad = Math.max(1, parseInt(e.target.value) || 1); }));
+  cont.querySelectorAll('.pm-combo-del').forEach(b => b.addEventListener('click', e => { _promoComboItems.splice(+e.target.dataset.i, 1); _renderPromoComboList(); }));
+}
+window._promoComboAdd = () => {
+  const prods = (productos || []).filter(p => p.activo !== false);
+  if (!prods.length) { toast('No hay productos para armar el combo', 'warn'); return; }
+  _promoComboItems.push({ producto_id: prods[0].id, cantidad: 1 });
+  _renderPromoComboList();
+};
 window._promoTipoChange = () => {
   const t = document.getElementById('pm-tipo').value;
   document.getElementById('pm-nxm').style.display = t==='nxm' ? 'grid' : 'none';
   document.getElementById('pm-pf').style.display  = t==='precio_fijo' ? 'grid' : 'none';
   document.getElementById('pm-pct').style.display = t==='pct' ? 'grid' : 'none';
+  const combo = document.getElementById('pm-combo');
+  if (combo) combo.style.display = t==='combo' ? 'block' : 'none';
+  const prodSel = document.getElementById('pm-prod');
+  if (prodSel) prodSel.style.display = t==='combo' ? 'none' : 'block';
 };
 window._promoEditar = (id) => { _promoEdit = (window._promosCache || []).find(p => p.id === id) || null; renderPromosConfig(); };
 window._promoCancelarEdit = () => { _promoEdit = null; renderPromosConfig(); };
@@ -1087,7 +1135,7 @@ window._promoGuardar = async () => {
     p_tipo: tipo,
     p_producto_id: document.getElementById('pm-prod').value || null,
     p_llevas: null, p_paga: null, p_cantidad: null, p_precio_total: null, p_pct: null,
-    p_min_cantidad: 1,
+    p_min_cantidad: 1, p_items: [],
     p_vigente_desde: document.getElementById('pm-desde').value || null,
     p_vigente_hasta: document.getElementById('pm-hasta').value || null,
     p_activo: document.getElementById('pm-activo').checked,
@@ -1096,6 +1144,16 @@ window._promoGuardar = async () => {
   if (tipo === 'nxm') { params.p_llevas = parseInt(document.getElementById('pm-llevas').value) || 0; params.p_paga = parseInt(document.getElementById('pm-paga').value); }
   if (tipo === 'precio_fijo') { params.p_cantidad = parseInt(document.getElementById('pm-cantidad').value) || 0; params.p_precio_total = parseFloat(document.getElementById('pm-precio-total').value); }
   if (tipo === 'pct') { params.p_pct = parseFloat(document.getElementById('pm-pct-val').value); params.p_min_cantidad = parseInt(document.getElementById('pm-min').value) || 1; }
+  if (tipo === 'combo') {
+    params.p_precio_total = parseFloat(document.getElementById('pm-combo-precio').value);
+    const items = (_promoComboItems || []).filter(it => it.producto_id)
+      .map(it => ({ producto_id: it.producto_id, cantidad: Math.max(1, parseInt(it.cantidad) || 1) }));
+    const distintos = new Set(items.map(i => i.producto_id));
+    if (distintos.size < 2) { toast('El combo necesita al menos 2 productos distintos', 'warn'); return; }
+    if (!(params.p_precio_total >= 0)) { toast('Poné el precio del combo', 'warn'); return; }
+    params.p_producto_id = null;
+    params.p_items = items;
+  }
   const { data, error } = await sb.rpc('promos_pos_upsert', params);
   if (error || !data?.ok) { toast('Error: ' + (error?.message || 'no se pudo guardar'), 'err'); return; }
   toast(_promoEdit ? 'Promo actualizada' : 'Promo creada', 'ok');
@@ -1107,7 +1165,7 @@ window._promoGuardar = async () => {
 window.aplicarPromoPOS = async () => {
   const { data, error } = await sb.rpc('promos_pos_list', { p_organization_id: orgId, p_solo_vigentes: true });
   if (error) { toast('Error: ' + error.message, 'err'); return; }
-  const promos = (data?.promos || []).filter(p => p.producto_id);
+  const promos = (data?.promos || []).filter(p => p.producto_id || (p.tipo === 'combo' && (p.items || []).length));
   if (!promos.length) { toast('No hay promos vigentes', 'info'); return; }
   let ov = document.getElementById('promo-pick-ov');
   if (ov) ov.remove();
@@ -1134,6 +1192,44 @@ window.aplicarPromoPOS = async () => {
   }));
 };
 function _aplicarPromoAlCarrito(pr) {
+  // Combo: varios productos a un precio total. Prorrateamos ese precio entre
+  // los componentes (según su peso por precio de lista) para que la suma del
+  // carrito dé exactamente el precio del combo, y cada línea descuenta su stock.
+  if (pr.tipo === 'combo') {
+    const rows = (pr.items || []).map(it => {
+      const prod = (productos || []).find(p => p.id === it.producto_id);
+      const qty = Math.max(1, parseInt(it.cantidad) || 1);
+      const base = parseFloat(prod ? prod.precio : it.producto_precio) || 0;
+      return { prod, qty, base, peso: base * qty };
+    }).filter(r => r.prod);
+    if (rows.length < 2) { toast('Algún producto del combo no está disponible', 'warn'); return; }
+    const precio = parseFloat(pr.precio_total) || 0;
+    const pesoTotal = rows.reduce((s, r) => s + r.peso, 0);
+    let acum = 0;
+    rows.forEach((r, idx) => {
+      let lineTotal;
+      if (idx === rows.length - 1) lineTotal = Math.round((precio - acum) * 100) / 100;
+      else {
+        lineTotal = pesoTotal > 0 ? Math.round((precio * r.peso / pesoTotal) * 100) / 100
+                                  : Math.round((precio / rows.length) * 100) / 100;
+        acum += lineTotal;
+      }
+      const unit = Math.round((lineTotal / r.qty) * 100) / 100;
+      cart.set(r.prod.id, {
+        cantidad: r.qty,
+        precio: unit,
+        nombre: r.prod.nombre,
+        tiene_envase: !!r.prod.tiene_envase,
+        envase_modo: r.prod.tiene_envase ? 'comodato' : 'no_aplica',
+        promo: { nombre: pr.nombre },
+      });
+    });
+    renderCart();
+    renderProductGrid();
+    toast('🎁 Combo aplicado: ' + pr.nombre, 'ok');
+    if (window.innerWidth <= 760) document.getElementById('pos-cart')?.classList.add('open');
+    return;
+  }
   const prod = (productos || []).find(p => p.id === pr.producto_id);
   if (!prod) { toast('El producto de la promo no está disponible', 'warn'); return; }
   const base = parseFloat(prod.precio) || 0;
