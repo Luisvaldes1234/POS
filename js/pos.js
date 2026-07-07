@@ -2625,6 +2625,50 @@ window.abrirEntregaParcial = () => {
   });
 };
 
+// ── Stock predictivo: avisa qué reponer según el ritmo de venta ──
+let _stockSug = [];
+async function _stockPrediccionCard(){
+  _stockSug = [];
+  const UMBRAL = 7, COBERTURA = 14, DIAS = 30;
+  try {
+    const { data } = await sb.rpc('pos_stock_velocidad', { p_organization_id: orgId, p_tienda_id: tiendaId || null, p_dias: DIAS });
+    const arr = data || [];
+    const dias = arr[0]?.dias || DIAS;
+    const vel = new Map(arr.map(v => [v.producto_id, Number(v.unidades) || 0]));
+    productos.forEach(p => {
+      if (p.es_combo) return;
+      const vendidos = vel.get(p.id) || 0;
+      if (vendidos <= 0) return;
+      const ritmo = vendidos / dias;                        // u/día
+      const stock = stockMap.has(p.id) ? Number(stockMap.get(p.id)) : 0;
+      const diasRest = ritmo > 0 ? stock / ritmo : Infinity;
+      if (diasRest <= UMBRAL) {
+        const sugerido = Math.max(1, Math.ceil(ritmo * COBERTURA - stock));
+        _stockSug.push({ id: p.id, nombre: p.nombre, ritmo, stock, diasRest, sugerido });
+      }
+    });
+    _stockSug.sort((a, b) => a.diasRest - b.diasRest);
+  } catch (_) { return ''; }
+  if (!_stockSug.length) return '';
+  const esc = s => String(s ?? '').replace(/[<>&]/g, '');
+  const puedeRep = _canRecibirStock();
+  return '<div style="background:rgba(245,158,11,.07);border:1.5px solid rgba(245,158,11,.4);border-radius:12px;padding:12px 14px;margin-bottom:14px">' +
+    '<div style="font-weight:700;margin-bottom:8px;display:flex;align-items:center">🔮 Reponé pronto' +
+      iHelp('Predicción según tu ritmo de venta de los últimos ' + DIAS + ' días: estimamos cuántos días de stock te quedan. Se listan los que se agotarían en ' + UMBRAL + ' días o menos, con una cantidad sugerida para cubrir ~' + COBERTURA + ' días.') + '</div>' +
+    '<div style="display:flex;flex-direction:column;gap:6px">' +
+    _stockSug.map((s, i) => {
+      const d = s.diasRest;
+      const dTxt = d <= 0 ? 'sin stock' : (d < 1 ? 'menos de 1 día' : ('~' + Math.round(d) + ' día' + (Math.round(d) === 1 ? '' : 's')));
+      const col = d <= 1 ? '#dc2626' : '#b45309';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:8px 10px">' +
+        '<div style="min-width:0"><b>' + esc(s.nombre) + '</b>' +
+        '<div style="font-size:11px;color:var(--muted)">stock ' + s.stock + ' · vendés ~' + (Math.round(s.ritmo * 10) / 10) + '/día · <b style="color:' + col + '">te queda ' + dTxt + '</b></div></div>' +
+        (puedeRep ? '<button class="sug-rep" data-i="' + i + '" style="padding:6px 12px;border:1.5px solid var(--primary);background:rgba(124,58,237,.06);color:var(--primary);border-radius:50px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex:0 0 auto">+ Reponer ' + s.sugerido + '</button>' : '') +
+      '</div>';
+    }).join('') +
+    '</div></div>';
+}
+
 let _stockShowInactive = false;
 async function renderStock(){
   const list = document.getElementById('stock-list');
@@ -2664,8 +2708,13 @@ async function renderStock(){
       + '<ul style="margin:0;padding-left:18px;line-height:1.5">' + items + '</ul>'
       + '</div>';
   }
+  if (_canRecibirStock()) html += await _stockPrediccionCard();
   list.innerHTML = html;
   if (canAny) _wireStockToolbar();
+  list.querySelectorAll('.sug-rep').forEach(b => b.addEventListener('click', () => {
+    const s = _stockSug[+b.dataset.i]; if (!s) return;
+    const p = productos.find(x => x.id === s.id); if (p) reponer(p, s.sugerido);
+  }));
 
   productos.forEach(p => {
     const cant = stockMap.has(p.id) ? stockMap.get(p.id) : 0;
@@ -2776,9 +2825,10 @@ async function reactivarProducto(p) {
   renderStock();
 }
 
-async function reponer(p){
+async function reponer(p, sugerido){
   // Quien solo tiene permiso de "recibir" puede sumar pero NO descontar.
   const _soloRecibir = !_canAjustarStock();
+  const _valorIni = (sugerido && sugerido > 0) ? sugerido : 10;
   const cur = stockMap.has(p.id) ? stockMap.get(p.id) : 0;
   const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const html = `
@@ -2809,7 +2859,7 @@ async function reponer(p){
           <select id="pos-rep-vehiculo" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;margin-top:5px"></select>
         </div>
         <label style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Cantidad</label>
-        <input id="pos-rep-cant" type="number" inputmode="numeric" placeholder="${_soloRecibir ? '10' : '+10 ó -3'}" value="10" step="1" ${_soloRecibir ? 'min="1"' : ''}
+        <input id="pos-rep-cant" type="number" inputmode="numeric" placeholder="${_soloRecibir ? '10' : '+10 ó -3'}" value="${_valorIni}" step="1" ${_soloRecibir ? 'min="1"' : ''}
           style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;margin-top:5px;margin-bottom:6px">
         <div style="font-size:10px;color:var(--muted);margin-bottom:14px">${_soloRecibir ? 'Ingresá cuánto recibís (solo suma).' : '+ suma · − resta (merma, corrección, rotura)'}</div>
         <div id="pos-rep-costo-wrap" style="display:none;background:rgba(16,185,129,.05);border:1px solid rgba(16,185,129,.2);border-radius:9px;padding:10px;margin-bottom:14px">
