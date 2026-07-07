@@ -14,8 +14,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <title>POS · Mostrador</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="js/shared/dialogs.js?v=26"></script>
-<script src="js/shared/errors.js?v=26"></script>
+<script src="js/shared/dialogs.js?v=27"></script>
+<script src="js/shared/errors.js?v=27"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -542,7 +542,7 @@
   body.print-a4   @page{size:A4;margin:15mm}
   @page{size:80mm auto;margin:2mm}
 </style>
-  <script src="js/sentry-init.js?v=26" defer></script>
+  <script src="js/sentry-init.js?v=27" defer></script>
 </head>
 <body>
 
@@ -774,6 +774,7 @@
         <button type="button" data-cfg="cuotas">💳 Cuotas</button>
         <button type="button" data-cfg="pagos">📱 MercadoPago</button>
         <button type="button" data-cfg="recibidas">📥 Facturas recibidas</button>
+        <button type="button" data-cfg="catalogo">🗂 Catálogo compartido</button>
       </div>
       <div class="cfg-panel" data-panel="negocio"><div class="recibo-wrap" id="negocio-wrap" style="padding:0;max-width:none"><div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div></div></div>
       <div class="cfg-panel" data-panel="usuarios" style="display:none"><div class="tiendas-wrap" id="usuarios-wrap" style="padding:0;max-width:none"><div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div></div></div>
@@ -783,6 +784,7 @@
       <div class="cfg-panel" data-panel="cuotas" style="display:none"><div class="recibo-wrap" id="cuotas-wrap" style="padding:0;max-width:none"></div></div>
       <div class="cfg-panel" data-panel="pagos" style="display:none"><div class="recibo-wrap" id="mp-config-wrap" style="padding:0;max-width:none"></div></div>
       <div class="cfg-panel" data-panel="recibidas" style="display:none"><div class="recibo-wrap" id="recibidas-wrap" style="padding:0;max-width:none"><div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div></div></div>
+      <div class="cfg-panel" data-panel="catalogo" style="display:none"><div class="recibo-wrap" id="catalogo-wrap" style="padding:0;max-width:none"><div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div></div></div>
     </div>
   </div>
 
@@ -1073,7 +1075,7 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=26"></script>
-<script src="js/pos.js?v=26"></script>
+<script src="js/config.js?v=27"></script>
+<script src="js/pos.js?v=27"></script>
 </body>
 </html>

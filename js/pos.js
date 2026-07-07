@@ -5451,8 +5451,28 @@ window.abrirAltaProducto = (preset) => {
     _renderComboList();
   }
   ov.classList.add('show');
+  // Autocompletar desde el catálogo compartido al tipear/escanear un código.
+  const _bcEl = document.getElementById('prod-barcode');
+  if (_bcEl) _bcEl.onchange = () => _catalogoAutofill(_bcEl.value);
+  if (preset.codigo_barra && !_prodEditId) _catalogoAutofill(preset.codigo_barra);
   setTimeout(() => document.getElementById('prod-nombre').focus(), 50);
 };
+
+// Autocompleta nombre/unidad desde el catálogo compartido (si la org comparte).
+async function _catalogoAutofill(codigo){
+  const cb = (codigo || '').trim();
+  if (cb.length < 6) return;
+  if (productos.some(p => (p.codigo_barra || '') === cb)) return;   // ya lo tenés
+  try {
+    const { data } = await sb.rpc('pos_catalogo_buscar', { p_organization_id: orgId, p_codigo: cb });
+    if (!data?.encontrado) return;
+    const nom = document.getElementById('prod-nombre');
+    const uni = document.getElementById('prod-unidad');
+    if (nom && !nom.value.trim()) nom.value = data.nombre || '';
+    if (uni && (!uni.value.trim() || uni.value.trim() === 'u.') && data.unidad) uni.value = data.unidad;
+    toast('✓ "' + (data.nombre || '') + '" del catálogo compartido — cargá costo y precio', 'ok');
+  } catch (_) {}
+}
 
 // Calcula y muestra el margen (precio venta vs costo) en el modal de producto.
 function _recalcMargenProd() {
@@ -5631,6 +5651,12 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           await sb.from('combo_componentes').delete().eq('combo_id', productoId);
         }
+      }
+
+      // Si la org comparte su catálogo, publicar este producto al pool
+      // (self-gated: no hace nada si no comparte o no tiene código de barras).
+      if (productoId) {
+        sb.rpc('pos_catalogo_publicar_uno', { p_organization_id: orgId, p_producto_id: productoId }).catch(() => {});
       }
 
       document.getElementById('prod-overlay').classList.remove('show');
@@ -6931,6 +6957,45 @@ function _cfgShow(key) {
   else if (key === 'cuotas')  renderCuotasConfig();
   else if (key === 'pagos')   renderConfigMP();
   else if (key === 'recibidas') renderFacturasRecibidas();
+  else if (key === 'catalogo') renderCatalogoCompartido();
+}
+
+// Catálogo compartido: opt-in público entre quienes comparten (aportás → accedés).
+async function renderCatalogoCompartido(){
+  const wrap = document.getElementById('catalogo-wrap');
+  if (!wrap) return;
+  if (!_isAdmin()) { wrap.innerHTML = '<div class="env-empty" style="background:#fff;border:1px solid var(--border);border-radius:14px">Solo administradores.</div>'; return; }
+  wrap.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>';
+  let cfg = {};
+  try {
+    const { data, error } = await sb.rpc('pos_catalogo_config_get', { p_organization_id: orgId });
+    if (error) throw error;
+    cfg = data || {};
+  } catch (e) { wrap.innerHTML = '<div style="color:var(--danger);padding:20px">Error: ' + (e.message || e) + '</div>'; return; }
+
+  wrap.innerHTML =
+    '<div class="recibo-card">' +
+    '  <div style="font-size:18px;font-weight:800;margin-bottom:6px">🗂 Catálogo compartido</div>' +
+    '  <div style="font-size:12.5px;color:var(--muted);margin-bottom:14px;line-height:1.55">Es un catálogo <b>público entre los negocios que optan por compartir</b>: si activás esto, tus productos (nombre, categoría y unidad, por su <b>código de barras</b>) se suman al pool y, a cambio, cuando cargás un producto podés autocompletar los datos de cualquier código que ya esté en el pool — vos solo ponés tu costo y tu precio. <b>Nunca se comparten costos ni precios.</b></div>' +
+    '  <label class="recibo-toggle" style="margin-bottom:12px"><span>Compartir mi catálogo (aportar y acceder)</span><input id="cat-share" type="checkbox"' + (cfg.compartir ? ' checked' : '') + '></label>' +
+    '  <div style="display:flex;gap:10px;flex-wrap:wrap">' +
+    '    <div style="flex:1;min-width:140px;background:#f8f9ff;border:1px solid var(--border);border-radius:10px;padding:12px 14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Aportados por vos</div><div style="font-size:22px;font-weight:800">' + (cfg.aportados || 0) + '</div></div>' +
+    '    <div style="flex:1;min-width:140px;background:#f8f9ff;border:1px solid var(--border);border-radius:10px;padding:12px 14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Total en el pool</div><div style="font-size:22px;font-weight:800">' + (cfg.pool_total || 0) + '</div></div>' +
+    '  </div>' +
+    '  <div id="cat-msg" style="font-size:12.5px;margin-top:12px;line-height:1.5"></div>' +
+    '</div>';
+
+  document.getElementById('cat-share').addEventListener('change', async (e) => {
+    const msg = document.getElementById('cat-msg');
+    const on = e.target.checked;
+    e.target.disabled = true;
+    const { data, error } = await sb.rpc('pos_catalogo_config_set', { p_organization_id: orgId, p_compartir: on });
+    e.target.disabled = false;
+    if (error || !data?.ok) { msg.style.color = 'var(--danger)'; msg.textContent = 'No se pudo guardar.'; e.target.checked = !on; return; }
+    if (on) { toast('Catálogo compartido activado ✓', 'ok'); msg.style.color = '#059669'; msg.textContent = '✓ Compartiendo. Se publicaron ' + (data.publicados || 0) + ' productos con código de barras.'; }
+    else { toast('Dejaste de compartir', 'ok'); msg.style.color = 'var(--muted)'; msg.textContent = 'Ya no compartís tu catálogo (y no podés autocompletar del pool).'; }
+    renderCatalogoCompartido();
+  });
 }
 
 // Archivo de facturas/remitos recibidos (compras). Foto o PDF + datos.
