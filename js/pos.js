@@ -7162,6 +7162,24 @@ async function renderConfigMP() {
     '  </div>' +
 
     '  <div class="recibo-section">' +
+    '    <div class="recibo-section-h">Client ID (App ID)</div>' +
+    '    <input id="mp-appid" type="text" class="prod-form-i" style="width:100%;font-family:monospace" autocomplete="off" placeholder="Ej: 1234567890123456" value="' + esc(cfg.app_id || '') + '">' +
+    '    <div style="font-size:11px;color:var(--muted);margin-top:6px">Número de tu aplicación de MercadoPago (Tus integraciones → tu app → Credenciales).</div>' +
+    '  </div>' +
+
+    '  <div class="recibo-section">' +
+    '    <div class="recibo-section-h">Client Secret</div>' +
+    '    <input id="mp-secret" type="password" class="prod-form-i" style="width:100%;font-family:monospace" autocomplete="off" placeholder="' + (cfg.tiene_client_secret ? '•••• (dejá vacío para mantener)' : 'Client Secret de tu app') + '">' +
+    '    <div style="font-size:11px;color:var(--muted);margin-top:6px">Se guarda cifrado en el servidor y no se muestra de nuevo. Va junto con el Client ID.</div>' +
+    '  </div>' +
+
+    '  <div class="recibo-section">' +
+    '    <div class="recibo-section-h">User ID (número de tu cuenta MP)</div>' +
+    '    <input id="mp-userid" type="number" inputmode="numeric" class="prod-form-i" style="width:100%;font-family:monospace" autocomplete="off" placeholder="Ej: 123456789" value="' + esc(cfg.user_id_mp != null ? cfg.user_id_mp : '') + '">' +
+    '    <div style="font-size:11px;color:var(--muted);margin-top:6px">Es el ID de usuario (collector) de tu cuenta de MercadoPago. Necesario para el QR fijo en caja.</div>' +
+    '  </div>' +
+
+    '  <div class="recibo-section">' +
     '    <div class="recibo-section-h">Nombre del POS (caja) para el QR</div>' +
     '    <input id="mp-posname" type="text" class="prod-form-i" style="width:100%" autocomplete="off" placeholder="POS01" value="' + esc(cfg.pos_name || 'POS01') + '">' +
     '    <div style="font-size:11px;color:var(--muted);margin-top:6px">Para el QR fijo "en caja" creá un punto de venta <b>Dinámico</b> en MP (Tu negocio → Puntos de venta) con este mismo nombre. Si no, el sistema genera igual un link/QR de pago automáticamente.</div>' +
@@ -7202,6 +7220,9 @@ async function renderConfigMP() {
         p_sandbox_mode:         document.getElementById('mp-sandbox').checked,
         p_sandbox_access_token: document.getElementById('mp-sandbox-token').value.trim() || null,
         p_activo:               document.getElementById('mp-activo').checked,
+        p_app_id:               document.getElementById('mp-appid').value.trim() || null,
+        p_client_secret:        document.getElementById('mp-secret').value.trim() || null,
+        p_user_id_mp:           (document.getElementById('mp-userid').value.trim() ? Number(document.getElementById('mp-userid').value.trim()) : null),
       });
       if (error) throw error;
       if (!data?.ok) throw new Error('No se guardó');
