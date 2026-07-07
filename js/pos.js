@@ -5884,6 +5884,26 @@ document.addEventListener('keydown', (e) => {
 
 // ── CARGA DE STOCK EN BULK ───────────────────────────
 function _esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+// Construye una fila de producto para la lista de carga. qtyVal es el valor
+// inicial de la cantidad ('' para el listado completo, '1' al escanear uno).
+function _cargaMakeRow(p, qtyVal) {
+  const cur = stockMap.has(p.id) ? stockMap.get(p.id) : 0;
+  const costoActual = (p.costo != null && p.costo !== '') ? Number(p.costo) : null;
+  const row = document.createElement('div');
+  row.className = 'carga-row';
+  row.style.gridTemplateColumns = '1fr 46px 54px 74px 26px';
+  row.innerHTML =
+    '<div style="min-width:0"><div class="carga-row-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>' +
+      '<div style="font-size:10px;color:var(--muted)">' + (costoActual ? 'costo ' + fmtARS(costoActual) : 'sin costo') + '</div></div>' +
+    '<div class="carga-row-cur">x<b>' + cur + '</b></div>' +
+    '<input class="carga-row-input" type="number" step="1" value="' + qtyVal + '" placeholder="0" data-prod="' + p.id + '" title="Cantidad a sumar (o negativo para restar)">' +
+    '<input class="carga-row-costo" type="number" min="0" step="0.01" placeholder="costo" data-prod="' + p.id + '" data-cur="' + cur + '" title="Costo unitario de esta entrega (opcional)" style="padding:8px 8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;text-align:right;width:100%">' +
+    '<button type="button" class="carga-row-del" title="Quitar" style="border:none;background:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1;padding:0">×</button>';
+  row.querySelector('.carga-row-name').textContent = p.nombre;
+  row.querySelector('.carga-row-del').addEventListener('click', () => row.remove());
+  return row;
+}
+
 // Agrega (o suma sobre) una fila de producto en la lista de carga. Si el
 // producto ya está en la lista, incrementa su cantidad en +1 en vez de
 // duplicar la fila. Las filas nuevas se insertan arriba para que se vea
@@ -5901,23 +5921,41 @@ function _cargaAgregar(p) {
     existente.focus(); existente.select();
     return;
   }
-  const cur = stockMap.has(p.id) ? stockMap.get(p.id) : 0;
-  const costoActual = (p.costo != null && p.costo !== '') ? Number(p.costo) : null;
-  const row = document.createElement('div');
-  row.className = 'carga-row';
-  row.style.gridTemplateColumns = '1fr 46px 54px 74px 26px';
-  row.innerHTML =
-    '<div style="min-width:0"><div class="carga-row-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>' +
-      '<div style="font-size:10px;color:var(--muted)">' + (costoActual ? 'costo ' + fmtARS(costoActual) : 'sin costo') + '</div></div>' +
-    '<div class="carga-row-cur">x<b>' + cur + '</b></div>' +
-    '<input class="carga-row-input" type="number" step="1" value="1" placeholder="0" data-prod="' + p.id + '" title="Cantidad a sumar (o negativo para restar)">' +
-    '<input class="carga-row-costo" type="number" min="0" step="0.01" placeholder="costo" data-prod="' + p.id + '" data-cur="' + cur + '" title="Costo unitario de esta entrega (opcional)" style="padding:8px 8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;text-align:right;width:100%">' +
-    '<button type="button" class="carga-row-del" title="Quitar" style="border:none;background:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1;padding:0">×</button>';
-  row.querySelector('.carga-row-name').textContent = p.nombre;
-  row.querySelector('.carga-row-del').addEventListener('click', () => row.remove());
+  const row = _cargaMakeRow(p, '1');
   list.prepend(row);
   const qtyInp = row.querySelector('.carga-row-input');
   qtyInp.focus(); qtyInp.select();
+}
+
+// Llena la lista con TODOS los productos (cantidad vacía) para cargar en bulk.
+function _cargaListarTodos() {
+  const list = document.getElementById('carga-list');
+  if (!list) return;
+  list.innerHTML = '';
+  const frag = document.createDocumentFragment();
+  productos.forEach(p => frag.appendChild(_cargaMakeRow(p, '')));
+  list.appendChild(frag);
+}
+
+// Alterna entre "de a uno" (escanear/buscar) y "listado completo" (bulk).
+function _cargaSetModo(modo) {
+  const unoBtn   = document.getElementById('carga-modo-uno');
+  const listaBtn = document.getElementById('carga-modo-lista');
+  const unoWrap  = document.getElementById('carga-uno-wrap');
+  const listaHint= document.getElementById('carga-lista-hint');
+  const list     = document.getElementById('carga-list');
+  const esLista = modo === 'lista';
+  unoBtn?.classList.toggle('active', !esLista);
+  listaBtn?.classList.toggle('active', esLista);
+  if (unoWrap)   unoWrap.style.display   = esLista ? 'none' : '';
+  if (listaHint) listaHint.style.display = esLista ? '' : 'none';
+  if (esLista) {
+    _cargaListarTodos();
+  } else if (list) {
+    list.innerHTML = '';
+    const q = document.getElementById('carga-q');
+    if (q) { q.value = ''; setTimeout(() => q.focus(), 50); }
+  }
 }
 
 let _cargaBuscWired = false;
@@ -6001,9 +6039,18 @@ window.abrirCargaStock = () => {
   document.getElementById('carga-origen-vehiculo-wrap').style.display = 'none';
   ov.classList.add('show');
   _wireCargaBuscador();
-  if (q) setTimeout(() => q.focus(), 50);
+  _wireCargaModo();
+  _cargaSetModo('uno');   // arranca en "de a uno" y enfoca el buscador
   _posPopularOrigenes();
 };
+
+let _cargaModoWired = false;
+function _wireCargaModo() {
+  if (_cargaModoWired) return;
+  _cargaModoWired = true;
+  document.getElementById('carga-modo-uno')?.addEventListener('click', () => _cargaSetModo('uno'));
+  document.getElementById('carga-modo-lista')?.addEventListener('click', () => _cargaSetModo('lista'));
+}
 
 async function _posPopularOrigenes() {
   const { data: tiendasLista } = await sb.rpc('pos_listar_tiendas', { p_organization_id: orgId });

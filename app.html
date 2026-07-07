@@ -14,8 +14,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <title>POS · Mostrador</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="js/shared/dialogs.js?v=34"></script>
-<script src="js/shared/errors.js?v=34"></script>
+<script src="js/shared/dialogs.js?v=35"></script>
+<script src="js/shared/errors.js?v=35"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -414,9 +414,9 @@
   .lock-modal .lock-logout:hover{color:#fff}
 
   /* ── QR MercadoPago ─────────────────────────────────── */
-  .qr-overlay{position:fixed;inset:0;background:rgba(10,10,20,.78);z-index:250;display:none;align-items:center;justify-content:center;padding:20px}
+  .qr-overlay{position:fixed;inset:0;background:rgba(10,10,20,.78);z-index:250;display:none;align-items:center;justify-content:center;padding:20px;padding-top:calc(var(--topbar) + var(--safe-top) + 16px)}
   .qr-overlay.show{display:flex}
-  .qr-modal{background:#fff;border-radius:24px;width:100%;max-width:480px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+  .qr-modal{background:#fff;border-radius:24px;width:100%;max-width:480px;max-height:calc(100vh - var(--topbar) - var(--safe-top) - 32px);overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.35)}
   .qr-modal-h{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0}
   .qr-modal-title{font-size:16px;font-weight:800}
   .qr-modal-close{background:rgba(239,68,68,.08);color:var(--danger);border:1.5px solid rgba(239,68,68,.2);width:36px;height:36px;border-radius:50%;font-size:22px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
@@ -428,14 +428,14 @@
   /* Pantallas de poca altura (tablet/notebook en horizontal): usar casi toda
      la pantalla y compactar padding. */
   @media (max-height:680px){
-    .qr-overlay{padding:10px}
-    .qr-modal{max-height:96vh}
+    .qr-overlay{padding:10px;padding-top:calc(var(--topbar) + var(--safe-top) + 10px)}
+    .qr-modal{max-height:calc(100vh - var(--topbar) - var(--safe-top) - 20px)}
     .qr-modal-body{padding:16px 20px}
   }
   /* Celulares y tablets angostas: modal casi a pantalla completa. */
   @media (max-width:560px){
-    .qr-overlay{padding:8px}
-    .qr-modal{max-height:94vh;border-radius:18px}
+    .qr-overlay{padding:8px;padding-top:calc(var(--topbar) + var(--safe-top) + 8px)}
+    .qr-modal{max-height:calc(100vh - var(--topbar) - var(--safe-top) - 16px);border-radius:18px}
     .qr-modal-body{padding:18px}
   }
   /* Pie fijo del modal: el botón de acción queda SIEMPRE visible aunque el
@@ -444,6 +444,9 @@
   .qr-foot-btn{flex:1;padding:14px;border-radius:50px;border:none;background:var(--primary);color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}
   .qr-foot-btn:active{transform:scale(.98)}
   .qr-foot-btn:disabled{opacity:.5;cursor:not-allowed}
+  /* Toggle De a uno / Listado completo en el modal de carga de mercadería. */
+  .carga-modo-btn{flex:1;padding:9px 10px;border-radius:50px;border:1.5px solid var(--border);background:#fff;color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
+  .carga-modo-btn.active{background:rgba(124,58,237,.08);border-color:var(--primary);color:var(--primary)}
   /* Ícono de información (ⓘ): al pasar el cursor (o tocar) muestra un tooltip
      propio (#pos-tip) explicando qué es y cómo se calcula la métrica. */
   .info-i{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;font-size:9px;font-weight:800;font-style:normal;font-family:Georgia,'Times New Roman',serif;color:var(--muted);border:1.3px solid currentColor;cursor:help;vertical-align:middle;opacity:.55;line-height:1;user-select:none;margin-left:4px;flex:0 0 auto}
@@ -542,7 +545,7 @@
   body.print-a4   @page{size:A4;margin:15mm}
   @page{size:80mm auto;margin:2mm}
 </style>
-  <script src="js/sentry-init.js?v=34" defer></script>
+  <script src="js/sentry-init.js?v=35" defer></script>
 </head>
 <body>
 
@@ -958,11 +961,18 @@
         <button class="qr-modal-close" id="carga-close" type="button" title="Cancelar">×</button>
       </div>
       <div class="qr-modal-body" style="align-items:stretch;text-align:left;overflow-y:auto">
-        <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Escaneá el código de barras o buscá por nombre para ir agregando productos de a uno. Ajustá la cantidad (negativo para corregir) y, si cambió, el costo.</div>
-        <div style="position:relative;margin-bottom:14px">
-          <input id="carga-q" type="text" autocomplete="off" placeholder="Escaneá el código o buscá por nombre…" class="prod-form-i" style="width:100%">
-          <div id="carga-sug" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:260px;overflow-y:auto;margin-top:4px;display:none;z-index:10"></div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <button type="button" id="carga-modo-uno" class="carga-modo-btn active">🔍 De a uno</button>
+          <button type="button" id="carga-modo-lista" class="carga-modo-btn">📋 Listado completo</button>
         </div>
+        <div id="carga-uno-wrap">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Escaneá el código de barras o buscá por nombre para ir agregando productos de a uno. Ajustá la cantidad (negativo para corregir) y, si cambió, el costo.</div>
+          <div style="position:relative;margin-bottom:14px">
+            <input id="carga-q" type="text" autocomplete="off" placeholder="Escaneá el código o buscá por nombre…" class="prod-form-i" style="width:100%">
+            <div id="carga-sug" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:260px;overflow-y:auto;margin-top:4px;display:none;z-index:10"></div>
+          </div>
+        </div>
+        <div id="carga-lista-hint" style="display:none;font-size:12px;color:var(--muted);margin-bottom:12px">Listado completo. Escribí la cantidad recibida en los productos que correspondan (negativo para corregir) y, si cambió, el costo. Los que dejes vacíos no se tocan.</div>
         <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Motivo</label>
         <select id="carga-motivo" class="prod-form-i" style="margin-bottom:12px">
           <option value="carga">Carga (recibí mercadería)</option>
@@ -1092,7 +1102,7 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=34"></script>
-<script src="js/pos.js?v=34"></script>
+<script src="js/config.js?v=35"></script>
+<script src="js/pos.js?v=35"></script>
 </body>
 </html>
