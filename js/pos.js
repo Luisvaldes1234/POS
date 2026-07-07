@@ -37,6 +37,20 @@ let _prodView = (() => { try { return localStorage.getItem('pos_prod_view') || '
 let _searchCli  = '';
 let _suggestTimer = null;
 let _stockStrict = true;
+// Permisos de stock del usuario actual (los admins tienen ambos). Para cajeros
+// los define el administrador desde Configuración → Usuarios.
+let _permRecibir = false;   // puede reponer / cargar mercadería (sumar stock)
+let _permAjustar = false;   // puede descontar/ajustar y editar/dar de baja productos
+async function _cargarPermisos(){
+  if (_isAdmin()) { _permRecibir = true; _permAjustar = true; return; }
+  try {
+    const { data } = await sb.rpc('pos_permisos_mis', { p_organization_id: orgId });
+    _permRecibir = !!data?.recibir_stock;
+    _permAjustar = !!data?.ajustar_stock;
+  } catch (_) { _permRecibir = false; _permAjustar = false; }
+}
+function _canRecibirStock(){ return _isAdmin() || _permRecibir || _permAjustar; }
+function _canAjustarStock(){ return _isAdmin() || _permAjustar; }
 function _calcDescuento(total) {
   const inp = document.getElementById('pos-descuento');
   const tipo = document.getElementById('pos-descuento-tipo')?.value || 'ars';
@@ -369,6 +383,7 @@ function _offSaveSnapshot(uid){
       tiendas, tiendaId, tiendaLocked,
       productos, stock: Array.from(stockMap.entries()),
       clienteMostradorId,
+      permRecibir: _permRecibir, permAjustar: _permAjustar,
     }));
   } catch (_) {}
 }
@@ -380,6 +395,7 @@ function _offHydrate(uid){
   productos = s.productos || [];
   stockMap = new Map(s.stock || []);
   clienteMostradorId = s.clienteMostradorId || null;
+  _permRecibir = !!s.permRecibir; _permAjustar = !!s.permAjustar;
   return true;
 }
 
@@ -484,6 +500,7 @@ async function init(){
   }
 
   await cargarTiendas();
+  await _cargarPermisos();
   if (_isAdmin()) {
     // Todo lo de gestión (usuarios, tiendas, ticket, promos, cuotas y
     // MercadoPago) vive ahora dentro de la pestaña Configuración.
@@ -2613,26 +2630,29 @@ async function renderStock(){
   const list = document.getElementById('stock-list');
   if (!list) return;
   const admin = _isAdmin();
+  // Permisos de stock: los admins tienen todo; a los cajeros el admin les puede
+  // habilitar "recibir" (reponer/cargar, sumar) y/o "ajustar" (descontar y
+  // editar/dar de baja productos) desde Configuración → Usuarios.
+  const canRecibir = _canRecibirStock();
+  const canAjustar = _canAjustarStock();
+  const canAny = canRecibir || canAjustar;
 
-  // El control de stock (reponer/cargar/ajustar) y el alta/baja de productos
-  // son SOLO para administradores. Los cajeros ven el stock en modo lectura;
-  // las ventas igual lo descuentan en el backend. Mostramos/ocultamos también
-  // el toggle de "bloquear venta por stock" (es una config de operación).
+  // El toggle de "bloquear venta por stock" es una config de operación: admin.
   const strictCb = document.getElementById('stock-strict-toggle');
   if (strictCb && strictCb.closest('label')) {
     strictCb.closest('label').style.display = admin ? '' : 'none';
   }
 
   if (!productos.length && !_stockShowInactive) {
-    list.innerHTML = (admin ? _stockAdminToolbar() : '') +
+    list.innerHTML = (canAny ? _stockAdminToolbar(canRecibir, canAjustar) : '') +
       '<div style="padding:30px;text-align:center;color:var(--muted)">Sin productos en el catálogo' +
-      (admin ? '. Tocá "➕ Producto" para crear el primero.' : '.') + '</div>';
-    if (admin) _wireStockToolbar();
+      (canAjustar ? '. Tocá "➕ Producto" para crear el primero.' : '.') + '</div>';
+    if (canAny) _wireStockToolbar();
     return;
   }
 
   const negativos = productos.filter(p => stockMap.has(p.id) && stockMap.get(p.id) < 0);
-  let html = admin ? _stockAdminToolbar() : '';
+  let html = canAny ? _stockAdminToolbar(canRecibir, canAjustar) : '';
   if (negativos.length) {
     const items = negativos.map(p =>
       '<li><b>' + p.nombre.replace(/</g,'&lt;') + '</b>: ' + stockMap.get(p.id) + '</li>'
@@ -2645,7 +2665,7 @@ async function renderStock(){
       + '</div>';
   }
   list.innerHTML = html;
-  if (admin) _wireStockToolbar();
+  if (canAny) _wireStockToolbar();
 
   productos.forEach(p => {
     const cant = stockMap.has(p.id) ? stockMap.get(p.id) : 0;
@@ -2670,29 +2690,29 @@ async function renderStock(){
         '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + sub + '</div>' +
       '</div>' +
       '<div class="stock-row-cant ' + cls + '">' + cant + '</div>' +
-      (admin
+      (canAny
         ? '<div style="display:flex;gap:6px">' +
-            '<button class="rep-btn" style="padding:6px 12px;border:1.5px solid var(--primary);background:rgba(124,58,237,.06);color:var(--primary);border-radius:50px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">+ Reponer</button>' +
-            '<button class="edit-btn" title="Editar producto" style="padding:6px 10px;border:1.5px solid var(--border);background:#fff;border-radius:50px;font-size:12px;cursor:pointer">✏️</button>' +
-            '<button class="baja-btn" title="Dar de baja" style="padding:6px 10px;border:1.5px solid rgba(239,68,68,.35);background:rgba(239,68,68,.06);color:#dc2626;border-radius:50px;font-size:12px;cursor:pointer">🗑</button>' +
+            (canRecibir ? '<button class="rep-btn" style="padding:6px 12px;border:1.5px solid var(--primary);background:rgba(124,58,237,.06);color:var(--primary);border-radius:50px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">' + (canAjustar ? '+ Reponer' : '+ Recibir') + '</button>' : '') +
+            (canAjustar ? '<button class="edit-btn" title="Editar producto" style="padding:6px 10px;border:1.5px solid var(--border);background:#fff;border-radius:50px;font-size:12px;cursor:pointer">✏️</button>' : '') +
+            (canAjustar ? '<button class="baja-btn" title="Dar de baja" style="padding:6px 10px;border:1.5px solid rgba(239,68,68,.35);background:rgba(239,68,68,.06);color:#dc2626;border-radius:50px;font-size:12px;cursor:pointer">🗑</button>' : '') +
           '</div>'
         : '<div style="font-size:11px;color:var(--muted)">solo lectura</div>');
     row.querySelector('.stock-row-name').textContent = p.nombre;
-    if (admin) {
-      row.querySelector('.rep-btn').addEventListener('click', () => reponer(p));
-      row.querySelector('.edit-btn').addEventListener('click', () => abrirAltaProducto({
+    if (canAny) {
+      row.querySelector('.rep-btn')?.addEventListener('click', () => reponer(p));
+      row.querySelector('.edit-btn')?.addEventListener('click', () => abrirAltaProducto({
         _editId: p.id, nombre: p.nombre, precio: p.precio, costo: p.costo, unidad: p.unidad,
         codigo_barra: p.codigo_barra, tiene_envase: p.tiene_envase, tipo_envase_id: p.tipo_envase_id,
         es_combo: p.es_combo, peso_variable: p.peso_variable, fecha_vencimiento: p.fecha_vencimiento,
         descuento_volumen_qty: p.descuento_volumen_qty, descuento_volumen_pct: p.descuento_volumen_pct,
       }));
-      row.querySelector('.baja-btn').addEventListener('click', () => darDeBajaProducto(p));
+      row.querySelector('.baja-btn')?.addEventListener('click', () => darDeBajaProducto(p));
     }
     list.appendChild(row);
   });
 
-  // Sección de productos dados de baja (inactivos) — admin, bajo demanda.
-  if (admin && _stockShowInactive) {
+  // Sección de productos dados de baja (inactivos) — requiere permiso de ajuste.
+  if (canAjustar && _stockShowInactive) {
     const { data: inact } = await sb.from('productos')
       .select('id, nombre, precio, precio_pos, unidad, codigo_barra')
       .eq('organization_id', orgId).eq('activo', false).order('nombre');
@@ -2719,11 +2739,12 @@ async function renderStock(){
   }
 }
 
-function _stockAdminToolbar() {
+function _stockAdminToolbar(canRecibir, canAjustar) {
+  if (canRecibir === undefined) { canRecibir = true; canAjustar = true; }  // compat
   return '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">' +
-    '<button id="stk-add" type="button" style="padding:9px 16px;border-radius:50px;border:1.5px solid var(--primary);background:rgba(124,58,237,.06);color:var(--primary);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">➕ Producto</button>' +
-    '<button id="stk-carga" type="button" style="padding:9px 16px;border-radius:50px;border:1.5px solid var(--border);background:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">📦 Cargar mercadería</button>' +
-    '<button id="stk-inact" type="button" style="padding:9px 16px;border-radius:50px;border:1.5px solid var(--border);background:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">' + (_stockShowInactive ? '✓ Ocultar dados de baja' : '👁 Ver dados de baja') + '</button>' +
+    (canAjustar ? '<button id="stk-add" type="button" style="padding:9px 16px;border-radius:50px;border:1.5px solid var(--primary);background:rgba(124,58,237,.06);color:var(--primary);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">➕ Producto</button>' : '') +
+    (canRecibir ? '<button id="stk-carga" type="button" style="padding:9px 16px;border-radius:50px;border:1.5px solid var(--border);background:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">📦 Cargar mercadería</button>' : '') +
+    (canAjustar ? '<button id="stk-inact" type="button" style="padding:9px 16px;border-radius:50px;border:1.5px solid var(--border);background:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">' + (_stockShowInactive ? '✓ Ocultar dados de baja' : '👁 Ver dados de baja') + '</button>' : '') +
     '</div>';
 }
 function _wireStockToolbar() {
@@ -2756,6 +2777,8 @@ async function reactivarProducto(p) {
 }
 
 async function reponer(p){
+  // Quien solo tiene permiso de "recibir" puede sumar pero NO descontar.
+  const _soloRecibir = !_canAjustarStock();
   const cur = stockMap.has(p.id) ? stockMap.get(p.id) : 0;
   const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const html = `
@@ -2763,7 +2786,7 @@ async function reponer(p){
       onmousedown="this.dataset.dwn=(event.target===this?&quot;1&quot;:&quot;&quot;)" onclick="if(event.target===this&&this.dataset.dwn===&quot;1&quot;)this.remove();this.dataset.dwn=&quot;&quot;">
       <div style="background:#fff;border-radius:14px;max-width:440px;width:100%;padding:20px;box-shadow:0 14px 40px rgba(0,0,0,.18)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div style="font-weight:700;font-size:16px">📦 Ajustar stock</div>
+          <div style="font-weight:700;font-size:16px">📦 ${_soloRecibir ? 'Recibir stock' : 'Ajustar stock'}</div>
           <button type="button" onclick="document.getElementById('pos-rep-overlay').remove()"
             style="background:none;border:0;font-size:22px;cursor:pointer;color:#64748b">×</button>
         </div>
@@ -2786,9 +2809,9 @@ async function reponer(p){
           <select id="pos-rep-vehiculo" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;margin-top:5px"></select>
         </div>
         <label style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Cantidad</label>
-        <input id="pos-rep-cant" type="number" inputmode="numeric" placeholder="+10 ó -3" value="10" step="1"
+        <input id="pos-rep-cant" type="number" inputmode="numeric" placeholder="${_soloRecibir ? '10' : '+10 ó -3'}" value="10" step="1" ${_soloRecibir ? 'min="1"' : ''}
           style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;margin-top:5px;margin-bottom:6px">
-        <div style="font-size:10px;color:var(--muted);margin-bottom:14px">+ suma · − resta (merma, corrección, rotura)</div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:14px">${_soloRecibir ? 'Ingresá cuánto recibís (solo suma).' : '+ suma · − resta (merma, corrección, rotura)'}</div>
         <div id="pos-rep-costo-wrap" style="display:none;background:rgba(16,185,129,.05);border:1px solid rgba(16,185,129,.2);border-radius:9px;padding:10px;margin-bottom:14px">
           <label style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.04em">💲 Costo unitario de esta entrega</label>
           <input id="pos-rep-costo" type="number" min="0" step="0.01" placeholder="0" autocomplete="off"
@@ -2893,6 +2916,9 @@ async function reponer(p){
   btnSave.addEventListener('click', async () => {
     const cant = parseInt(cantInp.value, 10) || 0;
     if (cant === 0) { toast('Cantidad inválida', 'err'); return; }
+    if (_soloRecibir && cant < 0) {
+      toast('No tenés permiso para descontar stock. Pedíselo al administrador.', 'err'); return;
+    }
     if (cant < 0 && (-cant) > cur) {
       toast(`No podés descontar más que el stock actual (${cur})`, 'err'); return;
     }
@@ -6321,12 +6347,18 @@ async function renderUsuarios() {
   if (error) { wrap.innerHTML = '<div style="color:var(--danger);padding:20px">Error: ' + error.message + '</div>'; return; }
   const usuarios = data?.usuarios || [];
   const esc = s => String(s ?? '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  // Permisos de stock por cajero (para los toggles).
+  let permMap = {};
+  try {
+    const { data: permData } = await sb.rpc('pos_permisos_listar', { p_organization_id: orgId });
+    (permData || []).forEach(p => { permMap[p.user_id] = p; });
+  } catch (_) {}
 
   let html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap">' +
     '<h3 style="font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:0">Usuarios del negocio</h3>' +
     '<button id="usr-add" type="button" style="padding:9px 16px;border-radius:50px;border:1.5px solid var(--primary);background:rgba(124,58,237,.06);color:var(--primary);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">+ Nuevo usuario</button>' +
     '</div>' +
-    '<div style="font-size:12px;color:var(--ink);background:rgba(124,58,237,.06);border-radius:8px;padding:8px 10px;margin-bottom:12px">ℹ️ Creá cajeros (solo venta) o administradores (acceso total). Dar de baja desactiva el acceso sin borrar el historial; podés reactivarlos cuando quieras.</div>';
+    '<div style="font-size:12px;color:var(--ink);background:rgba(124,58,237,.06);border-radius:8px;padding:8px 10px;margin-bottom:12px">ℹ️ Creá cajeros (solo venta) o administradores (acceso total). A cada cajero podés habilitarle <b>📦 Recibir stock</b> (reponer/cargar mercadería) y/o <b>✏️ Ajustar / descontar</b> (restar stock y editar productos). Sin permisos, el cajero ve el stock en modo lectura.</div>';
 
   if (!usuarios.length) {
     html += '<div class="env-empty" style="background:#fff;border:1px solid var(--border);border-radius:14px">Todavía no hay usuarios.</div>';
@@ -6342,6 +6374,14 @@ async function renderUsuarios() {
         (inactivo ? '<span style="font-size:10px;color:var(--danger)">dado de baja</span>' : '') +
         '  </div>' +
         '  <div class="tienda-card-meta email"></div>' +
+        ((u.role === 'client_pos' && u.activo) ? (function(){
+          const pm = permMap[u.user_id] || {};
+          const rec = !!pm.recibir_stock, aj = !!pm.ajustar_stock;
+          return '<div class="usr-perms" data-uid="' + u.user_id + '" style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--ink)">' +
+            '<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="perm-rec" ' + (rec?'checked':'') + '> 📦 Recibir stock</label>' +
+            '<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="perm-aj" ' + (aj?'checked':'') + '> ✏️ Ajustar / descontar</label>' +
+          '</div>';
+        })() : '') +
         '</div>' +
         '<div class="tienda-card-actions">' +
         (u.es_actual ? '<span style="font-size:11px;color:var(--muted)">—</span>'
@@ -6359,6 +6399,21 @@ async function renderUsuarios() {
   });
 
   document.getElementById('usr-add')?.addEventListener('click', abrirNuevoUsuario);
+  wrap.querySelectorAll('.usr-perms').forEach(box => {
+    const uid = box.dataset.uid;
+    const rec = box.querySelector('.perm-rec');
+    const aj  = box.querySelector('.perm-aj');
+    const save = async () => {
+      const { data, error } = await sb.rpc('pos_permisos_set', {
+        p_organization_id: orgId, p_user_id: uid,
+        p_recibir_stock: rec.checked, p_ajustar_stock: aj.checked,
+      });
+      if (error || !data?.ok) { toast('No se pudo guardar el permiso', 'err'); return; }
+      toast('Permisos actualizados ✓', 'ok');
+    };
+    rec.addEventListener('change', save);
+    aj.addEventListener('change', () => { if (aj.checked) rec.checked = true; save(); });
+  });
   wrap.querySelectorAll('button[data-toggle]').forEach(b => {
     b.addEventListener('click', async () => {
       const activar = b.dataset.activo !== '1';
