@@ -5505,7 +5505,7 @@ window.abrirAltaProducto = (preset) => {
 
   document.getElementById('prod-nombre').value  = preset.nombre  || '';
   document.getElementById('prod-precio').value  = preset.precio  || '';
-  document.getElementById('prod-unidad').value  = preset.unidad  || 'u.';
+  _setUnidadSelect(preset.unidad || 'u.');
   document.getElementById('prod-barcode').value = preset.codigo_barra || '';
   document.getElementById('prod-tiene-envase').checked = !!preset.tiene_envase;
   document.getElementById('prod-peso-variable').checked = !!preset.peso_variable;
@@ -5535,6 +5535,32 @@ window.abrirAltaProducto = (preset) => {
   if (preset.codigo_barra && !_prodEditId) _catalogoAutofill(preset.codigo_barra);
   setTimeout(() => document.getElementById('prod-nombre').focus(), 50);
 };
+
+// Selecciona la unidad en el desplegable. Si el producto tiene una unidad
+// vieja que no está entre las opciones, la agrega al vuelo para no perderla.
+function _setUnidadSelect(unidad) {
+  const sel = document.getElementById('prod-unidad');
+  if (!sel) return;
+  const val = (unidad || 'u.').trim() || 'u.';
+  if (![...sel.options].some(o => o.value === val)) {
+    const opt = document.createElement('option');
+    opt.value = val; opt.textContent = val;
+    sel.appendChild(opt);
+  }
+  sel.value = val;
+}
+
+// Al elegir una unidad de peso/volumen, sugerimos "peso variable" para que el
+// cajero ingrese la cantidad (kilos, litros) en cada venta. Se puede desmarcar.
+document.addEventListener('DOMContentLoaded', () => {
+  const sel = document.getElementById('prod-unidad');
+  if (!sel) return;
+  sel.addEventListener('change', () => {
+    const porPeso = ['kg', 'g', 'L', 'ml'].includes(sel.value);
+    const chk = document.getElementById('prod-peso-variable');
+    if (porPeso && chk && !chk.checked) chk.checked = true;
+  });
+});
 
 // Autocompleta nombre/unidad desde el catálogo compartido (si la org comparte).
 async function _catalogoAutofill(codigo){
