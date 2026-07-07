@@ -5734,7 +5734,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // Si la org comparte su catálogo, publicar este producto al pool
       // (self-gated: no hace nada si no comparte o no tiene código de barras).
       if (productoId) {
-        sb.rpc('pos_catalogo_publicar_uno', { p_organization_id: orgId, p_producto_id: productoId }).catch(() => {});
+        // El builder de Supabase es thenable pero no tiene .catch(): usamos
+        // el segundo argumento de .then() para tragarnos cualquier error sin
+        // romper el guardado (la publicación al pool no es crítica).
+        sb.rpc('pos_catalogo_publicar_uno', { p_organization_id: orgId, p_producto_id: productoId }).then(() => {}, () => {});
       }
 
       document.getElementById('prod-overlay').classList.remove('show');
