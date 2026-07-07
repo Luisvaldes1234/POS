@@ -2285,9 +2285,24 @@ window.posToggleVista = () => {
   _updateVistaBtn();
   renderProductGrid();
 };
+// Mostrar/ocultar en la grilla los productos sin stock (se recuerda la elección).
+let _verSinStock = (() => { try { return localStorage.getItem('pos_ver_sin_stock') === '1'; } catch (_) { return false; } })();
+window.posToggleSinStock = () => {
+  _verSinStock = !_verSinStock;
+  try { localStorage.setItem('pos_ver_sin_stock', _verSinStock ? '1' : '0'); } catch (_) {}
+  _updateSinStockBtn();
+  renderProductGrid();
+};
+function _updateSinStockBtn() {
+  const b = document.getElementById('prod-stock-toggle');
+  if (!b) return;
+  b.textContent = _verSinStock ? '🙈 Ocultar sin stock' : '👁 Sin stock';
+  b.classList.toggle('activo', _verSinStock);
+}
 function _updateVistaBtn() {
   const b = document.getElementById('prod-view-toggle');
   if (b) b.textContent = _prodView === 'list' ? '▦ Grilla' : '≣ Lista';
+  _updateSinStockBtn();
 }
 
 function renderProductGrid(){
@@ -2306,8 +2321,10 @@ function renderProductGrid(){
       const hay = norm(p.nombre) + ' ' + norm(p.codigo_barra);
       return tokens.every(t => hay.includes(t));
     }
-    // Sin búsqueda: no mostramos productos sin stock. Excepciones: los combos
-    // (descuentan de sus componentes) y los que no llevan control de stock.
+    // Sin búsqueda: por defecto no mostramos productos sin stock (salvo que el
+    // usuario active "ver sin stock"). Excepciones: los combos (descuentan de
+    // sus componentes) y los que no llevan control de stock.
+    if (_verSinStock) return true;
     if (p.es_combo) return true;
     const st = stockMap.has(p.id) ? stockMap.get(p.id) : null;
     if (st == null) return true;

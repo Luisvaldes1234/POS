@@ -14,8 +14,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <title>POS · Mostrador</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="js/shared/dialogs.js?v=38"></script>
-<script src="js/shared/errors.js?v=38"></script>
+<script src="js/shared/dialogs.js?v=39"></script>
+<script src="js/shared/errors.js?v=39"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -326,6 +326,7 @@
   .prod-search #barcode-input:focus{border-color:var(--primary);background:#fff}
   .btn-add-prod{padding:10px 16px;border-radius:50px;border:1.5px solid var(--primary);background:rgba(124,58,237,.06);color:var(--primary);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0}
   .btn-add-prod:hover{background:rgba(124,58,237,.12)}
+  .btn-add-prod.activo{background:var(--primary);color:#fff}
 
   /* ── Modales (alta producto + carga stock) ──────────── */
   .prod-form-l{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
@@ -548,7 +549,7 @@
   body.print-a4   @page{size:A4;margin:15mm}
   @page{size:80mm auto;margin:2mm}
 </style>
-  <script src="js/sentry-init.js?v=38" defer></script>
+  <script src="js/sentry-init.js?v=39" defer></script>
 </head>
 <body>
 
@@ -584,6 +585,7 @@
           <input id="prod-q" type="search" placeholder="🔍 Buscar producto o escanear código…" autocomplete="off"
                  title="Buscá por nombre o escaneá un código de barras: se agrega al carrito al instante, sin tener que enfocar nada.">
           <button id="prod-view-toggle" class="btn-add-prod" type="button" onclick="posToggleVista()" title="Cambiar entre grilla y lista">≣ Lista</button>
+          <button id="prod-stock-toggle" class="btn-add-prod" type="button" onclick="posToggleSinStock()" title="Mostrar u ocultar los productos sin stock">👁 Sin stock</button>
           <button id="btn-add-prod-toolbar" class="btn-add-prod" type="button" onclick="abrirAltaProducto()" title="Agregar nuevo producto al catálogo" style="display:none">+ Producto</button>
         </div>
         <div class="prod-grid" id="prod-grid"></div>
@@ -1105,7 +1107,7 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=38"></script>
-<script src="js/pos.js?v=38"></script>
+<script src="js/config.js?v=39"></script>
+<script src="js/pos.js?v=39"></script>
 </body>
 </html>
