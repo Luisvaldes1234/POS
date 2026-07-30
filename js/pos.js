@@ -881,7 +881,7 @@ window.hacerLogout = async () => {
 };
 
 // ── LOCK POR INACTIVIDAD ─────────────────────────────
-const LOCK_AFTER_MS = 5 * 60 * 1000;
+const LOCK_AFTER_MS = 60 * 60 * 1000;   // 1 hora de inactividad antes de pedir la contraseña
 let _lockTimer = null;
 let _lockUserEmail = null;
 
