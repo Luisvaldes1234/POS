@@ -36,7 +36,10 @@ let _searchProd = '';
 let _prodView = (() => { try { return localStorage.getItem('pos_prod_view') || 'grid'; } catch (_) { return 'grid'; } })();
 let _searchCli  = '';
 let _suggestTimer = null;
-let _stockStrict = true;
+// Bloquear venta si el stock no alcanza. Se recuerda la elección del comercio
+// (por defecto true = bloquea). Si el admin lo desactiva, queda desactivado
+// aunque recarguen la página.
+let _stockStrict = (() => { try { return localStorage.getItem('pos_stock_strict') !== '0'; } catch (_) { return true; } })();
 // Permisos de stock del usuario actual (los admins tienen ambos). Para cajeros
 // los define el administrador desde Configuración → Usuarios.
 let _permRecibir = false;   // puede reponer / cargar mercadería (sumar stock)
@@ -550,7 +553,13 @@ async function init(){
   if (!_offlineMode) await _loadTiposEnvase();
   _wireEnvasesUI();
   const strictCb = document.getElementById('stock-strict-toggle');
-  if (strictCb) strictCb.addEventListener('change', () => { _stockStrict = strictCb.checked; });
+  if (strictCb) {
+    strictCb.checked = _stockStrict;   // reflejar el estado guardado al cargar
+    strictCb.addEventListener('change', () => {
+      _stockStrict = strictCb.checked;
+      try { localStorage.setItem('pos_stock_strict', _stockStrict ? '1' : '0'); } catch (_) {}
+    });
+  }
 
   const factCb     = document.getElementById('fact-toggle');
   const factTipo   = document.getElementById('fact-tipo');
@@ -2877,8 +2886,9 @@ async function renderStock(){
 
   // El toggle de "bloquear venta por stock" es una config de operación: admin.
   const strictCb = document.getElementById('stock-strict-toggle');
-  if (strictCb && strictCb.closest('label')) {
-    strictCb.closest('label').style.display = admin ? '' : 'none';
+  if (strictCb) {
+    strictCb.checked = _stockStrict;
+    if (strictCb.closest('label')) strictCb.closest('label').style.display = admin ? '' : 'none';
   }
 
   if (!productos.length && !_stockShowInactive) {
