@@ -1916,7 +1916,8 @@ window.crearReserva = async () => {
   }
   const items = [];
   cart.forEach((it, prodId) => {
-    items.push({ producto_id: prodId, cantidad: it.cantidad, precio: it.precio });
+    const l = _lineaVenta(prodId, it);
+    items.push({ producto_id: prodId, cantidad: l.cantidad, precio: l.precio });
   });
   _abrirReservaModal(items);
 };
@@ -2431,6 +2432,18 @@ function renderProductGrid(){
     });
     grid.appendChild(card);
   });
+}
+
+// Línea de venta para las RPC. El servidor guarda cantidades enteras, así que
+// un peso con decimales (0,5 kg) viaja como 1 unidad con el precio total de la
+// línea (el servidor acepta el precio de línea en productos de peso variable).
+// Las cantidades enteras se mandan tal cual para no alterar el stock.
+function _lineaVenta(prodId, it){
+  if (!Number.isInteger(it.cantidad)) {
+    return { producto_id: prodId, cantidad: 1, precio: Math.round(it.cantidad * it.precio * 100) / 100,
+             envase_modo: it.envase_modo || 'comodato', fraccion: true };
+  }
+  return { producto_id: prodId, cantidad: it.cantidad, precio: it.precio, envase_modo: it.envase_modo || 'comodato' };
 }
 
 function agregarAlCarrito(p){
@@ -5096,7 +5109,13 @@ window.cobrar = async (metodo) => {
   let totalBruto = 0;
   let totalConPrepago = 0;
   cart.forEach((it, prodId) => {
-    const item = { producto_id: prodId, cantidad: it.cantidad, precio: it.precio, envase_modo: it.envase_modo || 'comodato' };
+    const { fraccion, ...item } = _lineaVenta(prodId, it);
+    if (fraccion) {
+      items.push(item);
+      totalBruto      += item.precio;
+      totalConPrepago += item.precio;
+      return;
+    }
     const lleva = (it.entregar != null && it.entregar < it.cantidad) ? it.entregar : it.cantidad;
     const resto = it.cantidad - lleva;
     let precioResto = it.precio;
@@ -5620,7 +5639,12 @@ window.abrirCobroMixto = () => {
     const items = [];
     let totalBrutoCart = 0;
     cart.forEach((it, prodId) => {
-      const item = { producto_id: prodId, cantidad: it.cantidad, precio: it.precio, envase_modo: it.envase_modo || 'comodato' };
+      const { fraccion, ...item } = _lineaVenta(prodId, it);
+      if (fraccion) {
+        items.push(item);
+        totalBrutoCart += item.precio;
+        return;
+      }
       const lleva = (it.entregar != null && it.entregar < it.cantidad) ? it.entregar : it.cantidad;
       const resto = it.cantidad - lleva;
       if (resto > 0) {
