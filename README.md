@@ -137,6 +137,13 @@ El POS funciona para Argentina, México, Chile, Colombia, Perú, Uruguay y
   RUT, NIT o RUC según el país y "Condición IVA" solo aparece en Argentina.
 - **Textos:** landing, registro y login usan "tú" fuera de Argentina y Uruguay
   (`js/pais.js`). La app sigue en español rioplatense.
+- **Landing por país:** `index.html` es la de Argentina; `mx/`, `cl/`, `co/`,
+  `pe/`, `uy/` e `intl/` se generan desde ella con
+  `python3 scripts/generar_landings.py` (precios y moneda del país, plan
+  Gratis, "tú" donde corresponde, canonical y hreflang). **No editar esas
+  carpetas a mano:** editar `index.html` y volver a correr el script. La raíz
+  lleva sola a cada visitante a la landing de su país (idioma o zona horaria
+  del navegador); al pie hay enlaces a los demás países.
 
 ## Plan Gratis (todos los países menos Argentina)
 
