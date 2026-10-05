@@ -138,7 +138,6 @@
       <input id="password" type="password" required minlength="6" placeholder="mínimo 6 caracteres" autocomplete="new-password">
 
       <label class="check"><input type="checkbox" id="acepto" required> <span>Leí y acepto los <a href="terminos.html" target="_blank">Términos y condiciones</a> y el <a href="privacidad.html" target="_blank">Aviso de privacidad</a>.</span></label>
-      <label class="check"><input type="checkbox" id="mejora-ia" checked> <span>Usar datos desidentificados de mi negocio para mejorar POS Mostrador y sus funciones de IA (<a href="privacidad.html#mejora" target="_blank">qué significa</a>). Opcional: se puede cambiar en Configuración.</span></label>
 
       <button type="submit" id="btn">Crear mi cuenta</button>
       <div class="msg" id="msg"></div>
@@ -264,7 +263,9 @@
       options: {
         data: { business_name: business, tienda_name: tienda, direccion, plan_elegido: plan, owner_name: owner, phone, country, timezone, product: 'pos',
                 terminos_version: TERMINOS_VERSION, terminos_aceptados_at: new Date().toISOString(),
-                mejora_ia: document.getElementById('mejora-ia').checked },
+                // Uso de datos desidentificados (privacidad.html §4.2): activo por defecto,
+                // se desactiva en Configuración → Privacidad.
+                mejora_ia: true },
         emailRedirectTo: new URL('login.html', window.location.href).href,
       },
     });
