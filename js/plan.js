@@ -310,3 +310,107 @@ async function _planErrorMsg(error) {
     if (vuelta && _isAdmin()) { goTab('config'); _cfgShow('plan'); }
   }, 500);
 })();
+
+// ── Términos, Aviso de privacidad y uso de datos para mejora / IA ──
+// TERMINOS_VERSION = fecha de terminos.html / privacidad.html. Al cambiar los
+// documentos, subirla (y la de signup.html): a los administradores que
+// aceptaron una versión anterior les aparece el aviso para aceptar la nueva.
+const TERMINOS_VERSION = '2026-10-05';
+let _consent = null;
+
+async function _cargarConsentimiento() {
+  const { data, error } = await sb.rpc('pos_consentimiento_estado', { p_organization_id: orgId });
+  if (error) { console.warn('pos_consentimiento_estado', error); return null; }
+  return (_consent = data);
+}
+
+function _avisoTerminos() {
+  document.getElementById('aviso-terminos')?.remove();
+  if (!_consent || !_consent.es_admin || _consent.terminos_version === TERMINOS_VERSION) return;
+  const nuevo = !_consent.terminos_version;
+  const caja = document.createElement('div');
+  caja.id = 'aviso-terminos';
+  caja.setAttribute('role', 'dialog');
+  caja.setAttribute('aria-label', 'Términos y Aviso de privacidad');
+  caja.style.cssText = 'position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:250;max-width:560px;margin:0 auto;' +
+    'background:#fff;border:1px solid var(--border,#E2E8F0);border-radius:12px;box-shadow:0 12px 32px -8px rgba(16,24,40,.25);padding:16px;font-size:14px;line-height:1.5;color:#334155';
+  caja.innerHTML =
+    '<div style="font-weight:700;color:#1A1A1A;margin-bottom:4px">' + (nuevo ? 'Términos y Aviso de privacidad' : 'Actualizamos los Términos y el Aviso de privacidad') + '</div>' +
+    '<div>Explican cómo funciona el servicio y cómo cuidamos tus datos. Entre otras cosas, usamos datos desidentificados (sin nombres ni teléfonos) para mejorar el POS y sus funciones de inteligencia artificial; podés desactivarlo cuando quieras en Configuración → Privacidad.</div>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center">' +
+      '<button type="button" data-ok style="font-weight:600;background:var(--primary,#0F766E);color:#fff;border:0;border-radius:8px;padding:9px 16px;cursor:pointer">Aceptar</button>' +
+      '<button type="button" data-cfg style="font-weight:600;background:#fff;color:#1A1A1A;border:1px solid #CBD5E1;border-radius:8px;padding:8px 14px;cursor:pointer">Ver opciones</button>' +
+      '<a href="terminos.html" target="_blank" style="color:var(--primary,#0F766E);font-weight:600">Términos</a>' +
+      '<a href="privacidad.html" target="_blank" style="color:var(--primary,#0F766E);font-weight:600">Privacidad</a>' +
+    '</div>';
+  caja.querySelector('[data-ok]').addEventListener('click', async (e) => {
+    e.target.disabled = true;
+    const { data, error } = await sb.rpc('pos_consentimiento_guardar', { p_organization_id: orgId, p_terminos_version: TERMINOS_VERSION });
+    if (error) { e.target.disabled = false; toast('No se pudo guardar. Probá de nuevo.', 'err'); return; }
+    _consent = data;
+    caja.remove();
+  });
+  caja.querySelector('[data-cfg]').addEventListener('click', () => { goTab('config'); _cfgShow('privacidad'); });
+  document.body.appendChild(caja);
+}
+
+async function renderPrivacidadConfig() {
+  const wrap = document.getElementById('privacidad-wrap');
+  if (!wrap) return;
+  if (!_isAdmin()) { wrap.innerHTML = '<div class="env-empty">Solo administradores.</div>'; return; }
+  wrap.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>';
+  const c = await _cargarConsentimiento();
+  if (!c) { wrap.innerHTML = '<div class="env-empty">No se pudo cargar.</div>'; return; }
+  const fecha = (s) => s ? new Date(s).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+  const vigente = c.terminos_version === TERMINOS_VERSION;
+  wrap.innerHTML =
+    '<div class="env-section">' +
+      '<h3>Uso de datos para mejorar el servicio</h3>' +
+      '<label style="display:flex;align-items:flex-start;gap:10px;font-size:15px;font-weight:600;cursor:pointer"><input type="checkbox" id="pv-ia"' + (c.mejora_ia ? ' checked' : '') + ' style="width:18px;height:18px;margin-top:2px;flex-shrink:0"> Usar datos desidentificados para mejorar el Servicio y sus funciones de IA</label>' +
+      '<div style="font-size:13px;color:var(--muted);margin-top:8px;line-height:1.5">Antes de usarlos les quitamos nombres, teléfonos, correos, direcciones y datos fiscales, y los combinamos con los de otros negocios. Sirven para mejorar el POS y desarrollar funciones como sugerencias de precios y compras. Si lo desactivás, el POS funciona igual. <a href="privacidad.html#mejora" target="_blank" style="color:var(--primary);font-weight:600">Más información</a></div>' +
+      '<div id="pv-msg" style="font-size:13px;margin-top:8px;min-height:18px"></div>' +
+    '</div>' +
+    '<div class="env-section">' +
+      '<h3>Documentos</h3>' +
+      '<div style="font-size:14px;line-height:1.7">' +
+        '<a href="terminos.html" target="_blank" style="color:var(--primary);font-weight:600">Términos y condiciones</a> · ' +
+        '<a href="privacidad.html" target="_blank" style="color:var(--primary);font-weight:600">Aviso de privacidad</a> · ' +
+        '<a href="cookies.html" target="_blank" style="color:var(--primary);font-weight:600">Política de cookies</a></div>' +
+      '<div style="font-size:13px;color:var(--muted);margin-top:6px">' +
+        (vigente ? 'Aceptados el ' + fecha(c.terminos_aceptados_at) + ' (versión ' + _esc(c.terminos_version) + ').'
+                 : 'Hay una versión nueva (' + TERMINOS_VERSION + ') sin aceptar. <button type="button" id="pv-acepto" class="cc-btn" style="margin-left:6px">Aceptar</button>') +
+      '</div>' +
+      '<div style="font-size:13px;color:var(--muted);margin-top:10px">Para pedir una copia de tus datos, corregirlos o borrarlos, escribí a <a href="mailto:privacidad@trackmyvend.com" style="color:var(--primary)">privacidad@trackmyvend.com</a>.</div>' +
+    '</div>';
+  const msg = wrap.querySelector('#pv-msg');
+  wrap.querySelector('#pv-ia').addEventListener('change', async (e) => {
+    const valor = e.target.checked;
+    e.target.disabled = true;
+    const { data, error } = await sb.rpc('pos_consentimiento_guardar', { p_organization_id: orgId, p_mejora_ia: valor });
+    e.target.disabled = false;
+    if (error) { e.target.checked = !valor; msg.style.color = '#B42318'; msg.textContent = 'No se pudo guardar. Probá de nuevo.'; return; }
+    _consent = data;
+    msg.style.color = 'var(--muted)';
+    msg.textContent = valor ? 'Activado.' : 'Desactivado: dejamos de usar los datos de tu negocio para estos fines.';
+  });
+  wrap.querySelector('#pv-acepto')?.addEventListener('click', async () => {
+    const { data, error } = await sb.rpc('pos_consentimiento_guardar', { p_organization_id: orgId, p_terminos_version: TERMINOS_VERSION });
+    if (error) { toast('No se pudo guardar. Probá de nuevo.', 'err'); return; }
+    _consent = data;
+    document.getElementById('aviso-terminos')?.remove();
+    renderPrivacidadConfig();
+  });
+}
+
+// Al entrar: registra lo aceptado en el registro y, si falta aceptar la
+// versión vigente, muestra el aviso (solo administradores).
+(function _consentInit() {
+  let intentos = 0;
+  const esperar = setInterval(async () => {
+    if (++intentos > 60) { clearInterval(esperar); return; }
+    if (!orgId) return;
+    clearInterval(esperar);
+    if (!_isAdmin()) return;
+    if (await _cargarConsentimiento()) _avisoTerminos();
+  }, 700);
+})();
