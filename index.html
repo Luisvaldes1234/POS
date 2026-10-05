@@ -176,6 +176,7 @@
   .price{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px 28px;display:flex;flex-direction:column;position:relative}
   .price.pop{border:2px solid var(--primary);box-shadow:0 12px 32px -12px rgba(15,118,110,.28)}
   .price-pop{position:absolute;top:-13px;left:28px;background:var(--accent);color:#fff;font-size:12px;font-weight:600;padding:4px 12px;border-radius:999px}
+  .price-promo{background:var(--primary)}
   .price-name{font-size:18px;font-weight:600}
   .price-for{font-size:14px;color:var(--text-2);margin-top:4px;min-height:42px}
   .price-amt{font-size:40px;font-weight:700;letter-spacing:-.03em;margin-top:20px;line-height:1}
@@ -441,15 +442,16 @@
     <div class="sec-head center">
       <div class="kicker">Precios</div>
       <h2>Planes simples, sin sorpresas.</h2>
-      <p>Todos arrancan con 14 días de prueba gratis y el primer mes a mitad de precio.</p>
+      <p>Todos arrancan con 14 días gratis, sin tarjeta. En Mostrador, promo de lanzamiento: $20.000 por mes los primeros 3 meses.</p>
     </div>
 
     <div class="price-grid">
       <div class="price">
+        <div class="price-pop price-promo">Promo lanzamiento</div>
         <div class="price-name">Mostrador</div>
         <div class="price-for">Para kioscos y negocios que arrancan</div>
-        <div class="price-amt num">$40.000 <small>/ mes</small></div>
-        <div class="price-note num">Primer mes <b>$20.000</b> · hasta 8 usuarios</div>
+        <div class="price-amt num">$20.000 <small>/ mes</small></div>
+        <div class="price-note num">Los primeros 3 meses, después <b>$40.000</b>.<br>O <b>$240.000 el año completo</b> ($20.000/mes por 12 meses).</div>
         <ul>
           <li><svg class="ic"><use href="#i-check"/></svg>Venta con scanner de código de barras</li>
           <li><svg class="ic"><use href="#i-check"/></svg>Efectivo, transferencia, MP QR, débito y crédito</li>
@@ -459,7 +461,7 @@
           <li><svg class="ic"><use href="#i-check"/></svg>Generador de códigos de barras y etiquetas</li>
           <li><svg class="ic"><use href="#i-check"/></svg>Hasta 8 usuarios</li>
         </ul>
-        <a class="btn btn-outline" href="signup.html">Empezar gratis</a>
+        <a class="btn btn-outline" href="signup.html?plan=mostrador">Empezar gratis</a>
       </div>
 
       <div class="price pop">
@@ -477,7 +479,7 @@
           <li><svg class="ic"><use href="#i-check"/></svg><span><b>Programa de puntos</b> con recompensas a medida</span></li>
           <li><svg class="ic"><use href="#i-check"/></svg>Devoluciones, reservas y prepagos</li>
         </ul>
-        <a class="btn btn-primary" href="signup.html">Empezar gratis</a>
+        <a class="btn btn-primary" href="signup.html?plan=negocio">Empezar gratis</a>
       </div>
 
       <div class="price">
@@ -493,13 +495,13 @@
           <li><svg class="ic"><use href="#i-check"/></svg>Cajeros asignados por tienda</li>
           <li><svg class="ic"><use href="#i-check"/></svg>Soporte prioritario</li>
         </ul>
-        <a class="btn btn-outline" href="signup.html">Empezar gratis</a>
+        <a class="btn btn-outline" href="signup.html?plan=cadena">Empezar gratis</a>
       </div>
     </div>
 
     <div class="price-foot">
       ¿Más de 6 tiendas o necesidades especiales? <a href="signup.html">Hablemos de un plan a medida.</a><br>
-      Pagás por mes, sin permanencia. Podés cambiar de plan cuando quieras.
+      Pagás por mes o por año, sin permanencia. Podés cambiar de plan cuando quieras.
     </div>
   </div>
 </section>
@@ -540,7 +542,7 @@
       </details>
       <details>
         <summary>¿Tengo que poner la tarjeta para probarlo?<svg class="ic"><use href="#i-chevron"/></svg></summary>
-        <p>No. Tenés 14 días de prueba completa sin tarjeta. Si te sirve, elegís un plan y el primer mes lo pagás a mitad de precio.</p>
+        <p>No. Al registrarte elegís el plan, pero no te pedimos tarjeta: tenés 14 días de prueba completa gratis. Recién al terminar la prueba cargás el medio de pago.</p>
       </details>
       <details>
         <summary>¿Qué pasa si se corta internet?<svg class="ic"><use href="#i-chevron"/></svg></summary>

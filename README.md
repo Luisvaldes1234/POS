@@ -129,11 +129,27 @@ Base ya creada en Supabase (`sql/2026-10-05_pos_billing.sql`): `pos_planes`
 (Mostrador / Negocio / Cadena con los precios de la landing), `pos_suscripciones`,
 `pos_billing_eventos` y la RPC `pos_plan_actual`.
 
+**Registro:** el alta pide la dirección del local y el plan (Mostrador /
+Negocio / Cadena), sin tarjeta. Se guardan en el metadata del usuario y la app
+los aplica al entrar (`pos_registro_completar`: dirección en `org_config` y en
+la tienda, plan elegido en `pos_suscripciones` con estado `trial`). Durante la
+prueba hay una banda fija "Te quedan X días gratis" y el plan elegido se puede
+cambiar en Mi plan. SQL en `sql/2026-10-05_pos_promo_registro.sql`.
+
+**Promo Mostrador:** $20.000/mes los primeros 3 meses y después $40.000, o
+$240.000 pagando el año por adelantado (`precio_promo`, `meses_promo`,
+`precio_anual` en `pos_planes`).
+
 Para activar el pago con tarjeta:
 
 1. En Stripe, crear un producto por plan con su precio mensual recurrente y
-   cargar el id del precio en `pos_planes.stripe_price_id`. Opcional: un cupón
-   del 50% por un mes para el primer mes.
+   cargar el id del precio en `pos_planes.stripe_price_id`. Para Mostrador:
+   precio mensual de $40.000, un cupón `amount_off` de $20.000 ARS con
+   duración "repeating" de 3 meses (`pos_planes.stripe_coupon_promo`) y un
+   precio anual de $240.000 (`pos_planes.stripe_price_id_anual`). Opcional: el
+   cupón general del 50% del primer mes para los otros planes. Si la
+   organización todavía está en la prueba, el primer cobro se hace al terminar
+   la prueba.
 2. Cargar los secrets y desplegar las edge functions de `supabase/functions/`:
    ```sh
    supabase secrets set STRIPE_SECRET_KEY=sk_... STRIPE_WEBHOOK_SECRET=whsec_... \

@@ -48,6 +48,15 @@
   .done .ico svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
   .done h2{font-size:20px;font-weight:600;margin:16px 0 8px}
   .done p{font-size:14.5px;color:var(--muted);line-height:1.6}
+  .planes{display:grid;gap:8px;margin-bottom:8px}
+  .plan-op{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid #CBD5E1;border-radius:10px;cursor:pointer;margin:0;font-weight:400}
+  .plan-op:has(input:checked){border-color:var(--primary);background:var(--primary-soft);box-shadow:0 0 0 1px var(--primary)}
+  .plan-op input{width:18px;height:18px;margin:2px 0 0;accent-color:var(--primary);flex-shrink:0}
+  .plan-op-b{display:flex;flex-direction:column;gap:2px}
+  .plan-op-n{font-size:15px;font-weight:600;color:var(--text)}
+  .plan-op-tag{font-size:11px;font-weight:600;color:#fff;background:var(--accent);border-radius:999px;padding:2px 8px;margin-left:4px;vertical-align:middle}
+  .plan-op-p{font-size:13px;color:var(--muted);line-height:1.4}
+  .plan-nota{font-size:12.5px;color:var(--muted);margin-bottom:16px}
   .terms{font-size:12.5px;color:var(--muted);text-align:center;margin-top:12px;line-height:1.5}
 </style>
 </head>
@@ -55,7 +64,7 @@
   <div class="card">
     <div class="logo"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#0F766E"/><g fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"><path d="M112 196 L140 120 H372 L400 196"/><path d="M112 196 a36 36 0 0 0 72 0 a36 36 0 0 0 72 0 a36 36 0 0 0 72 0 a36 36 0 0 0 72 0"/><path d="M136 244 V392 H376 V244"/><path d="M220 392 V316 H292 V392"/></g></svg>POS Mostrador</div>
     <div class="sub">Creá tu cuenta y empezá a vender en minutos</div>
-    <div class="trial-wrap"><span class="trial">14 días de prueba · sin tarjeta</span></div>
+    <div class="trial-wrap"><span class="trial">14 días gratis · no pedimos tarjeta</span></div>
 
     <form id="signup-form" autocomplete="on">
       <label for="business">Nombre de la organización / empresa *</label>
@@ -63,6 +72,35 @@
 
       <label for="tienda">Nombre de la tienda / local *</label>
       <input id="tienda" type="text" required placeholder="Ej: Sucursal Centro" autocomplete="off">
+
+      <label for="direccion">Dirección del local *</label>
+      <input id="direccion" type="text" required minlength="6" placeholder="Calle, número y localidad" autocomplete="street-address">
+
+      <label>Elegí tu plan *</label>
+      <div class="planes" id="planes" role="radiogroup" aria-label="Plan">
+        <label class="plan-op">
+          <input type="radio" name="plan" value="mostrador" required>
+          <span class="plan-op-b">
+            <span class="plan-op-n">Mostrador <span class="plan-op-tag">Promo</span></span>
+            <span class="plan-op-p">$20.000/mes los primeros 3 meses, después $40.000. O $240.000 el año completo.</span>
+          </span>
+        </label>
+        <label class="plan-op">
+          <input type="radio" name="plan" value="negocio">
+          <span class="plan-op-b">
+            <span class="plan-op-n">Negocio</span>
+            <span class="plan-op-p">$60.000/mes · usuarios ilimitados, promos, fiado y programa de puntos.</span>
+          </span>
+        </label>
+        <label class="plan-op">
+          <input type="radio" name="plan" value="cadena">
+          <span class="plan-op-b">
+            <span class="plan-op-n">Cadena</span>
+            <span class="plan-op-p">$90.000/mes · 3 tiendas incluidas y corte global.</span>
+          </span>
+        </label>
+      </div>
+      <div class="plan-nota">Los primeros 14 días son gratis con todas las funciones. No te cobramos nada ahora.</div>
 
       <div class="row">
         <div>
@@ -109,6 +147,14 @@
   </div>
 
 <script>
+  // Plan preseleccionado desde la landing (signup.html?plan=mostrador).
+  (function () {
+    const planUrl = (new URLSearchParams(location.search).get('plan') || '').replace(/[^a-z]/g, '');
+    const radio = planUrl && document.querySelector('input[name="plan"][value="' + planUrl + '"]');
+    if (radio) radio.checked = true;
+  })();
+</script>
+<script>
   const SB_URL = 'https://zgdrvptneiwlxlaywfur.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpnZHJ2cHRuZWl3bHhsYXl3ZnVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NDU4NDgsImV4cCI6MjA5MDUyMTg0OH0.r1BR_OruT95Ks_xdkvlnuSqT8Lm-Vh6usJhgdLcV_Ig';
   const sb = supabase.createClient(SB_URL, SB_KEY);
@@ -126,6 +172,8 @@
     e.preventDefault();
     const business = document.getElementById('business').value.trim();
     const tienda   = document.getElementById('tienda').value.trim();
+    const direccion = document.getElementById('direccion').value.trim();
+    const plan     = document.querySelector('input[name="plan"]:checked')?.value || '';
     const owner    = document.getElementById('owner').value.trim();
     let   country  = document.getElementById('country').value;
     const phone    = document.getElementById('phone').value.trim();
@@ -133,6 +181,16 @@
     const password = document.getElementById('password').value;
     if (country === 'OT') country = '';  // país desconocido → el backend usa default
 
+    if (!plan) {
+      msg.className = 'msg err';
+      msg.textContent = 'Elegí un plan para continuar';
+      return;
+    }
+    if (direccion.length < 6) {
+      msg.className = 'msg err';
+      msg.textContent = 'Completá la dirección del local';
+      return;
+    }
     if (!business || !tienda || !owner || !email || password.length < 6) {
       msg.className = 'msg err';
       msg.textContent = 'Completá los campos obligatorios (contraseña de 6+ caracteres)';
@@ -148,7 +206,7 @@
       email,
       password,
       options: {
-        data: { business_name: business, tienda_name: tienda, owner_name: owner, phone, country, product: 'pos' },
+        data: { business_name: business, tienda_name: tienda, direccion, plan_elegido: plan, owner_name: owner, phone, country, product: 'pos' },
         emailRedirectTo: new URL('login.html', window.location.href).href,
       },
     });
