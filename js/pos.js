@@ -7897,6 +7897,7 @@ function _cfgShow(key) {
   else if (key === 'cuotas')  renderCuotasConfig();
   else if (key === 'lealtad') renderLealtadConfig();
   else if (key === 'plan')    renderPlanConfig();
+  else if (key === 'privacidad') renderPrivacidadConfig();
   else if (key === 'pagos')   renderConfigMP();
   else if (key === 'recibidas') renderFacturasRecibidas();
   else if (key === 'catalogo') renderCatalogoCompartido();

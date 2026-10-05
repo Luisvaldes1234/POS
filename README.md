@@ -214,6 +214,15 @@ paga (`organizations.plan = 'pro'`); si la suscripción se cancela o vence, la
 organización vuelve a `trial` con vencimiento al fin del período pagado, y el
 bloqueo existente por prueba vencida corta el acceso.
 
+## Documentos legales y consentimiento
+
+- `terminos.html`, `privacidad.html` y `cookies.html` (estilos en `css/legal.css`), enlazados desde el pie de la landing, el registro y Configuración → Privacidad. El aviso de privacidad tiene una sección por país (AR, MX, CL, CO, PE, UY).
+- Contacto de privacidad y soporte: `contacto@trackmyvend.com`.
+- `js/aviso-cookies.js`: aviso informativo (solo se usa almacenamiento necesario). Si se agregan analytics o píxeles de publicidad, hay que pedir consentimiento antes de cargarlos y actualizar `cookies.html`.
+- Registro: casilla obligatoria de aceptación y casilla opcional (marcada) de uso de datos desidentificados para mejora del servicio e IA. Se guardan en la metadata del usuario y `pos_consentimiento_estado` los pasa a `pos_consentimientos` (`sql/2026-10-05_pos_consentimientos.sql`).
+- **Cualquier proceso que use datos para análisis o entrenamiento de modelos debe tomar solo negocios con `pos_consentimientos.mejora_ia = true`** y desidentificar antes (sin nombres, teléfonos, correos, direcciones ni identificaciones fiscales; clientes de los negocios incluidos).
+- Al cambiar los documentos: actualizar la fecha de versión en las tres páginas y `TERMINOS_VERSION` en `signup.html` y `js/plan.js`. Los administradores verán el aviso para aceptar la versión nueva.
+
 ## Backend
 
 Se conecta al proyecto Supabase **Reparto** (`zgdrvptneiwlxlaywfur`) usando la

@@ -44,6 +44,20 @@ PRECIOS_RESPALDO = {
     'UY': {'mostrador': (1190, None, 590, 7080, None), 'negocio': (1790, 890, None, None, None), 'cadena': (2590, 1290, None, None, 690)},
     'OT': {'mostrador': (29, None, 15, 180, None), 'negocio': (45, 22, None, None, None), 'cadena': (65, 32, None, None, 18)},
 }
+# Cómo se le dice a cada rubro en cada país (index.html usa los nombres de
+# Argentina: almacén, kiosco, minimercado). Uruguay usa los mismos.
+RUBROS = {
+    'MX': {'almacenes': 'tiendas de abarrotes', 'almacén': 'tienda de abarrotes', 'kioscos': 'misceláneas',
+           'kiosco': 'miscelánea', 'minimercados': 'minisúpers'},
+    'CL': {'kioscos': 'botillerías', 'kiosco': 'botillería', 'minimercados': 'minimarkets'},
+    'CO': {'almacenes': 'tiendas de barrio', 'almacén': 'tienda de barrio', 'kioscos': 'misceláneas',
+           'kiosco': 'miscelánea'},
+    'PE': {'almacenes': 'bodegas', 'almacén': 'bodega', 'kioscos': 'quioscos', 'kiosco': 'quiosco',
+           'minimercados': 'minimarkets'},
+    'OT': {'almacenes': 'tiendas', 'almacén': 'tienda', 'kioscos': 'quioscos', 'kiosco': 'quiosco'},
+}
+# Expresiones rioplatenses que fuera de Argentina y Uruguay suenan raras.
+NEUTRO = {'arrancan': 'empiezan', 'arrancás': 'empiezas'}
 CAMPOS = ('precio_mensual', 'precio_primer_mes', 'precio_promo', 'precio_anual', 'precio_tienda_extra')
 
 
@@ -94,6 +108,7 @@ def tutear_texto(txt, tuteo, patron):
 
 
 def tutear_html(html, tuteo):
+    """Reemplaza palabras completas del dict en textos visibles (no en scripts)."""
     patron = re.compile(r'(?<![%s])(%s)(?![%s])' % (LETRA, '|'.join(sorted(map(re.escape, tuteo), key=len, reverse=True)), LETRA), re.I)
     partes = re.split(r'(<script\b.*?</script>|<style\b.*?</style>|<[^>]+>)', html, flags=re.S)
     out = []
@@ -157,7 +172,9 @@ def generar(base, pais, cfg, precios, tuteo):
     h = h.replace('<a href="./?pais=AR" data-pais-link="AR" aria-current="page">', '<a href="./?pais=AR" data-pais-link="AR">')
     h = h.replace('data-pais-link="%s">' % pais, 'data-pais-link="%s" aria-current="page">' % pais)
     if not cfg['voseo']:
-        h = tutear_html(h, tuteo)
+        h = tutear_html(h, dict(tuteo, **NEUTRO))
+    if RUBROS.get(pais):
+        h = tutear_html(h, RUBROS[pais])
     h = rutas_relativas(h)
     h = h.replace('<!-- hreflang:inicio -->', '<!-- Generado por scripts/generar_landings.py desde index.html: no editar a mano. -->\n<!-- hreflang:inicio -->', 1)
     destino = os.path.join(RAIZ, cfg['dir'])

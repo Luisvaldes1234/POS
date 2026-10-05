@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#F8F9FA">
-<meta name="description" content="Creá tu cuenta del POS Mostrador para tiendas, kioscos y ferreterías.">
+<meta name="description" content="Creá tu cuenta del POS Mostrador para tiendas, minimercados y ferreterías.">
 <title>POS Mostrador · Crear cuenta</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <link rel="icon" type="image/svg+xml" href="icon.svg">
@@ -60,6 +60,9 @@
   .plan-op-p{font-size:13px;color:var(--muted);line-height:1.4}
   .plan-nota{font-size:12.5px;color:var(--muted);margin-bottom:16px}
   .terms{font-size:12.5px;color:var(--muted);text-align:center;margin-top:12px;line-height:1.5}
+  .terms a,.check a{color:var(--primary);font-weight:600}
+  .check{display:flex;gap:10px;align-items:flex-start;font-size:13px;font-weight:400;color:var(--muted);line-height:1.45;margin:0 0 12px;cursor:pointer}
+  .check input{width:17px;height:17px;margin:1px 0 0;accent-color:var(--primary);flex-shrink:0}
 </style>
 </head>
 <body>
@@ -134,6 +137,9 @@
       <label for="password">Contraseña *</label>
       <input id="password" type="password" required minlength="6" placeholder="mínimo 6 caracteres" autocomplete="new-password">
 
+      <label class="check"><input type="checkbox" id="acepto" required> <span>Leí y acepto los <a href="terminos.html" target="_blank">Términos y condiciones</a> y el <a href="privacidad.html" target="_blank">Aviso de privacidad</a>.</span></label>
+      <label class="check"><input type="checkbox" id="mejora-ia" checked> <span>Usar datos desidentificados de mi negocio para mejorar POS Mostrador y sus funciones de IA (<a href="privacidad.html#mejora" target="_blank">qué significa</a>). Opcional: se puede cambiar en Configuración.</span></label>
+
       <button type="submit" id="btn">Crear mi cuenta</button>
       <div class="msg" id="msg"></div>
       <div class="terms">Al crear la cuenta aceptás recibir comunicaciones para ayudarte a empezar.</div>
@@ -151,7 +157,8 @@
     <div class="legal">POS Mostrador by TMV Dynamics S.A.&nbsp;de&nbsp;C.V.</div>
   </div>
 
-<script src="js/pais.js?v=2"></script>
+<script src="js/pais.js?v=3"></script>
+<script src="js/aviso-cookies.js"></script>
 <script>
   // Plan preseleccionado desde la landing (signup.html?plan=mostrador).
   (function () {
@@ -199,6 +206,8 @@
   const SB_URL = 'https://zgdrvptneiwlxlaywfur.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpnZHJ2cHRuZWl3bHhsYXl3ZnVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NDU4NDgsImV4cCI6MjA5MDUyMTg0OH0.r1BR_OruT95Ks_xdkvlnuSqT8Lm-Vh6usJhgdLcV_Ig';
   const sb = supabase.createClient(SB_URL, SB_KEY);
+  // Versión de terminos.html / privacidad.html (la misma que TERMINOS_VERSION en js/plan.js).
+  const TERMINOS_VERSION = '2026-10-05';
 
   const msg  = document.getElementById('msg');
   const btn  = document.getElementById('btn');
@@ -233,6 +242,11 @@
       msg.textContent = 'Completá la dirección del local';
       return;
     }
+    if (!document.getElementById('acepto').checked) {
+      msg.className = 'msg err';
+      msg.textContent = 'Para crear la cuenta hay que aceptar los Términos y el Aviso de privacidad';
+      return;
+    }
     if (!business || !tienda || !owner || !email || password.length < 6) {
       msg.className = 'msg err';
       msg.textContent = 'Completá los campos obligatorios (contraseña de 6+ caracteres)';
@@ -248,7 +262,9 @@
       email,
       password,
       options: {
-        data: { business_name: business, tienda_name: tienda, direccion, plan_elegido: plan, owner_name: owner, phone, country, timezone, product: 'pos' },
+        data: { business_name: business, tienda_name: tienda, direccion, plan_elegido: plan, owner_name: owner, phone, country, timezone, product: 'pos',
+                terminos_version: TERMINOS_VERSION, terminos_aceptados_at: new Date().toISOString(),
+                mejora_ia: document.getElementById('mejora-ia').checked },
         emailRedirectTo: new URL('login.html', window.location.href).href,
       },
     });
