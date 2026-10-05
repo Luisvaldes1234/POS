@@ -1,13 +1,13 @@
 {
-  "name": "POS Mostrador",
-  "short_name": "POS",
+  "name": "Mostrador",
+  "short_name": "Mostrador",
   "description": "Punto de venta en mostrador para tiendas de abarrotes, ferreterías y kioscos.",
   "start_url": "./app.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#1a1a2e",
-  "theme_color": "#1a1a2e",
+  "background_color": "#F8F9FA",
+  "theme_color": "#0F766E",
   "lang": "es",
   "icons": [
     {
