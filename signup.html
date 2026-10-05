@@ -50,6 +50,7 @@
   .done h2{font-size:20px;font-weight:600;margin:16px 0 8px}
   .done p{font-size:14.5px;color:var(--muted);line-height:1.6}
   .planes{display:grid;gap:8px;margin-bottom:8px}
+  .plan-op[hidden]{display:none}
   .plan-op{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid #CBD5E1;border-radius:10px;cursor:pointer;margin:0;font-weight:400}
   .plan-op:has(input:checked){border-color:var(--primary);background:var(--primary-soft);box-shadow:0 0 0 1px var(--primary)}
   .plan-op input{width:18px;height:18px;margin:2px 0 0;accent-color:var(--primary);flex-shrink:0}
@@ -90,6 +91,13 @@
 
       <label>Elegí tu plan *</label>
       <div class="planes" id="planes" role="radiogroup" aria-label="Plan">
+        <label class="plan-op" id="plan-op-gratis" hidden>
+          <input type="radio" name="plan" value="gratis">
+          <span class="plan-op-b">
+            <span class="plan-op-n">Gratis <span class="plan-op-tag" style="background:var(--primary)">Para siempre</span></span>
+            <span class="plan-op-p">Ventas ilimitadas, scanner, caja, stock, puntos y fiado. 2 usuarios y 1 tienda. Sin tarjeta.</span>
+          </span>
+        </label>
         <label class="plan-op">
           <input type="radio" name="plan" value="mostrador" required>
           <span class="plan-op-b">
@@ -112,7 +120,7 @@
           </span>
         </label>
       </div>
-      <div class="plan-nota">Los primeros 14 días son gratis con todas las funciones. No te cobramos nada ahora.</div>
+      <div class="plan-nota" id="plan-nota">Los primeros 14 días son gratis con todas las funciones. No te cobramos nada ahora.</div>
 
       <label for="owner">Tu nombre *</label>
       <input id="owner" type="text" required placeholder="José Pérez" autocomplete="name">
@@ -143,7 +151,7 @@
     <div class="legal">POS Mostrador by TMV Dynamics S.A.&nbsp;de&nbsp;C.V.</div>
   </div>
 
-<script src="js/pais.js?v=1"></script>
+<script src="js/pais.js?v=2"></script>
 <script>
   // Plan preseleccionado desde la landing (signup.html?plan=mostrador).
   (function () {
@@ -172,6 +180,16 @@
       d('negocio', f(n.precio_mensual) + '/mes · usuarios ilimitados, promos, fiado y programa de puntos.');
       d('cadena', f(c.precio_mensual) + '/mes · 3 tiendas incluidas y corte global.');
       document.getElementById('phone').placeholder = info.tel;
+      // Plan Gratis: solo fuera de Argentina.
+      const gratisOp = document.getElementById('plan-op-gratis');
+      const hayGratis = p !== 'AR';
+      gratisOp.hidden = !hayGratis;
+      const radioGratis = gratisOp.querySelector('input');
+      if (!hayGratis && radioGratis.checked) radioGratis.checked = false;
+      document.getElementById('plan-nota').textContent = hayGratis
+        ? 'Gratis es para siempre. Los planes pagos tienen 14 días de prueba con todo; si no pagás, seguís en Gratis. No te cobramos nada ahora.'
+        : 'Los primeros 14 días son gratis con todas las funciones. No te cobramos nada ahora.';
+      if (!P.PAISES[p].voseo) P.aplicarTuteo(document.getElementById('plan-nota'));
     }
     sel.addEventListener('change', () => { P.guardar(sel.value); pintar(); });
     pintar();

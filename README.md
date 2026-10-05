@@ -138,6 +138,23 @@ El POS funciona para Argentina, México, Chile, Colombia, Perú, Uruguay y
 - **Textos:** landing, registro y login usan "tú" fuera de Argentina y Uruguay
   (`js/pais.js`). La app sigue en español rioplatense.
 
+## Plan Gratis (todos los países menos Argentina)
+
+`sql/2026-10-05_pos_plan_gratis.sql`. Plan `gratis` con precio 0 en MX, CL, CO,
+PE, UY y "Otro"; la organización queda con `organizations.plan = 'free'`.
+
+- Incluye ventas y productos ilimitados, scanner y generador de códigos,
+  caja con cortes y vuelto, stock con alertas, programa de puntos, cuenta
+  corriente, ticket por WhatsApp y modo sin conexión, sin comisiones.
+- Límites (`pos_planes.limites`): 2 usuarios y 1 tienda (controlados también
+  por triggers en `user_roles` y `tiendas`), 90 días de historial en reportes,
+  y sin promos automáticas, reservas/prepagos ni Finanzas (se ven con 🔒 y
+  ofrecen pasar a un plan pago).
+- Fuera de Argentina, cuando vence la prueba de un plan pago, o se cancela la
+  suscripción, el negocio pasa a Gratis en vez de bloquearse
+  (`pos_plan_vencido_a_gratis` al entrar a la app y el webhook de Stripe).
+- Desde Gratis a un plan pago se pasa solo pagando (no hay una segunda prueba).
+
 ## Plan y cobro de la suscripción (Stripe)
 
 Configuración → **💳 Mi plan** muestra el plan de la organización (prueba con

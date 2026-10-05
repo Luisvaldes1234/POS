@@ -109,6 +109,7 @@
     'imprimí': 'imprime', 'imprimís': 'imprimes', 'sabé': 'sabe', 'tenés': 'tienes', 'vos': 'tú', 'elegí': 'elige',
     'iniciá': 'inicia', 'aceptás': 'aceptas', 'empezá': 'empieza', 'registrate': 'regístrate', 'creálos': 'créalos',
     'querés': 'quieres', 'necesitás': 'necesitas', 'sabés': 'sabes', 'usás': 'usas', 'escribinos': 'escríbenos',
+    'seguís': 'sigues', 'pasate': 'pásate', 'elegí': 'elige',
   };
   const RE_TUTEO = new RegExp('(^|[^\\p{L}])(' + Object.keys(TUTEO).join('|') + ')(?=$|[^\\p{L}])', 'giu');
   function tutear(txt) {

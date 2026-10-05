@@ -8,9 +8,10 @@
 //   - suscripción activa  → organizations.plan = 'pro' (marca de cuenta paga; la
 //     columna tiene un CHECK compartido con Reparto, así que el plan real del
 //     POS vive en pos_suscripciones.plan_id)
-//   - cancelada / vencida → organizations.plan = 'trial' con trial_ends_at = fin
-//     del período pagado, así el bloqueo existente (_assert_trial_active) corta
-//     el acceso cuando termina lo que ya pagó.
+//   - cancelada / vencida → en Argentina, organizations.plan = 'trial' con
+//     trial_ends_at = fin del período pagado (el bloqueo existente corta el
+//     acceso cuando termina lo que ya pagó); en los demás países pasa al plan
+//     Gratis.
 import Stripe from "npm:stripe@17.7.0";
 import { adminClient, estadoDesdeStripe, json, stripe } from "../_shared/billing.ts";
 
@@ -105,6 +106,14 @@ async function sincronizarSuscripcion(
   if (estado === "activa" || estado === "pago_pendiente") {
     await admin.from("organizations").update({ plan: "pro" }).eq("id", orgId);
   } else {
-    await admin.from("organizations").update({ plan: "trial", trial_ends_at: finPeriodo }).eq("id", orgId);
+    // Fuera de Argentina hay plan Gratis: al cancelar o vencer pasa a Gratis
+    // en vez de quedar bloqueado.
+    const { data: org } = await admin.from("organizations").select("pais").eq("id", orgId).single();
+    if (String(org?.pais ?? "").toUpperCase() !== "AR") {
+      const { error } = await admin.rpc("_pos_pasar_a_gratis", { p_org: orgId });
+      if (error) throw error;
+    } else {
+      await admin.from("organizations").update({ plan: "trial", trial_ends_at: finPeriodo }).eq("id", orgId);
+    }
   }
 }

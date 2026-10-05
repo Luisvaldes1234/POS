@@ -139,6 +139,12 @@
   .price.pop{border:2px solid var(--primary);box-shadow:0 12px 32px -12px rgba(15,118,110,.28)}
   .price-pop{position:absolute;top:-13px;left:28px;background:var(--accent);color:#fff;font-size:12px;font-weight:600;padding:4px 12px;border-radius:999px}
   .price-promo{background:var(--primary)}
+  .price[hidden]{display:none}
+  .price-grid.con-gratis{grid-template-columns:repeat(4,1fr);gap:18px}
+  .price-grid.con-gratis .price{padding:28px 20px}
+  .price-grid.con-gratis .price-amt{font-size:32px}
+  @media(max-width:1100px){.price-grid.con-gratis{grid-template-columns:repeat(2,1fr);max-width:none}}
+  @media(max-width:640px){.price-grid.con-gratis{grid-template-columns:1fr}}
   .pais-row{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin:-24px 0 36px;font-size:14px;color:var(--text-2)}
   .pais-row select{padding:8px 12px;border:1px solid #CBD5E1;border-radius:10px;font-family:inherit;font-size:14px;background:#fff;color:var(--text);cursor:pointer}
   .pais-moneda{width:100%;text-align:center;font-size:13px}
@@ -247,7 +253,7 @@
 <header class="hero">
   <div class="wrap hero-grid">
     <div>
-      <span class="eyebrow"><span class="dot"></span>14 días de prueba · sin tarjeta</span>
+      <span class="eyebrow"><span class="dot"></span><span id="eyebrow-txt">14 días de prueba · sin tarjeta</span></span>
       <h1>Caja rápida.<br>Control total.</h1>
       <p class="lead">El punto de venta para almacenes, kioscos y ferreterías. Cobrá con scanner, controlá tu caja y tu stock, y entendé cómo va tu negocio.</p>
       <div class="cta-row">
@@ -397,7 +403,7 @@
     <div class="sec-head center">
       <div class="kicker">Precios</div>
       <h2>Planes simples, sin sorpresas.</h2>
-      <p>Todos arrancan con 14 días gratis, sin tarjeta. En Mostrador, promo de lanzamiento: <span data-pp="intro">$20.000</span> por mes los primeros 3 meses.</p>
+      <p data-pp-texto>Todos arrancan con 14 días gratis, sin tarjeta. En Mostrador, promo de lanzamiento: <span data-pp="intro">$20.000</span> por mes los primeros 3 meses.</p>
     </div>
 
     <div class="pais-row">
@@ -415,6 +421,24 @@
     </div>
 
     <div class="price-grid">
+      <div class="price" id="price-gratis" hidden>
+        <div class="price-pop price-promo">Para siempre</div>
+        <div class="price-name">Gratis</div>
+        <div class="price-for">Para empezar a vender sin pagar nada</div>
+        <div class="price-amt num">Gratis</div>
+        <div class="price-note num">Sin tarjeta y sin vencimiento.<br>Sin comisiones por venta.</div>
+        <ul>
+          <li><svg class="ic"><use href="#i-check"/></svg>Ventas y productos ilimitados</li>
+          <li><svg class="ic"><use href="#i-check"/></svg>Scanner y generador de códigos de barras</li>
+          <li><svg class="ic"><use href="#i-check"/></svg>Caja con cortes y vuelto automático</li>
+          <li><svg class="ic"><use href="#i-check"/></svg>Stock con alertas</li>
+          <li><svg class="ic"><use href="#i-check"/></svg>Programa de puntos y cuenta corriente</li>
+          <li><svg class="ic"><use href="#i-check"/></svg>Ticket por WhatsApp y funciona sin internet</li>
+          <li><svg class="ic"><use href="#i-check"/></svg>2 usuarios · 1 tienda · 90 días de historial</li>
+        </ul>
+        <a class="btn btn-outline" href="signup.html?plan=gratis">Crear cuenta gratis</a>
+      </div>
+
       <div class="price">
         <div class="price-pop price-promo">Promo lanzamiento</div>
         <div class="price-name">Mostrador</div>
@@ -560,7 +584,7 @@
   </div>
 </footer>
 
-<script src="js/pais.js?v=1"></script>
+<script src="js/pais.js?v=2"></script>
 <script>
   document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -583,6 +607,14 @@
       set('negocio-mensual', f(n.precio_mensual)); set('negocio-primer', f(n.precio_primer_mes));
       set('cadena-mensual', f(c.precio_mensual)); set('cadena-extra', f(c.precio_tienda_extra));
       set('moneda', 'Precios en ' + info.monedaNombre + ' (' + info.moneda + '), por mes.');
+      // Plan Gratis: en todos los países menos Argentina.
+      const hayGratis = pais !== 'AR';
+      document.getElementById('price-gratis').hidden = !hayGratis;
+      document.querySelector('.price-grid').classList.toggle('con-gratis', hayGratis);
+      document.getElementById('eyebrow-txt').textContent = hayGratis ? 'Plan gratis para siempre · sin tarjeta' : '14 días de prueba · sin tarjeta';
+      const intro = document.querySelector('[data-pp-texto]');
+      if (hayGratis) intro.innerHTML = 'Plan Gratis para siempre, o 14 días de prueba de los planes pagos. Todo sin tarjeta. En Mostrador, promo: <span data-pp="intro">' + f(m.precio_promo) + '</span> por mes los primeros 3 meses.';
+      else intro.innerHTML = 'Todos arrancan con 14 días gratis, sin tarjeta. En Mostrador, promo de lanzamiento: <span data-pp="intro">' + f(m.precio_promo) + '</span> por mes los primeros 3 meses.';
       // Los botones de registro llevan el país elegido.
       document.querySelectorAll('a[href^="signup.html"]').forEach(a => {
         const u = new URL(a.getAttribute('href'), location.href);

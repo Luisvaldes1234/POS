@@ -13,6 +13,83 @@
 
 let _planInfo = null;
 let _planesCache = null;
+let _planLimites = null;   // límites del plan Gratis (null = sin límites)
+
+// ── Límites del plan (solo el plan Gratis tiene) ──
+function planPermite(f) { return !_planLimites || _planLimites[f] !== false; }
+function planLimite(k) { return _planLimites && _planLimites[k] != null ? _planLimites[k] : null; }
+function planHistorialDesde() {
+  const d = planLimite('historial_dias');
+  return d ? _fechaNegocio(-(d - 1)) : null;
+}
+// true (y muestra el aviso) si ya se llegó al tope de `clave`.
+function planBloquea(clave, actual) {
+  const lim = planLimite(clave);
+  if (lim == null || actual < lim) return false;
+  const txt = { usuarios: 'El plan Gratis incluye ' + lim + ' usuarios.', tiendas: 'El plan Gratis incluye ' + lim + ' tienda.' }[clave] || 'Llegaste al límite del plan Gratis.';
+  mostrarMejorarPlan(txt);
+  return true;
+}
+const FUNCIONES_PAGAS = {
+  promos:   'Las promos automáticas (2x1, NxM, % por volumen) están en los planes pagos.',
+  reservas: 'Las reservas, prepagos y entregas parciales están en los planes pagos.',
+  finanzas: 'El módulo de Finanzas (costos, márgenes y ganancia) está en los planes pagos.',
+};
+function mostrarMejorarPlan(texto) {
+  const admin = typeof _isAdmin === 'function' && _isAdmin();
+  const ov = _ccModal(
+    '<div style="text-align:center;padding:6px 4px">' +
+      '<div style="font-size:34px">🚀</div>' +
+      '<h3 style="margin:8px 0 6px;font-size:18px">Pasate a un plan pago</h3>' +
+      '<p style="color:var(--muted);font-size:14px;line-height:1.5;margin:0 0 16px">' + _esc(texto) + '</p>' +
+      (admin ? '<button type="button" data-ver class="cc-btn cc-btn-pri" style="width:100%;padding:12px">Ver planes</button>'
+             : '<div style="font-size:13px;color:var(--muted)">Pedile a un administrador que cambie el plan.</div>') +
+      '<button type="button" data-x class="cc-btn" style="width:100%;margin-top:8px">Ahora no</button>' +
+    '</div>', 360);
+  ov.querySelector('[data-x]').addEventListener('click', () => ov.remove());
+  ov.addEventListener('mousedown', e => { if (e.target === ov) ov.remove(); });
+  ov.querySelector('[data-ver]')?.addEventListener('click', () => { ov.remove(); goTab('config'); _cfgShow('plan'); });
+}
+// Bloquea las funciones pagas en el plan Gratis (quedan visibles con 🔒).
+function _envolverGratis(nombre, f) {
+  const orig = window[nombre];
+  if (typeof orig !== 'function' || orig.__gratis) return;
+  const w = function (...a) { if (!planPermite(f)) { mostrarMejorarPlan(FUNCIONES_PAGAS[f]); return; } return orig.apply(this, a); };
+  w.__gratis = true;
+  window[nombre] = w;
+}
+function _aplicarLimitesPlan() {
+  document.body.classList.toggle('plan-gratis', !!_planLimites);
+  if (!_planLimites) return;
+  _envolverGratis('aplicarPromoPOS', 'promos');
+  _envolverGratis('crearReserva', 'reservas');
+  _envolverGratis('abrirEntregaParcial', 'reservas');
+  const goTabOrig = window.goTab;
+  if (!goTabOrig.__gratis) {
+    const w = (tab) => {
+      const f = { reservas: 'reservas', finanzas: 'finanzas' }[tab];
+      if (f && !planPermite(f)) { mostrarMejorarPlan(FUNCIONES_PAGAS[f]); return; }
+      return goTabOrig(tab);
+    };
+    w.__gratis = true;
+    window.goTab = w;
+  }
+  const cfgOrig = window._cfgShow;
+  if (!cfgOrig.__gratis) {
+    const w = (key) => {
+      if (key === 'promos' && !planPermite('promos')) { mostrarMejorarPlan(FUNCIONES_PAGAS.promos); return; }
+      return cfgOrig(key);
+    };
+    w.__gratis = true;
+    window._cfgShow = w;
+  }
+  ['btn-reservar', 'btn-promo'].forEach(id => document.getElementById(id)?.classList.add('bloq-gratis'));
+  document.querySelector('.topbar-tab[data-tab="reservas"]')?.classList.add('bloq-gratis');
+  document.querySelector('.topbar-tab[data-tab="finanzas"]')?.classList.add('bloq-gratis');
+  document.querySelector('#cfg-subnav [data-cfg="promos"]')?.classList.add('bloq-gratis');
+  const btnPre = document.getElementById('btn-prepago');
+  if (btnPre) btnPre.style.display = 'none';
+}
 
 const PLAN_ESTADOS = {
   trial:          { txt: 'Prueba gratis',   bg: '#E6F2F1', fg: '#0D5C56' },
@@ -26,6 +103,8 @@ async function cargarPlanActual() {
   const { data, error } = await sb.rpc('pos_plan_actual', { p_organization_id: orgId });
   if (error) { console.warn('pos_plan_actual:', error.message); return null; }
   _planInfo = data;
+  _planLimites = data?.limites || null;
+  _aplicarLimitesPlan();
   _planPintarBanda();
   return data;
 }
@@ -91,6 +170,9 @@ async function renderPlanConfig() {
     detalle = p.dias_restantes != null
       ? 'Te quedan <b>' + p.dias_restantes + ' día' + (p.dias_restantes === 1 ? '' : 's') + ' gratis</b> con todas las funciones (hasta el ' + fecha(p.trial_ends_at) + '). No te cobramos nada hasta que elijas cómo pagar.'
       : 'Estás usando la prueba gratis con todas las funciones.';
+  } else if (p.es_gratis) {
+    const l = p.limites || {};
+    detalle = 'Estás en el plan <b>Gratis</b>, sin vencimiento. Incluye ' + (l.usuarios || 2) + ' usuarios, ' + (l.tiendas || 1) + ' tienda y ' + (l.historial_dias || 90) + ' días de historial. Cuando quieras más, pasate a un plan pago.';
   } else if (p.estado === 'activa') {
     detalle = (p.periodo === 'anual' ? 'Pago anual. ' : p.periodo === 'mensual' ? 'Pago mensual. ' : '') +
       (p.current_period_end ? (p.cancel_at_period_end ? 'Se cancela el ' : 'Próximo cobro: ') + '<b>' + fecha(p.current_period_end) + '</b>.' : 'Tu cuenta está activa.');
@@ -104,6 +186,9 @@ async function renderPlanConfig() {
   const subPaga = p.tiene_cliente_stripe && ['activa', 'pago_pendiente'].includes(p.estado) && p.plan_legacy !== 'trial';
 
   const precioHtml = (pl) => {
+    if (Number(pl.precio_mensual) === 0) {
+      return '<div class="plan-precio">Gratis</div><div class="plan-sub">Para siempre, sin tarjeta</div>';
+    }
     if (pl.precio_promo && pl.meses_promo) {
       return '<div class="plan-precio">' + fmtARS(pl.precio_promo) + ' <span>/ mes</span></div>' +
         '<div class="plan-sub">Los primeros ' + pl.meses_promo + ' meses, después ' + fmtARS(pl.precio_mensual) + '</div>' +
@@ -119,7 +204,10 @@ async function renderPlanConfig() {
     const pagMensual = p.stripe_habilitado && !!pl.stripe_price_id;
     const pagAnual = p.stripe_habilitado && !!pl.stripe_price_id_anual;
     let botones = '';
+    const esGratisPl = Number(pl.precio_mensual) === 0;
     if (!puede) botones = '';
+    else if (esActual && !enPrueba) botones = '<button type="button" class="cc-btn" disabled>Tu plan actual</button>';
+    else if (esGratisPl) botones = (enPrueba || p.estado === 'vencida') ? '<button type="button" class="cc-btn" data-elegir="gratis">Quedarme con Gratis</button>' : '';
     else if (subPaga) botones = esActual ? '<button type="button" class="cc-btn" disabled>Tu plan actual</button>' : '<button type="button" class="cc-btn" data-portal>Cambiar a este plan</button>';
     else if (pagMensual || pagAnual) {
       botones =
@@ -128,6 +216,8 @@ async function renderPlanConfig() {
     } else if (enPrueba || p.estado === 'vencida') {
       botones = esActual ? '<button type="button" class="cc-btn" disabled>Plan elegido ✓</button>'
                          : '<button type="button" class="cc-btn" data-elegir="' + pl.id + '">Elegir este plan</button>';
+    } else if (p.es_gratis) {
+      botones = '<button type="button" class="cc-btn" disabled title="El pago online todavía no está habilitado">Pago online próximamente</button>';
     }
     return '<div class="plan-card' + (esActual ? ' actual' : '') + '">' +
       (pl.precio_promo ? '<div class="plan-promo">Promo</div>' : '') +
@@ -156,6 +246,7 @@ async function renderPlanConfig() {
   wrap.querySelectorAll('[data-pagar]').forEach(b => b.addEventListener('click', () => _planCheckout(b.dataset.pagar, b.dataset.periodo, b)));
   wrap.querySelectorAll('[data-portal]').forEach(b => b.addEventListener('click', () => _planPortal(b)));
   wrap.querySelectorAll('[data-elegir]').forEach(b => b.addEventListener('click', async () => {
+    if (b.dataset.elegir === 'gratis' && enPrueba && !confirm('Vas a pasar al plan Gratis y termina tu prueba de los planes pagos. ¿Seguro?')) return;
     b.disabled = true;
     const { error } = await sb.rpc('pos_plan_elegir', { p_organization_id: orgId, p_plan_id: b.dataset.elegir });
     if (error) { b.disabled = false; tmvShowError(error); return; }
@@ -210,7 +301,10 @@ async function _planErrorMsg(error) {
         if (data?.ok) { try { localStorage.setItem(k, '1'); } catch (_) {} }
       }
     }
+    // Fuera de Argentina, si la prueba venció pasa al plan Gratis.
+    const { data: venc } = await sb.rpc('pos_plan_vencido_a_gratis', { p_organization_id: orgId });
     await cargarPlanActual();
+    if (venc?.cambio) toast('Terminó tu prueba: seguís usando el POS con el plan Gratis.', 'info');
     if (vuelta === 'ok') toast('¡Gracias! Tu suscripción se está activando. Puede tardar unos segundos.', 'ok');
     if (vuelta === 'cancel') toast('El pago se canceló. Podés elegir cómo pagar cuando quieras.', 'info');
     if (vuelta && _isAdmin()) { goTab('config'); _cfgShow('plan'); }
