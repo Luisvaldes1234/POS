@@ -30,13 +30,19 @@ async function cargarPlanActual() {
   return data;
 }
 
-async function _cargarPlanes() {
-  if (_planesCache) return _planesCache;
-  const { data } = await sb.from('pos_planes')
-    .select('id, nombre, descripcion, precio_mensual, precio_primer_mes, precio_promo, meses_promo, precio_anual, promo_texto, features, stripe_price_id, stripe_price_id_anual')
-    .eq('activo', true).order('orden');
-  _planesCache = data || [];
-  return _planesCache;
+// Planes con los precios del país del negocio (pos_planes_precios).
+async function _cargarPlanes(pais) {
+  if (_planesCache && _planesCache.pais === pais) return _planesCache.lista;
+  const [planesR, preciosR] = await Promise.all([
+    sb.from('pos_planes').select('id, nombre, descripcion, promo_texto, features, orden').eq('activo', true).order('orden'),
+    sb.from('pos_planes_precios')
+      .select('plan_id, moneda, precio_mensual, precio_primer_mes, precio_promo, meses_promo, precio_anual, stripe_price_id, stripe_price_id_anual')
+      .eq('pais', pais || 'AR'),
+  ]);
+  const precios = new Map((preciosR.data || []).map(r => [r.plan_id, r]));
+  const lista = (planesR.data || []).filter(pl => precios.has(pl.id)).map(pl => ({ ...pl, ...precios.get(pl.id) }));
+  _planesCache = { pais, lista };
+  return lista;
 }
 
 // ── Banda superior ──
@@ -72,7 +78,8 @@ async function renderPlanConfig() {
   const wrap = document.getElementById('plan-wrap');
   if (!wrap) return;
   wrap.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>';
-  const [p, planes] = await Promise.all([cargarPlanActual(), _cargarPlanes()]);
+  const p = await cargarPlanActual();
+  const planes = p ? await _cargarPlanes(p.pais_precios) : [];
   if (!p) { wrap.innerHTML = '<div class="env-empty">No se pudo cargar tu plan.</div>'; return; }
   const est = PLAN_ESTADOS[p.estado] || PLAN_ESTADOS.activa;
   const fecha = (s) => s ? new Date(s).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
@@ -123,7 +130,7 @@ async function renderPlanConfig() {
                          : '<button type="button" class="cc-btn" data-elegir="' + pl.id + '">Elegir este plan</button>';
     }
     return '<div class="plan-card' + (esActual ? ' actual' : '') + '">' +
-      (pl.promo_texto ? '<div class="plan-promo">Promo</div>' : '') +
+      (pl.precio_promo ? '<div class="plan-promo">Promo</div>' : '') +
       '<div style="font-size:16px;font-weight:700">' + _esc(pl.nombre) + (esActual ? ' <span style="font-size:11px;font-weight:600;color:var(--primary)">· ' + (enPrueba ? 'elegido' : 'actual') + '</span>' : '') + '</div>' +
       '<div style="font-size:12px;color:var(--muted);min-height:32px">' + _esc(pl.descripcion || '') + '</div>' +
       precioHtml(pl) +

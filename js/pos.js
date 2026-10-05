@@ -13,6 +13,8 @@ const sb = supabase.createClient(SB_URL, SB_KEY);
 let orgId       = null;
 let orgName     = null;
 let orgPais     = null;   // 'AR' / 'MX' / etc — para sugerir prefijo telefónico
+let orgMoneda   = null;   // 'ARS' / 'MXN' / 'CLP' / … — moneda en la que se muestran los montos
+let orgTz       = null;   // zona horaria del negocio (IANA), para saber qué día es "hoy"
 let userRole    = null;
 
 const PHONE_PREFIX = {
@@ -23,6 +25,16 @@ const PHONE_PREFIX = {
   BR:'+55',BRASIL:'+55',BRAZIL:'+55',US:'+1',USA:'+1',EEUU:'+1','ESTADOS UNIDOS':'+1',
   ES:'+34','ESPAÑA':'+34',SPAIN:'+34',
 };
+// Identificación fiscal según el país del negocio.
+const ID_FISCAL = {
+  AR: { nombre: 'CUIT', ej: '20-12345678-9' }, MX: { nombre: 'RFC', ej: 'XAXX010101000' },
+  CL: { nombre: 'RUT',  ej: '12.345.678-9' },  CO: { nombre: 'NIT', ej: '900.123.456-7' },
+  PE: { nombre: 'RUC',  ej: '20123456789' },   UY: { nombre: 'RUT', ej: '211234560019' },
+};
+function idFiscal() {
+  return ID_FISCAL[String(orgPais || 'AR').toUpperCase()] || { nombre: 'ID fiscal', ej: '' };
+}
+function esArgentina() { return !orgPais || String(orgPais).toUpperCase() === 'AR'; }
 function posPhonePrefix() {
   if (!orgPais) return '+54';
   return PHONE_PREFIX[String(orgPais).toUpperCase()] || '+54';
@@ -60,7 +72,7 @@ function _calcDescuento(total) {
   const inp = document.getElementById('pos-descuento');
   const tipo = document.getElementById('pos-descuento-tipo')?.value || 'ars';
   if (!inp) return Math.min(total, lealtad);
-  const raw = parseFloat(String(inp.value).replace(',', '.')) || 0;
+  const raw = parseMonto(inp.value);
   if (raw <= 0) return Math.min(total, lealtad);
   if (tipo === 'pct') return Math.min(total, total * raw / 100 + lealtad);
   return Math.min(total, raw + lealtad);
@@ -118,7 +130,43 @@ function _costoNuevoPonderado(mode, qActual, costoActual, qNueva, costoNuevo) {
 }
 
 // ── Helpers UI ───────────────────────────────────────
-function fmtARS(n){ return '$' + Number(n||0).toLocaleString('es-AR', {maximumFractionDigits:0}); }
+// Formatea un monto en la moneda del negocio (el nombre quedó de cuando el POS
+// era solo para Argentina). MXN, PEN y USD muestran centavos si los hay.
+const MONEDAS = {
+  ARS: { sim: '$',   loc: 'es-AR', dec: 0 }, MXN: { sim: '$',   loc: 'es-MX', dec: 2 },
+  CLP: { sim: '$',   loc: 'es-CL', dec: 0 }, COP: { sim: '$',   loc: 'es-CO', dec: 0 },
+  PEN: { sim: 'S/ ', loc: 'es-PE', dec: 2 }, UYU: { sim: '$',   loc: 'es-UY', dec: 0 },
+  USD: { sim: 'US$', loc: 'en-US', dec: 2 },
+};
+function fmtARS(n){
+  const m = MONEDAS[String(orgMoneda || 'ARS').toUpperCase()] || MONEDAS.ARS;
+  const v = Number(n || 0);
+  const dec = m.dec && Math.round(v * 100) % 100 !== 0 ? m.dec : 0;
+  return m.sim + v.toLocaleString(m.loc, { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+// Lee un monto escrito por el cajero respetando el separador decimal de la
+// moneda (coma en ARS/CLP/COP/UYU, punto en MXN/PEN/USD).
+function parseMonto(str) {
+  const m = MONEDAS[String(orgMoneda || 'ARS').toUpperCase()] || MONEDAS.ARS;
+  const dec = (1.5).toLocaleString(m.loc).charAt(1);
+  let t = String(str == null ? '' : str).replace(/[^\d.,-]/g, '');
+  t = dec === ',' ? t.replace(/\./g, '').replace(',', '.') : t.replace(/,/g, '');
+  return parseFloat(t) || 0;
+}
+// Monto listo para poner en un input (sin separador de miles).
+function montoInput(n) {
+  const m = MONEDAS[String(orgMoneda || 'ARS').toUpperCase()] || MONEDAS.ARS;
+  return Number(n || 0).toLocaleString(m.loc, { useGrouping: false, maximumFractionDigits: m.dec });
+}
+// Fecha (YYYY-MM-DD) en la zona horaria del negocio, con un desplazamiento en días.
+// No usar toISOString(): da la fecha UTC y después de las 21 h (Argentina) ya es "mañana".
+function _fechaNegocio(offsetDias = 0) {
+  const hoy = new Date().toLocaleDateString('en-CA', { timeZone: orgTz || 'America/Argentina/Buenos_Aires' });
+  if (!offsetDias) return hoy;
+  const d = new Date(hoy + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() + offsetDias);
+  return d.toISOString().slice(0, 10);
+}
 function fmtTime(ts){
   if (!ts) return '—';
   return new Date(ts).toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
@@ -386,7 +434,7 @@ function _offSaveSnapshot(uid){
   try {
     if (!orgId || !Array.isArray(productos) || !productos.length) return;   // no pisar con datos vacíos
     localStorage.setItem(_offSnapKey(uid), JSON.stringify({
-      ts: Date.now(), userRole, orgId, orgName, orgPais,
+      ts: Date.now(), userRole, orgId, orgName, orgPais, orgMoneda, orgTz,
       tiendas, tiendaId, tiendaLocked,
       productos, stock: Array.from(stockMap.entries()),
       clienteMostradorId,
@@ -398,6 +446,7 @@ function _offHydrate(uid){
   let s; try { s = JSON.parse(localStorage.getItem(_offSnapKey(uid)) || 'null'); } catch (_) { s = null; }
   if (!s || !s.orgId || !Array.isArray(s.productos) || !s.productos.length) return false;
   userRole = s.userRole; orgId = s.orgId; orgName = s.orgName; orgPais = s.orgPais;
+  orgMoneda = s.orgMoneda || null; orgTz = s.orgTz || null;
   tiendas = s.tiendas || []; tiendaId = s.tiendaId; tiendaLocked = !!s.tiendaLocked;
   productos = s.productos || [];
   stockMap = new Map(s.stock || []);
@@ -431,19 +480,20 @@ async function init(){
     let orgRow = null;
     if (impOrgId) {
       const { data } = await sb.from('organizations')
-        .select('id, name, pais').eq('id', impOrgId).eq('activo', true).maybeSingle();
+        .select('id, name, pais, moneda, timezone').eq('id', impOrgId).eq('activo', true).maybeSingle();
       orgRow = data || null;
     }
     if (!orgRow) {
       const { data: orgs } = await sb.from('organizations')
-        .select('id, name, pais').eq('activo', true).order('name').limit(1);
+        .select('id, name, pais, moneda, timezone').eq('activo', true).order('name').limit(1);
       orgRow = orgs?.[0] || null;
     }
     if (!orgRow) { toast('Sin organizaciones disponibles', 'err'); return; }
     orgId = orgRow.id; orgName = orgRow.name; orgPais = orgRow.pais || null;
+    orgMoneda = orgRow.moneda || null; orgTz = orgRow.timezone || null;
   } else {
     const _fetchRole = () => sb.from('user_roles')
-      .select('role, organization_id, organizations(name, pais)')
+      .select('role, organization_id, organizations(name, pais, moneda, timezone)')
       .eq('user_id', session.user.id)
       .eq('activo', true)
       .maybeSingle();
@@ -477,6 +527,8 @@ async function init(){
     orgId    = ur.organization_id;
     orgName  = ur.organizations?.name || '';
     orgPais  = ur.organizations?.pais || null;
+    orgMoneda = ur.organizations?.moneda || null;
+    orgTz    = ur.organizations?.timezone || null;
 
     if (!['client_pos','client_admin','account_manager'].includes(userRole)) {
       toast('No tenés permisos para usar el POS', 'err');
@@ -1475,11 +1527,10 @@ async function initReportesUI() {
   const desde = document.getElementById('rep-desde');
   const hasta = document.getElementById('rep-hasta');
   if (desde && !desde.value) {
-    const d = new Date(); d.setDate(d.getDate() - 7);
-    desde.value = d.toISOString().slice(0, 10);
+    desde.value = _fechaNegocio(-7);
   }
   if (hasta && !hasta.value) {
-    hasta.value = new Date().toISOString().slice(0, 10);
+    hasta.value = _fechaNegocio();
   }
   if (!_reportesInited) {
     try {
@@ -1692,8 +1743,8 @@ window.cargarCorteGlobal = async () => {
   const cont = document.getElementById('corte-global-content');
   const inp  = document.getElementById('corte-global-fecha');
   if (!cont) return;
-  if (inp && !inp.value) inp.value = new Date().toISOString().slice(0, 10);
-  const fecha = (inp && inp.value) ? inp.value : new Date().toISOString().slice(0, 10);
+  if (inp && !inp.value) inp.value = _fechaNegocio();
+  const fecha = (inp && inp.value) ? inp.value : _fechaNegocio();
   cont.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">Cargando…</div>';
   const { data, error } = await sb.rpc('pos_corte_global_dia', { p_organization_id: orgId, p_fecha: fecha });
   if (error) { cont.innerHTML = '<div style="color:var(--danger);padding:16px">Error: ' + error.message + '</div>'; return; }
@@ -1928,7 +1979,7 @@ window.crearReserva = async () => {
 };
 
 function _abrirReservaModal(items) {
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = _fechaNegocio();
   const html = `
     <div id="pos-rv-overlay" style="position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:14px"
       onmousedown="this.dataset.dwn=(event.target===this?&quot;1&quot;:&quot;&quot;)" onclick="if(event.target===this&&this.dataset.dwn===&quot;1&quot;)this.remove();this.dataset.dwn=&quot;&quot;">
@@ -2372,7 +2423,7 @@ function renderProductGrid(){
     const _favs = _getFavoritos();
     const favSlot = Object.entries(_favs).find(([, v]) => v.id === p.id)?.[0];
     const favKey = favSlot ? 'F' + (parseInt(favSlot, 10) + 6) : null;
-    const hoy = new Date().toISOString().slice(0, 10);
+    const hoy = _fechaNegocio();
     const vencido = p.fecha_vencimiento && p.fecha_vencimiento <= hoy;
     const porVencer = !vencido && p.fecha_vencimiento &&
       ((new Date(p.fecha_vencimiento) - new Date(hoy)) / 86400000) <= 7;
@@ -2441,7 +2492,7 @@ function renderProductGrid(){
 
 function agregarAlCarrito(p){
   if (p.fecha_vencimiento) {
-    const hoy = new Date().toISOString().slice(0, 10);
+    const hoy = _fechaNegocio();
     if (p.fecha_vencimiento <= hoy) {
       if (!confirm('⚠ ' + p.nombre + ' está vencido (vto ' + p.fecha_vencimiento + '). ¿Vender igual?')) return;
     } else {
@@ -3172,7 +3223,7 @@ async function reponer(p, sugerido){
   const { data: stocks } = await sb.from('stock_repartidor')
     .select('id, vehiculo_id, vehiculos(patente, marca, modelo)')
     .eq('organization_id', orgId)
-    .eq('fecha', new Date().toISOString().slice(0,10))
+    .eq('fecha', _fechaNegocio())
     .eq('estado', 'abierto');
   const vSel = document.getElementById('pos-rep-vehiculo');
   if (vSel) vSel.innerHTML = (stocks || []).map(s =>
@@ -3413,7 +3464,7 @@ window._posAbrirNuevoCliente = async function() {
           <label style="font-size:11px;color:#64748b;font-weight:600">🔍 Buscar dirección</label>
           <div style="display:flex;gap:6px;margin-top:3px">
             <input id="geo-search" type="text" autocomplete="off"
-              placeholder="Ej: San Martín 1234, San Juan…"
+              placeholder="Ej: Av. Principal 1234…"
               oninput="window.geoSuggest(this.value)"
               style="flex:1;padding:9px 11px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;outline:none">
             <button type="button" onclick="window.geoMiUbicacion()" title="Usar mi GPS"
@@ -3492,11 +3543,11 @@ window._posAbrirNuevoCliente = async function() {
         <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Facturación (opcional)</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
           <div>
-            <label style="font-size:11px;color:#64748b;font-weight:600">CUIT/DNI</label>
+            <label style="font-size:11px;color:#64748b;font-weight:600">${idFiscal().nombre}${esArgentina() ? '/DNI' : ''}</label>
             <input id="pos-nc-cuit" type="text"
               style="width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;margin-top:3px">
           </div>
-          <div>
+          <div style="${esArgentina() ? '' : 'display:none'}">
             <label style="font-size:11px;color:#64748b;font-weight:600">Condición IVA</label>
             <select id="pos-nc-iva"
               style="width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;margin-top:3px">
@@ -4465,7 +4516,7 @@ function abrirRecibo(v){
 
   const fiscalLines = [];
   if (reciboCfg.header_extra)                  fiscalLines.push(reciboCfg.header_extra);
-  if (reciboCfg.mostrar_cuit && orgFiscal.cuit)           fiscalLines.push('CUIT: ' + orgFiscal.cuit);
+  if (reciboCfg.mostrar_cuit && orgFiscal.cuit)           fiscalLines.push(idFiscal().nombre + ': ' + orgFiscal.cuit);
   if (reciboCfg.mostrar_direccion && orgFiscal.direccion) fiscalLines.push(orgFiscal.direccion);
   if (reciboCfg.mostrar_telefono && orgFiscal.telefono)   fiscalLines.push('Tel: ' + orgFiscal.telefono);
   const fiscalHtml = fiscalLines.length
@@ -4619,7 +4670,7 @@ async function cargarVentasHoy(){
 
   const { data, error } = await sb.rpc('pos_get_ventas_dia', {
     p_organization_id: orgId,
-    p_fecha:           new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }),
+    p_fecha:           _fechaNegocio(),
   });
   if (error) {
     list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--danger)">Error: ' + error.message + '</div>';
@@ -4965,7 +5016,7 @@ function _pedirPagaCon(total) {
       '</div>' +
       '<div style="display:flex;justify-content:space-between;align-items:baseline;margin:10px 0 14px;font-variant-numeric:tabular-nums"><span style="color:var(--muted);font-size:14px">Total</span><span style="font-size:24px;font-weight:800">' + fmtARS(total) + '</span></div>' +
       '<label for="pc-in" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px">¿Con cuánto paga?</label>' +
-      '<input id="pc-in" type="text" inputmode="numeric" autocomplete="off" placeholder="' + Math.round(total) + '" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;outline:none">' +
+      '<input id="pc-in" type="text" inputmode="decimal" autocomplete="off" placeholder="' + montoInput(total) + '" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;outline:none">' +
       '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">' + chip(total, 'Justo') + sugeridos.map(v => chip(v, fmtARS(v))).join('') + '</div>' +
       '<div id="pc-res" style="margin-top:16px;padding:14px;border-radius:10px;display:flex;justify-content:space-between;align-items:baseline;font-variant-numeric:tabular-nums"></div>' +
       '<button type="button" id="pc-ok" style="margin-top:14px;width:100%;padding:14px;border:0;border-radius:10px;background:var(--primary);color:#fff;font-size:16px;font-weight:700;cursor:pointer">Confirmar cobro</button>' +
@@ -4975,8 +5026,7 @@ function _pedirPagaCon(total) {
     const res = ov.querySelector('#pc-res');
     const ok  = ov.querySelector('#pc-ok');
     const leer = () => {
-      const raw = inp.value.replace(/[^0-9,]/g, '').replace(',', '.');
-      return raw === '' ? total : (parseFloat(raw) || 0);
+      return inp.value.trim() === '' ? total : parseMonto(inp.value);
     };
     const pintar = () => {
       const paga = leer();
@@ -5005,7 +5055,7 @@ function _pedirPagaCon(total) {
     document.addEventListener('keydown', onKey, true);
     inp.addEventListener('input', pintar);
     ov.querySelectorAll('.pc-op').forEach(b => b.addEventListener('click', () => {
-      inp.value = String(Math.round(Number(b.dataset.v))); pintar(); ok.focus();
+      inp.value = montoInput(Number(b.dataset.v)); pintar(); ok.focus();
     }));
     ok.addEventListener('click', confirmar);
     ov.querySelector('#pc-x').addEventListener('click', () => cerrar(null));
@@ -6344,7 +6394,7 @@ async function _posPopularOrigenes() {
   const { data: stocks } = await sb.from('stock_repartidor')
     .select('id, vehiculo_id, repartidor_id, vehiculos(patente, marca, modelo)')
     .eq('organization_id', orgId)
-    .eq('fecha', new Date().toISOString().slice(0,10))
+    .eq('fecha', _fechaNegocio())
     .eq('estado', 'abierto');
   const vSel = document.getElementById('carga-origen-vehiculo');
   if (vSel) {
@@ -6583,7 +6633,7 @@ function _ccPedirPago(c) {
         '<button type="button" data-x style="background:none;border:0;font-size:22px;cursor:pointer;color:#64748b">×</button></div>' +
       '<div style="font-size:14px;color:var(--muted);margin-bottom:14px">' + _esc(c.nombre) + ' · debe <b style="color:#B42318">' + fmtARS(deuda) + '</b></div>' +
       '<label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px">Monto que paga</label>' +
-      '<input id="ccp-m" type="text" inputmode="decimal" autocomplete="off" value="' + Math.round(deuda) + '" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;outline:none">' +
+      '<input id="ccp-m" type="text" inputmode="decimal" autocomplete="off" value="' + montoInput(deuda) + '" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;outline:none">' +
       '<div style="display:flex;gap:8px;margin-top:8px"><button type="button" class="cc-btn" data-total>Paga todo</button><button type="button" class="cc-btn" data-mitad>La mitad</button></div>' +
       '<label style="display:block;font-size:13px;font-weight:600;margin:14px 0 6px">Cómo paga</label>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
@@ -6594,7 +6644,7 @@ function _ccPedirPago(c) {
     const inp = ov.querySelector('#ccp-m');
     const res = ov.querySelector('#ccp-res');
     const ok  = ov.querySelector('#ccp-ok');
-    const leer = () => parseFloat(inp.value.replace(/[^0-9,.]/g, '').replace(/\./g, '').replace(',', '.')) || 0;
+    const leer = () => parseMonto(inp.value);
     const pintar = () => {
       ov.querySelectorAll('.cc-met').forEach(b => b.classList.toggle('on', b.dataset.m === metodo));
       const m = leer();
@@ -6608,8 +6658,8 @@ function _ccPedirPago(c) {
     const cerrar = (v) => { ov.remove(); resolve(v); };
     ov.querySelector('[data-x]').addEventListener('click', () => cerrar(false));
     ov.addEventListener('mousedown', e => { if (e.target === ov) cerrar(false); });
-    ov.querySelector('[data-total]').addEventListener('click', () => { inp.value = String(Math.round(deuda)); pintar(); });
-    ov.querySelector('[data-mitad]').addEventListener('click', () => { inp.value = String(Math.round(deuda / 2)); pintar(); });
+    ov.querySelector('[data-total]').addEventListener('click', () => { inp.value = montoInput(deuda); pintar(); });
+    ov.querySelector('[data-mitad]').addEventListener('click', () => { inp.value = montoInput(Math.round(deuda / 2 * 100) / 100); pintar(); });
     ov.querySelectorAll('.cc-met').forEach(b => b.addEventListener('click', () => { metodo = b.dataset.m; pintar(); }));
     inp.addEventListener('input', pintar);
     inp.addEventListener('keydown', e => { if (e.key === 'Enter') ok.click(); if (e.key === 'Escape') cerrar(false); });
@@ -7070,7 +7120,7 @@ function _reciboPreviewHTML(cfg) {
   const esc = s => String(s ?? '').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
   const fiscal = [];
   if (cfg.header_extra) fiscal.push(cfg.header_extra);
-  if (cfg.mostrar_cuit && orgFiscal.cuit)           fiscal.push('CUIT: ' + orgFiscal.cuit);
+  if (cfg.mostrar_cuit && orgFiscal.cuit)           fiscal.push(idFiscal().nombre + ': ' + orgFiscal.cuit);
   if (cfg.mostrar_direccion && orgFiscal.direccion) fiscal.push(orgFiscal.direccion);
   if (cfg.mostrar_telefono && orgFiscal.telefono)   fiscal.push('Tel: ' + orgFiscal.telefono);
   const foot = [];
@@ -7128,7 +7178,7 @@ async function renderReciboConfig() {
     '  </div>' +
     '  <div class="recibo-section">' +
     '    <div class="recibo-section-h">Datos fiscales en el header</div>' +
-    '    <label class="recibo-toggle"><span>CUIT</span><input id="rc-cuit" type="checkbox"' + (c.mostrar_cuit ? ' checked' : '') + '></label>' +
+    '    <label class="recibo-toggle"><span>' + idFiscal().nombre + '</span><input id="rc-cuit" type="checkbox"' + (c.mostrar_cuit ? ' checked' : '') + '></label>' +
     '    <label class="recibo-toggle"><span>Dirección</span><input id="rc-dir" type="checkbox"' + (c.mostrar_direccion ? ' checked' : '') + '></label>' +
     '    <label class="recibo-toggle"><span>Teléfono</span><input id="rc-tel" type="checkbox"' + (c.mostrar_telefono ? ' checked' : '') + '></label>' +
     '  </div>' +
@@ -7448,13 +7498,12 @@ function abrirNuevoUsuario() {
 //  FINANZAS — resumen de lo que pasó (ventas, costo, margen, gastos…)
 // ════════════════════════════════════════════════════════════════════
 function _finRango(preset) {
-  const hoy = new Date();
-  const fmt = d => d.toISOString().slice(0, 10);
-  if (preset === 'hoy')  return [fmt(hoy), fmt(hoy)];
-  if (preset === 'mes')  return [fmt(new Date(hoy.getFullYear(), hoy.getMonth(), 1)), fmt(hoy)];
-  if (preset === '7')    { const d = new Date(hoy); d.setDate(d.getDate()-6); return [fmt(d), fmt(hoy)]; }
-  if (preset === '30')   { const d = new Date(hoy); d.setDate(d.getDate()-29); return [fmt(d), fmt(hoy)]; }
-  return [fmt(new Date(hoy.getFullYear(), hoy.getMonth(), 1)), fmt(hoy)];
+  const hoy = _fechaNegocio();
+  const inicioMes = hoy.slice(0, 8) + '01';
+  if (preset === 'hoy')  return [hoy, hoy];
+  if (preset === '7')    return [_fechaNegocio(-6), hoy];
+  if (preset === '30')   return [_fechaNegocio(-29), hoy];
+  return [inicioMes, hoy];
 }
 
 async function renderFinanzas() {
@@ -7975,7 +8024,7 @@ async function _verFacturaRecibida(id){
 
 function _abrirCargaFacturaRecibida(){
   _frecArchivo = null;
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = _fechaNegocio();
   const tiendasOpts = (tiendas || []).map(t => '<option value="' + t.id + '">' + (t.es_principal ? '★ ' : '') + t.nombre.replace(/[<>&"]/g, '') + '</option>').join('');
   const ov = document.createElement('div');
   ov.className = 'qr-overlay show';
@@ -8066,12 +8115,12 @@ async function renderNegocio() {
     '    <input id="ng-nombre" class="prod-form-i" style="width:100%" maxlength="80" placeholder="Ej: Almacén Don José" value="' + esc(orgName || '') + '">' +
     '  </div>' +
     '  <div class="recibo-section">' +
-    '    <div class="recibo-section-h">CUIT / identificación fiscal (opcional)</div>' +
-    '    <input id="ng-cuit" class="prod-form-i" style="width:100%" maxlength="40" placeholder="Ej: 20-12345678-9" value="' + esc(orgFiscal.cuit || '') + '">' +
+    '    <div class="recibo-section-h">' + idFiscal().nombre + ' / identificación fiscal (opcional)</div>' +
+    '    <input id="ng-cuit" class="prod-form-i" style="width:100%" maxlength="40" placeholder="' + (idFiscal().ej ? 'Ej: ' + idFiscal().ej : '') + '" value="' + esc(orgFiscal.cuit || '') + '">' +
     '  </div>' +
     '  <div class="recibo-section">' +
     '    <div class="recibo-section-h">Dirección (opcional)</div>' +
-    '    <input id="ng-dir" class="prod-form-i" style="width:100%" maxlength="120" placeholder="Ej: San Martín 1234, San Juan" value="' + esc(orgFiscal.direccion || '') + '">' +
+    '    <input id="ng-dir" class="prod-form-i" style="width:100%" maxlength="120" placeholder="Ej: Av. Principal 1234" value="' + esc(orgFiscal.direccion || '') + '">' +
     '  </div>' +
     '  <div class="recibo-section">' +
     '    <div class="recibo-section-h">Teléfono (opcional)</div>' +

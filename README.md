@@ -118,6 +118,26 @@ detectan que ya existe y no hacen nada):
 El email de bienvenida se dispara una sola vez vía la edge function
 `notify-signup` desde la vía que efectivamente crea la org.
 
+## Países
+
+El POS funciona para Argentina, México, Chile, Colombia, Perú, Uruguay y
+"Otro país" (USD):
+
+- **Registro:** el país se preselecciona (enlace de la landing, idioma o zona
+  horaria del navegador). "Otro país" crea la organización con `pais = 'OT'`,
+  moneda USD y la zona horaria del navegador del dueño.
+- **Precios:** `pos_planes_precios` tiene los montos por país y moneda
+  (`sql/2026-10-05_pos_precios_pais.sql`). La landing, el registro y Mi plan los
+  leen de ahí. Los montos fuera de Argentina son equivalentes aproximados:
+  revisarlos en esa tabla.
+- **App:** los montos se muestran en la moneda del negocio
+  (`organizations.moneda`) y los ingresos de dinero respetan su separador
+  decimal; "hoy" se calcula con la zona horaria del negocio
+  (`organizations.timezone`); la identificación fiscal se llama CUIT, RFC,
+  RUT, NIT o RUC según el país y "Condición IVA" solo aparece en Argentina.
+- **Textos:** landing, registro y login usan "tú" fuera de Argentina y Uruguay
+  (`js/pais.js`). La app sigue en español rioplatense.
+
 ## Plan y cobro de la suscripción (Stripe)
 
 Configuración → **💳 Mi plan** muestra el plan de la organización (prueba con
@@ -142,11 +162,11 @@ $240.000 pagando el año por adelantado (`precio_promo`, `meses_promo`,
 
 Para activar el pago con tarjeta:
 
-1. En Stripe, crear un producto por plan con su precio mensual recurrente y
-   cargar el id del precio en `pos_planes.stripe_price_id`. Para Mostrador:
-   precio mensual de $40.000, un cupón `amount_off` de $20.000 ARS con
-   duración "repeating" de 3 meses (`pos_planes.stripe_coupon_promo`) y un
-   precio anual de $240.000 (`pos_planes.stripe_price_id_anual`). Opcional: el
+1. En Stripe, crear un producto por plan con su precio mensual recurrente en
+   cada moneda y cargar los ids en `pos_planes_precios` (por país:
+   `stripe_price_id`, `stripe_price_id_anual`, `stripe_coupon_promo`). Para Mostrador:
+   precio mensual (ej. $40.000 ARS), un cupón `amount_off` por la diferencia
+   con la promo con duración "repeating" de 3 meses y un precio anual. Opcional: el
    cupón general del 50% del primer mes para los otros planes. Si la
    organización todavía está en la prueba, el primer cobro se hace al terminar
    la prueba.

@@ -139,6 +139,9 @@
   .price.pop{border:2px solid var(--primary);box-shadow:0 12px 32px -12px rgba(15,118,110,.28)}
   .price-pop{position:absolute;top:-13px;left:28px;background:var(--accent);color:#fff;font-size:12px;font-weight:600;padding:4px 12px;border-radius:999px}
   .price-promo{background:var(--primary)}
+  .pais-row{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin:-24px 0 36px;font-size:14px;color:var(--text-2)}
+  .pais-row select{padding:8px 12px;border:1px solid #CBD5E1;border-radius:10px;font-family:inherit;font-size:14px;background:#fff;color:var(--text);cursor:pointer}
+  .pais-moneda{width:100%;text-align:center;font-size:13px}
   .price-name{font-size:18px;font-weight:600}
   .price-for{font-size:14px;color:var(--text-2);margin-top:4px;min-height:42px}
   .price-amt{font-size:40px;font-weight:700;letter-spacing:-.03em;margin-top:20px;line-height:1}
@@ -394,7 +397,21 @@
     <div class="sec-head center">
       <div class="kicker">Precios</div>
       <h2>Planes simples, sin sorpresas.</h2>
-      <p>Todos arrancan con 14 días gratis, sin tarjeta. En Mostrador, promo de lanzamiento: $20.000 por mes los primeros 3 meses.</p>
+      <p>Todos arrancan con 14 días gratis, sin tarjeta. En Mostrador, promo de lanzamiento: <span data-pp="intro">$20.000</span> por mes los primeros 3 meses.</p>
+    </div>
+
+    <div class="pais-row">
+      <label for="pais-sel">Precios para</label>
+      <select id="pais-sel" aria-label="País">
+        <option value="AR">🇦🇷 Argentina</option>
+        <option value="MX">🇲🇽 México</option>
+        <option value="CL">🇨🇱 Chile</option>
+        <option value="CO">🇨🇴 Colombia</option>
+        <option value="PE">🇵🇪 Perú</option>
+        <option value="UY">🇺🇾 Uruguay</option>
+        <option value="OT">🌎 Otro país (USD)</option>
+      </select>
+      <span class="pais-moneda" data-pp="moneda">Precios en pesos argentinos (ARS), por mes.</span>
     </div>
 
     <div class="price-grid">
@@ -402,8 +419,8 @@
         <div class="price-pop price-promo">Promo lanzamiento</div>
         <div class="price-name">Mostrador</div>
         <div class="price-for">Para kioscos y negocios que arrancan</div>
-        <div class="price-amt num">$20.000 <small>/ mes</small></div>
-        <div class="price-note num">Los primeros 3 meses, después <b>$40.000</b>.<br>O <b>$240.000 el año completo</b> ($20.000/mes por 12 meses).</div>
+        <div class="price-amt num"><span data-pp="mostrador-promo">$20.000</span> <small>/ mes</small></div>
+        <div class="price-note num">Los primeros 3 meses, después <b data-pp="mostrador-mensual">$40.000</b>.<br>O <b data-pp="mostrador-anual">$240.000</b> <b>el año completo</b> (<span data-pp="mostrador-promo2">$20.000</span>/mes por 12 meses).</div>
         <ul>
           <li><svg class="ic"><use href="#i-check"/></svg>Venta con scanner de código de barras</li>
           <li><svg class="ic"><use href="#i-check"/></svg>Efectivo, transferencia, MP QR, débito y crédito</li>
@@ -420,8 +437,8 @@
         <div class="price-pop">Más elegido</div>
         <div class="price-name">Negocio</div>
         <div class="price-for">Para almacenes y ferreterías en crecimiento</div>
-        <div class="price-amt num">$60.000 <small>/ mes</small></div>
-        <div class="price-note num">Primer mes <b>$30.000</b> · usuarios ilimitados</div>
+        <div class="price-amt num"><span data-pp="negocio-mensual">$60.000</span> <small>/ mes</small></div>
+        <div class="price-note num">Primer mes <b data-pp="negocio-primer">$30.000</b> · usuarios ilimitados</div>
         <ul>
           <li><svg class="ic"><use href="#i-check"/></svg>Todo lo de Mostrador</li>
           <li><svg class="ic"><use href="#i-check"/></svg><span><b>Usuarios ilimitados</b> (cajeros y admins)</span></li>
@@ -437,8 +454,8 @@
       <div class="price">
         <div class="price-name">Cadena</div>
         <div class="price-for">Para varias tiendas o sucursales</div>
-        <div class="price-amt num">$90.000 <small>/ mes</small></div>
-        <div class="price-note num">Incluye 3 tiendas · <b>+$24.900</b> por tienda extra</div>
+        <div class="price-amt num"><span data-pp="cadena-mensual">$90.000</span> <small>/ mes</small></div>
+        <div class="price-note num">Incluye 3 tiendas · <b>+<span data-pp="cadena-extra">$24.900</span></b> por tienda extra</div>
         <ul>
           <li><svg class="ic"><use href="#i-check"/></svg>Todo lo de Negocio</li>
           <li><svg class="ic"><use href="#i-check"/></svg><span><b>Multi-tienda</b>: stock y caja por sucursal</span></li>
@@ -543,8 +560,40 @@
   </div>
 </footer>
 
+<script src="js/pais.js?v=1"></script>
 <script>
   document.getElementById('year').textContent = new Date().getFullYear();
+
+  // País del visitante: precios en su moneda y textos con "tú" fuera de AR/UY.
+  (function () {
+    const P = window.PosPais;
+    if (!P) return;
+    const sel = document.getElementById('pais-sel');
+    let pais = P.detectarPais();
+    if (!P.PAISES[pais].voseo) P.aplicarTuteo(document.body);
+
+    async function pintar() {
+      const info = P.PAISES[pais];
+      const pr = await P.precios(pais);
+      const f = n => P.fmt(n, info.moneda);
+      const set = (k, v) => document.querySelectorAll('[data-pp="' + k + '"]').forEach(el => { el.textContent = v; });
+      const m = pr.mostrador || {}, n = pr.negocio || {}, c = pr.cadena || {};
+      set('intro', f(m.precio_promo)); set('mostrador-promo', f(m.precio_promo)); set('mostrador-promo2', f(m.precio_promo));
+      set('mostrador-mensual', f(m.precio_mensual)); set('mostrador-anual', f(m.precio_anual));
+      set('negocio-mensual', f(n.precio_mensual)); set('negocio-primer', f(n.precio_primer_mes));
+      set('cadena-mensual', f(c.precio_mensual)); set('cadena-extra', f(c.precio_tienda_extra));
+      set('moneda', 'Precios en ' + info.monedaNombre + ' (' + info.moneda + '), por mes.');
+      // Los botones de registro llevan el país elegido.
+      document.querySelectorAll('a[href^="signup.html"]').forEach(a => {
+        const u = new URL(a.getAttribute('href'), location.href);
+        u.searchParams.set('pais', pais);
+        a.setAttribute('href', 'signup.html' + u.search);
+      });
+    }
+    sel.value = pais;
+    sel.addEventListener('change', () => { pais = sel.value; P.guardar(pais); pintar(); });
+    pintar();
+  })();
 </script>
 </body>
 </html>

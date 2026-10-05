@@ -77,50 +77,45 @@
       <label for="direccion">Dirección del local *</label>
       <input id="direccion" type="text" required minlength="6" placeholder="Calle, número y localidad" autocomplete="street-address">
 
+      <label for="country">País *</label>
+      <select id="country" required>
+        <option value="AR" selected>Argentina</option>
+        <option value="MX">México</option>
+        <option value="CL">Chile</option>
+        <option value="CO">Colombia</option>
+        <option value="PE">Perú</option>
+        <option value="UY">Uruguay</option>
+        <option value="OT">Otro país</option>
+      </select>
+
       <label>Elegí tu plan *</label>
       <div class="planes" id="planes" role="radiogroup" aria-label="Plan">
         <label class="plan-op">
           <input type="radio" name="plan" value="mostrador" required>
           <span class="plan-op-b">
             <span class="plan-op-n">Mostrador <span class="plan-op-tag">Promo</span></span>
-            <span class="plan-op-p">$20.000/mes los primeros 3 meses, después $40.000. O $240.000 el año completo.</span>
+            <span class="plan-op-p" data-plan-desc="mostrador">$20.000/mes los primeros 3 meses, después $40.000. O $240.000 el año completo.</span>
           </span>
         </label>
         <label class="plan-op">
           <input type="radio" name="plan" value="negocio">
           <span class="plan-op-b">
             <span class="plan-op-n">Negocio</span>
-            <span class="plan-op-p">$60.000/mes · usuarios ilimitados, promos, fiado y programa de puntos.</span>
+            <span class="plan-op-p" data-plan-desc="negocio">$60.000/mes · usuarios ilimitados, promos, fiado y programa de puntos.</span>
           </span>
         </label>
         <label class="plan-op">
           <input type="radio" name="plan" value="cadena">
           <span class="plan-op-b">
             <span class="plan-op-n">Cadena</span>
-            <span class="plan-op-p">$90.000/mes · 3 tiendas incluidas y corte global.</span>
+            <span class="plan-op-p" data-plan-desc="cadena">$90.000/mes · 3 tiendas incluidas y corte global.</span>
           </span>
         </label>
       </div>
       <div class="plan-nota">Los primeros 14 días son gratis con todas las funciones. No te cobramos nada ahora.</div>
 
-      <div class="row">
-        <div>
-          <label for="owner">Tu nombre *</label>
-          <input id="owner" type="text" required placeholder="José Pérez" autocomplete="name">
-        </div>
-        <div>
-          <label for="country">País</label>
-          <select id="country">
-            <option value="AR" selected>Argentina</option>
-            <option value="MX">México</option>
-            <option value="CL">Chile</option>
-            <option value="CO">Colombia</option>
-            <option value="PE">Perú</option>
-            <option value="UY">Uruguay</option>
-            <option value="OT">Otro</option>
-          </select>
-        </div>
-      </div>
+      <label for="owner">Tu nombre *</label>
+      <input id="owner" type="text" required placeholder="José Pérez" autocomplete="name">
 
       <label for="phone">WhatsApp / teléfono</label>
       <input id="phone" type="tel" inputmode="tel" placeholder="+54 9 11 1234 5678" autocomplete="tel">
@@ -148,12 +143,38 @@
     <div class="legal">POS Mostrador by TMV Dynamics S.A.&nbsp;de&nbsp;C.V.</div>
   </div>
 
+<script src="js/pais.js?v=1"></script>
 <script>
   // Plan preseleccionado desde la landing (signup.html?plan=mostrador).
   (function () {
     const planUrl = (new URLSearchParams(location.search).get('plan') || '').replace(/[^a-z]/g, '');
     const radio = planUrl && document.querySelector('input[name="plan"][value="' + planUrl + '"]');
     if (radio) radio.checked = true;
+  })();
+
+  // País: preseleccionado (landing / navegador), precios de los planes en su
+  // moneda, teléfono de ejemplo del país y textos con "tú" fuera de AR/UY.
+  (function () {
+    const P = window.PosPais;
+    if (!P) return;
+    const sel = document.getElementById('country');
+    const pais = P.detectarPais();
+    sel.value = pais;
+    if (!P.PAISES[pais].voseo) P.aplicarTuteo(document.body);
+    async function pintar() {
+      const p = sel.value;
+      const info = P.PAISES[p];
+      const pr = await P.precios(p);
+      const f = n => P.fmt(n, info.moneda);
+      const m = pr.mostrador || {}, n = pr.negocio || {}, c = pr.cadena || {};
+      const d = (k, t) => { const el = document.querySelector('[data-plan-desc="' + k + '"]'); if (el) el.textContent = t; };
+      d('mostrador', f(m.precio_promo) + '/mes los primeros ' + (m.meses_promo || 3) + ' meses, después ' + f(m.precio_mensual) + '. O ' + f(m.precio_anual) + ' el año completo.');
+      d('negocio', f(n.precio_mensual) + '/mes · usuarios ilimitados, promos, fiado y programa de puntos.');
+      d('cadena', f(c.precio_mensual) + '/mes · 3 tiendas incluidas y corte global.');
+      document.getElementById('phone').placeholder = info.tel;
+    }
+    sel.addEventListener('change', () => { P.guardar(sel.value); pintar(); });
+    pintar();
   })();
 </script>
 <script>
@@ -177,11 +198,12 @@
     const direccion = document.getElementById('direccion').value.trim();
     const plan     = document.querySelector('input[name="plan"]:checked')?.value || '';
     const owner    = document.getElementById('owner').value.trim();
-    let   country  = document.getElementById('country').value;
+    const country  = document.getElementById('country').value;   // 'OT' = otro país (USD)
     const phone    = document.getElementById('phone').value.trim();
     const email    = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
-    if (country === 'OT') country = '';  // país desconocido → el backend usa default
+    let timezone = '';
+    try { timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (_) {}
 
     if (!plan) {
       msg.className = 'msg err';
@@ -208,7 +230,7 @@
       email,
       password,
       options: {
-        data: { business_name: business, tienda_name: tienda, direccion, plan_elegido: plan, owner_name: owner, phone, country, product: 'pos' },
+        data: { business_name: business, tienda_name: tienda, direccion, plan_elegido: plan, owner_name: owner, phone, country, timezone, product: 'pos' },
         emailRedirectTo: new URL('login.html', window.location.href).href,
       },
     });
