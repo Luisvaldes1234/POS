@@ -55,13 +55,15 @@ async function _cargarPermisos(){
 function _canRecibirStock(){ return _isAdmin() || _permRecibir || _permAjustar; }
 function _canAjustarStock(){ return _isAdmin() || _permAjustar; }
 function _calcDescuento(total) {
+  // Canje de lealtad (js/clientes.js) + descuento manual, sin superar el total.
+  const lealtad = typeof _lealtadDescuento === 'function' ? _lealtadDescuento(total) : 0;
   const inp = document.getElementById('pos-descuento');
   const tipo = document.getElementById('pos-descuento-tipo')?.value || 'ars';
-  if (!inp) return 0;
+  if (!inp) return Math.min(total, lealtad);
   const raw = parseFloat(String(inp.value).replace(',', '.')) || 0;
-  if (raw <= 0) return 0;
-  if (tipo === 'pct') return Math.min(total, total * raw / 100);
-  return Math.min(total, raw);
+  if (raw <= 0) return Math.min(total, lealtad);
+  if (tipo === 'pct') return Math.min(total, total * raw / 100 + lealtad);
+  return Math.min(total, raw + lealtad);
 }
 function _calcPromoOff() {
   let off = 0;
@@ -79,6 +81,7 @@ function _calcPromoOff() {
 function _resetDescuento() {
   const inp = document.getElementById('pos-descuento');
   if (inp) inp.value = '';
+  if (typeof _lealtadLimpiarCanje === 'function') _lealtadLimpiarCanje();
 }
 let tiendas = [];
 let tiendaId = null;
@@ -994,6 +997,7 @@ window.goTab = (tab) => {
   if (tab === 'stock')    renderStock();
   if (tab === 'caja')     renderCaja();
   if (tab === 'cuentas')  renderCuentas();
+  if (tab === 'clientes') renderClientes();
   if (tab === 'finanzas') renderFinanzas();
   if (tab === 'config')   renderConfig();
 };
@@ -4082,6 +4086,7 @@ function renderClienteUI(){
   if (!wrap) return;
   _refrescarEnvasesSaldo();
   _refrescarPrepagos();
+  if (typeof _lealtadRefrescarCliente === 'function') _lealtadRefrescarCliente();
   const ccBtn = document.getElementById('btn-cc');
   if (ccBtn) {
     ccBtn.disabled = !clienteSel?.id;
@@ -4524,7 +4529,7 @@ function abrirRecibo(v){
         ? '  <div class="receipt-pago"><span>Cuotas</span><span>' + cuotasRecibo + ' × ' + fmtARS(v.total / cuotasRecibo) + '</span></div>'
         : '') +
       '  <div class="receipt-pago"><span>Método</span><span>' + metodoLabel + '</span></div>' +
-      (v.metodo === 'efectivo' && Number(v.pagaCon) > 0
+      (v.metodo === 'efectivo' && Number(v.pagaCon) > 0 && Number(v.vuelto) > 0
         ? '  <div class="receipt-pago"><span>Paga con</span><span>' + fmtARS(v.pagaCon) + '</span></div>' +
           '  <div class="receipt-tot" style="color:#0F766E"><span>Vuelto</span><span>' + fmtARS(v.vuelto) + '</span></div>'
         : '');
@@ -5275,6 +5280,7 @@ function _productosSinStockEnCarrito() {
 
 function _postVentaOk(data, metodo, totalEstimado, factInfo, envasesMov, recargoInfo, brutoOverride, efectivoInfo) {
   const sinStock = _productosSinStockEnCarrito();
+  if (typeof _lealtadPostVenta === 'function') _lealtadPostVenta(clienteSel?.id || null, data, totalEstimado);
   if (data?.vales_creados > 0) {
     toast('📦 ' + data.vales_creados + ' prepago(s) registrado(s) — pendiente de entrega', 'ok');
   }
@@ -5760,7 +5766,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-window.vaciarCarrito = () => { cart.clear(); _prepagoDescuento = { valor: 0, tipo: 'pct' }; renderCart(); renderProductGrid(); };
+window.vaciarCarrito = () => { cart.clear(); _prepagoDescuento = { valor: 0, tipo: 'pct' }; if (typeof _lealtadLimpiarCanje === 'function') _lealtadLimpiarCanje(); renderCart(); renderProductGrid(); };
 
 // ── ALTA DE PRODUCTO ─────────────────────────────────
 let _prodEditId = null;
@@ -7816,6 +7822,7 @@ function _cfgShow(key) {
   else if (key === 'ticket')  renderReciboConfig();
   else if (key === 'promos')  renderPromosConfig();
   else if (key === 'cuotas')  renderCuotasConfig();
+  else if (key === 'lealtad') renderLealtadConfig();
   else if (key === 'pagos')   renderConfigMP();
   else if (key === 'recibidas') renderFacturasRecibidas();
   else if (key === 'catalogo') renderCatalogoCompartido();

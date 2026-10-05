@@ -14,8 +14,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <title>POS Mostrador</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="js/shared/dialogs.js?v=42"></script>
-<script src="js/shared/errors.js?v=42"></script>
+<script src="js/shared/dialogs.js?v=43"></script>
+<script src="js/shared/errors.js?v=43"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -424,6 +424,22 @@
   .cc-met.on{border-color:var(--primary);background:var(--primary-soft);color:var(--primary-dark);font-weight:600}
   @media (max-width:700px){.cc-row{grid-template-columns:1fr auto}.cc-acts{grid-column:1/-1;justify-content:flex-start}}
 
+  /* ── Lealtad ──────────────────────────────────────────── */
+  .lea-box{display:block;width:100%;text-align:left;background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:10px 12px;font-family:inherit;font-size:13px;color:var(--ink)}
+  .lea-cta{cursor:pointer;font-weight:600;color:#92400E}
+  .lea-cta:hover{background:#FEF3C7}
+  .lea-chip{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;padding:6px 8px;background:#fff;border:1px solid #FDE68A;border-radius:8px;font-size:12px;font-weight:600}
+  .lea-chip button{background:none;border:0;font-size:16px;cursor:pointer;color:var(--muted)}
+  .lea-rec{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;padding:12px 14px;margin-bottom:8px;border:1.5px solid var(--border);background:#fff;border-radius:10px;cursor:pointer;text-align:left;font-family:inherit;font-size:14px}
+  .lea-rec:hover{border-color:var(--primary)}
+  .lea-rec.off{opacity:.45;cursor:not-allowed}
+  .lea-in{padding:9px 11px;border:1px solid var(--border);border-radius:9px;font-family:inherit;font-size:14px;outline:none;background:#fff;min-width:0}
+  .lea-in:focus{border-color:var(--primary)}
+  .lea-rec-cfg{display:grid;grid-template-columns:minmax(0,1.6fr) 70px minmax(150px,1.3fr) minmax(0,1.2fr) auto 36px;gap:8px;align-items:center;margin-bottom:8px}
+  @media (max-width:700px){.lea-rec-cfg{grid-template-columns:1fr 1fr;padding-bottom:10px;border-bottom:1px solid var(--border)}.lea-reg{grid-template-columns:1fr !important}}
+  .bc-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--border);font-size:13px}
+  .bc-row:first-child{border-top:none}
+
   /* ── Lock overlay ───────────────────────────────────── */
   .lock-overlay{position:fixed;inset:0;background:var(--bg);z-index:400;display:none;align-items:center;justify-content:center;padding:20px;color:var(--ink)}
   .lock-overlay.show{display:flex}
@@ -569,7 +585,7 @@
   body.print-a4   @page{size:A4;margin:15mm}
   @page{size:80mm auto;margin:2mm}
 </style>
-  <script src="js/sentry-init.js?v=42" defer></script>
+  <script src="js/sentry-init.js?v=43" defer></script>
 </head>
 <body>
 
@@ -585,6 +601,7 @@
     <button class="topbar-tab"        data-tab="reservas" onclick="goTab('reservas')">Reservas <span id="reservas-badge" style="display:none;background:#f59e0b;color:white;padding:1px 6px;border-radius:10px;font-size:10px;margin-left:2px"></span></button>
     <button class="topbar-tab"        data-tab="reportes" onclick="goTab('reportes')">Reportes</button>
     <button class="topbar-tab"        data-tab="stock"   onclick="goTab('stock')">Stock</button>
+    <button class="topbar-tab"        data-tab="clientes" onclick="goTab('clientes')">Clientes</button>
     <button class="topbar-tab"        data-tab="cuentas" onclick="goTab('cuentas')">Cuenta corriente</button>
     <button class="topbar-tab"        data-tab="caja"    onclick="goTab('caja')">Caja</button>
     <button class="topbar-tab"        data-tab="finanzas" onclick="goTab('finanzas')" id="tab-finanzas-btn" style="display:none">📈 Finanzas</button>
@@ -648,6 +665,7 @@
             </button>
           </div>
           <!-- Prepagos pendientes del cliente (producto ya pagado, entrega diferida) -->
+          <div id="pos-lealtad" style="display:none;margin-bottom:10px"></div>
           <div id="pos-prepagos" style="display:none;margin-bottom:10px;background:rgba(5,150,105,.06);border:1.5px solid rgba(5,150,105,.3);border-radius:10px;padding:10px 12px"></div>
           <button type="button" id="btn-promo" onclick="aplicarPromoPOS()"
             style="width:100%;margin-bottom:8px;padding:9px;border:1.5px solid rgba(245,158,11,.4);background:rgba(245,158,11,.08);color:#b45309;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer">🎁 Aplicar promo</button>
@@ -768,6 +786,17 @@
     </div>
   </div>
 
+  <!-- ═══ CLIENTES (lista + lealtad) ═══ -->
+  <div class="screen" id="screen-clientes">
+    <div class="envases-wrap" style="max-width:960px">
+      <div class="cfg-subnav" id="cli-subnav" style="margin-bottom:16px">
+        <button type="button" data-cli="lista" class="active">👥 Todos los clientes</button>
+        <button type="button" data-cli="lealtad">⭐ Programa de lealtad</button>
+      </div>
+      <div id="clientes-wrap"><div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div></div>
+    </div>
+  </div>
+
   <!-- ═══ CUENTA CORRIENTE ═══ -->
   <div class="screen" id="screen-cuentas">
     <div class="envases-wrap" id="cuentas-wrap" style="max-width:900px">
@@ -799,6 +828,7 @@
         <button type="button" data-cfg="tiendas">🏪 Tiendas</button>
         <button type="button" data-cfg="ticket">🧾 Ticket</button>
         <button type="button" data-cfg="promos">🎁 Promos</button>
+        <button type="button" data-cfg="lealtad">⭐ Lealtad</button>
         <button type="button" data-cfg="cuotas">💳 Cuotas</button>
         <button type="button" data-cfg="pagos">📱 MercadoPago</button>
         <button type="button" data-cfg="recibidas">📥 Facturas recibidas</button>
@@ -809,6 +839,7 @@
       <div class="cfg-panel" data-panel="tiendas" style="display:none"><div class="tiendas-wrap" id="tiendas-wrap" style="padding:0;max-width:none"></div></div>
       <div class="cfg-panel" data-panel="ticket" style="display:none"><div class="recibo-wrap" id="recibo-wrap" style="padding:0;max-width:none"></div></div>
       <div class="cfg-panel" data-panel="promos" style="display:none"><div class="recibo-wrap" id="promos-wrap" style="padding:0;max-width:none"></div></div>
+      <div class="cfg-panel" data-panel="lealtad" style="display:none"><div class="recibo-wrap" id="lealtad-cfg-wrap" style="padding:0;max-width:none"></div></div>
       <div class="cfg-panel" data-panel="cuotas" style="display:none"><div class="recibo-wrap" id="cuotas-wrap" style="padding:0;max-width:none"></div></div>
       <div class="cfg-panel" data-panel="pagos" style="display:none"><div class="recibo-wrap" id="mp-config-wrap" style="padding:0;max-width:none"></div></div>
       <div class="cfg-panel" data-panel="recibidas" style="display:none"><div class="recibo-wrap" id="recibidas-wrap" style="padding:0;max-width:none"><div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div></div></div>
@@ -927,7 +958,11 @@
           </div>
 
           <label class="prod-form-l">Código de barras (opcional)</label>
-          <input id="prod-barcode" type="text" placeholder="Escaneá o tipeá" class="prod-form-i" autocomplete="off">
+          <div style="display:flex;gap:8px">
+            <input id="prod-barcode" type="text" placeholder="Escaneá o tipeá" class="prod-form-i" autocomplete="off" style="flex:1">
+            <button type="button" id="prod-barcode-gen" onclick="window._bcGenerarEnForm()" title="Generar un código interno para productos que no traen código de barras"
+              style="padding:0 12px;border:1px solid var(--border);background:#fff;border-radius:10px;font-family:inherit;font-size:13px;font-weight:600;color:var(--primary);cursor:pointer;white-space:nowrap">Generar</button>
+          </div>
 
           <label style="display:none;align-items:center;gap:8px;cursor:pointer;padding:8px 0;font-size:13px">
             <input id="prod-tiene-envase" type="checkbox">
@@ -1037,10 +1072,11 @@
     <div class="stock-wrap">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap">
         <h3 style="font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;display:flex;align-items:center">Stock de mostrador<span class="info-i" tabindex="0" data-tip="Existencias por tienda. El stock se descuenta automáticamente con cada venta. Solo los administradores pueden reponer, cargar mercadería, ajustar cantidades o dar de baja productos; los cajeros lo ven en modo lectura.">i</span></h3>
+        <button type="button" onclick="window.abrirCodigosBarras()" class="cc-btn" style="margin-left:auto">🏷 Códigos de barras</button>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none">
           <input type="checkbox" id="stock-strict-toggle" checked>
           <span>Bloquear ventas si el stock no alcanza</span>
-          <span class="info-i" tabindex="0" data-tip="Si está activo, el POS no deja completar una venta cuando no hay stock suficiente del producto. Si lo desactivás, permite vender igual y el stock puede quedar en negativo.">i</span>
+          <span class="info-i" tabindex="0" data-tip="Si está activo, el POS no deja completar una venta cuando no hay stock suficiente del producto. Si lo desactivás, permite vender igual y el stock queda en 0 (nunca negativo).">i</span>
         </label>
       </div>
 
@@ -1127,7 +1163,9 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=42"></script>
-<script src="js/pos.js?v=42"></script>
+<script src="js/config.js?v=43"></script>
+<script src="js/pos.js?v=43"></script>
+<script src="js/clientes.js?v=43"></script>
+<script src="js/barcodes.js?v=43"></script>
 </body>
 </html>

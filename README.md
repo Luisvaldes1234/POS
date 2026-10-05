@@ -34,6 +34,15 @@ como archivos estáticos y se conecta directo a Supabase desde el navegador.
   favor, registrar pagos, movimientos, límite de deuda y recordatorio por
   WhatsApp. Reemplaza al módulo de envases retornables, que queda apagado
   (`ENVASES_ON = false` en `js/pos.js`).
+- **Clientes**: pestaña con la lista de clientes (búsqueda, saldo, puntos,
+  vender, editar, compras) y alta de clientes.
+- **Programa de lealtad**: registro por teléfono + nombre, 1 punto cada $X de
+  compra, puntos de bienvenida y recompensas configurables (descuento en $, en %
+  o producto gratis) que se canjean en la caja. Configuración → Lealtad. SQL en
+  `sql/2026-10-05_pos_lealtad.sql`.
+- **Códigos de barras**: botón "Generar" en el alta de producto y herramienta
+  en Stock para generar EAN-13 internos (prefijo 20) a los productos sin código
+  e imprimir etiquetas con nombre y precio.
 - **Stock nunca negativo**: si se vende sin stock, queda en 0 (trigger en
   `stock_mostrador`, ver `sql/`).
 - **Vuelto en efectivo**: al cobrar en efectivo se pregunta con cuánto paga y se
