@@ -89,3 +89,10 @@ REVOKE ALL ON FUNCTION public.pos_consentimiento_estado(uuid) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.pos_consentimiento_guardar(uuid, text, boolean) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.pos_consentimiento_estado(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.pos_consentimiento_guardar(uuid, text, boolean) TO authenticated;
+
+-- Negocios POS que ya existían: aceptaron los documentos (versión
+-- 2026-10-05) al contratar, así que se registran sin volver a preguntarles.
+INSERT INTO pos_consentimientos (organization_id, terminos_version, terminos_aceptados_at, mejora_ia, mejora_ia_at)
+SELECT o.id, '2026-10-05', now(), true, now() FROM organizations o
+WHERE o.product = 'pos'
+ON CONFLICT (organization_id) DO NOTHING;

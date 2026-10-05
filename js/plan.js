@@ -326,8 +326,9 @@ async function _cargarConsentimiento() {
 
 function _avisoTerminos() {
   document.getElementById('aviso-terminos')?.remove();
-  if (!_consent || !_consent.es_admin || _consent.terminos_version === TERMINOS_VERSION) return;
-  const nuevo = !_consent.terminos_version;
+  // Solo cuando aceptaron una versión anterior: a los negocios sin registro
+  // (los que ya existían antes de los documentos) no se les pregunta.
+  if (!_consent || !_consent.es_admin || !_consent.terminos_version || _consent.terminos_version === TERMINOS_VERSION) return;
   const caja = document.createElement('div');
   caja.id = 'aviso-terminos';
   caja.setAttribute('role', 'dialog');
@@ -335,7 +336,7 @@ function _avisoTerminos() {
   caja.style.cssText = 'position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:250;max-width:560px;margin:0 auto;' +
     'background:#fff;border:1px solid var(--border,#E2E8F0);border-radius:12px;box-shadow:0 12px 32px -8px rgba(16,24,40,.25);padding:16px;font-size:14px;line-height:1.5;color:#334155';
   caja.innerHTML =
-    '<div style="font-weight:700;color:#1A1A1A;margin-bottom:4px">' + (nuevo ? 'Términos y Aviso de privacidad' : 'Actualizamos los Términos y el Aviso de privacidad') + '</div>' +
+    '<div style="font-weight:700;color:#1A1A1A;margin-bottom:4px">' + 'Actualizamos los Términos y el Aviso de privacidad' + '</div>' +
     '<div>Explican cómo funciona el servicio y cómo cuidamos tus datos. Entre otras cosas, usamos datos desidentificados (sin nombres ni teléfonos) para mejorar el POS y sus funciones de inteligencia artificial; podés desactivarlo cuando quieras en Configuración → Privacidad.</div>' +
     '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center">' +
       '<button type="button" data-ok style="font-weight:600;background:var(--primary,#0F766E);color:#fff;border:0;border-radius:8px;padding:9px 16px;cursor:pointer">Aceptar</button>' +
