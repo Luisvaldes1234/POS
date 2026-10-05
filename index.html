@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#FFFFFF">
 <meta name="color-scheme" content="light">
-<meta name="description" content="POS Mostrador es el punto de venta para almacenes, kioscos, ferreterías y minimercados. Scanner de código de barras, caja, stock, reportes y facturación. 14 días de prueba sin tarjeta.">
+<meta name="description" content="POS Mostrador es el punto de venta para almacenes, kioscos, ferreterías y minimercados. Scanner y generador de códigos de barras, caja, stock, reportes y programa de puntos para tus clientes. 14 días de prueba sin tarjeta.">
 <meta property="og:title" content="POS Mostrador — Caja rápida. Control total.">
-<meta property="og:description" content="El punto de venta para tu almacén, kiosco o ferretería. Scanner, caja, stock, reportes y facturación, todo en uno.">
+<meta property="og:description" content="El punto de venta para tu almacén, kiosco o ferretería. Scanner, caja, stock, reportes y programa de puntos, todo en uno.">
 <title>POS Mostrador — Punto de venta para almacenes, kioscos y ferreterías</title>
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="manifest" href="manifest.webmanifest">
@@ -246,6 +246,7 @@
   <symbol id="i-cash" viewBox="0 0 24 24"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></symbol>
   <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol>
   <symbol id="i-tag" viewBox="0 0 24 24"><path d="M12.59 2.59A2 2 0 0 0 11.17 2H4a2 2 0 0 0-2 2v7.17a2 2 0 0 0 .59 1.42l8.7 8.7a2.43 2.43 0 0 0 3.42 0l6.58-6.58a2.43 2.43 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r="1"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M11.53 2.3a.53.53 0 0 1 .95 0l2.31 4.68a2.12 2.12 0 0 0 1.6 1.16l5.16.76a.53.53 0 0 1 .3.9l-3.74 3.64a2.12 2.12 0 0 0-.61 1.88l.88 5.14a.53.53 0 0 1-.77.56l-4.62-2.43a2.12 2.12 0 0 0-1.97 0L6.4 21.01a.53.53 0 0 1-.77-.56l.88-5.14a2.12 2.12 0 0 0-.61-1.88L2.16 9.79a.53.53 0 0 1 .3-.9l5.16-.76a2.12 2.12 0 0 0 1.6-1.16z"/></symbol>
   <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></symbol>
   <symbol id="i-undo" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
   <symbol id="i-store" viewBox="0 0 24 24"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/><path d="M22 7v3a2 2 0 0 1-2 2 2.7 2.7 0 0 1-2-1 2.7 2.7 0 0 1-2 1 2.7 2.7 0 0 1-2-1 2.7 2.7 0 0 1-2 1 2.7 2.7 0 0 1-2-1 2.7 2.7 0 0 1-2 1 2.7 2.7 0 0 1-2-1 2.7 2.7 0 0 1-2 1 2 2 0 0 1-2-2V7"/></symbol>
@@ -406,10 +407,12 @@
     <div class="feat-list">
       <div class="feat"><svg class="ic"><use href="#i-users"/></svg><div><h4>Clientes y fiado</h4><p>Cuenta corriente, historial de compras y listas de precios.</p></div></div>
       <div class="feat"><svg class="ic"><use href="#i-tag"/></svg><div><h4>Promos y combos</h4><p>2x1, NxM, precio por cantidad y % por volumen, que se aplican solos.</p></div></div>
-      <div class="feat"><svg class="ic"><use href="#i-receipt"/></svg><div><h4>Comprobantes y facturación</h4><p>Ticket de 58/80 mm o A4, envío por WhatsApp o email, factura A, B o C.</p></div></div>
+      <div class="feat"><svg class="ic"><use href="#i-star"/></svg><div><h4>Programa de puntos</h4><p>Tus clientes suman puntos con cada compra y los canjean por las promos que vos armás.</p></div></div>
+      <div class="feat"><svg class="ic"><use href="#i-scan"/></svg><div><h4>Códigos de barras propios</h4><p>¿Algo no trae código? Generalo en un toque e imprimí la etiqueta con nombre y precio.</p></div></div>
+      <div class="feat"><svg class="ic"><use href="#i-receipt"/></svg><div><h4>Tickets a tu manera</h4><p>Ticket de 58/80 mm o A4 con tu logo, o envialo por WhatsApp o email.</p></div></div>
+      <div class="feat"><svg class="ic"><use href="#i-printer"/></svg><div><h4>Tu hardware</h4><p>Impresora térmica, cajón monedero, roles por usuario y bloqueo por inactividad.</p></div></div>
       <div class="feat"><svg class="ic"><use href="#i-undo"/></svg><div><h4>Reservas y devoluciones</h4><p>Pedidos a cobrar después, entregas parciales y anulaciones con reposición de stock.</p></div></div>
       <div class="feat"><svg class="ic"><use href="#i-store"/></svg><div><h4>Multi-tienda</h4><p>Cada sucursal con su stock y su caja, y un corte global consolidado.</p></div></div>
-      <div class="feat"><svg class="ic"><use href="#i-printer"/></svg><div><h4>Tu hardware</h4><p>Impresora térmica, cajón monedero, roles por usuario y bloqueo por inactividad.</p></div></div>
     </div>
   </div>
 </section>
@@ -453,6 +456,7 @@
           <li><svg class="ic"><use href="#i-check"/></svg>Caja diaria y cortes X / Z / del día</li>
           <li><svg class="ic"><use href="#i-check"/></svg>Stock con alertas y reportes</li>
           <li><svg class="ic"><use href="#i-check"/></svg>Recibo configurable (58/80 mm o A4)</li>
+          <li><svg class="ic"><use href="#i-check"/></svg>Generador de códigos de barras y etiquetas</li>
           <li><svg class="ic"><use href="#i-check"/></svg>Hasta 8 usuarios</li>
         </ul>
         <a class="btn btn-outline" href="signup.html">Empezar gratis</a>
@@ -470,7 +474,8 @@
           <li><svg class="ic"><use href="#i-check"/></svg><span><b>Costos y márgenes</b> + módulo de Finanzas</span></li>
           <li><svg class="ic"><use href="#i-check"/></svg>Promos (2x1, NxM, % volumen) y combos</li>
           <li><svg class="ic"><use href="#i-check"/></svg>Clientes con cuenta corriente (fiado)</li>
-          <li><svg class="ic"><use href="#i-check"/></svg>Facturación, devoluciones, reservas y prepagos</li>
+          <li><svg class="ic"><use href="#i-check"/></svg><span><b>Programa de puntos</b> con recompensas a medida</span></li>
+          <li><svg class="ic"><use href="#i-check"/></svg>Devoluciones, reservas y prepagos</li>
         </ul>
         <a class="btn btn-primary" href="signup.html">Empezar gratis</a>
       </div>
@@ -542,8 +547,12 @@
         <p>La app queda guardada en el dispositivo y tolera cortes cortos de red. Para sincronizar ventas, stock y caja necesita conexión.</p>
       </details>
       <details>
-        <summary>¿Puedo emitir factura?<svg class="ic"><use href="#i-chevron"/></svg></summary>
-        <p>Sí. En los planes Negocio y Cadena podés emitir factura A, B o C desde la misma venta, además del ticket configurable con tus datos fiscales y logo.</p>
+        <summary>¿Cómo funciona el programa de puntos?<svg class="ic"><use href="#i-chevron"/></svg></summary>
+        <p>Registrás al cliente con su nombre y teléfono, y suma puntos con cada compra (vos elegís cada cuántos pesos). Los canjea en la caja por las recompensas que armes: un descuento, un porcentaje o un producto gratis.</p>
+      </details>
+      <details>
+        <summary>¿Qué hago con los productos que no tienen código de barras?<svg class="ic"><use href="#i-chevron"/></svg></summary>
+        <p>Les generás un código propio desde el sistema e imprimís las etiquetas para pegarles. Después los escaneás como cualquier otro producto.</p>
       </details>
       <details>
         <summary>¿Hay permanencia mínima?<svg class="ic"><use href="#i-chevron"/></svg></summary>

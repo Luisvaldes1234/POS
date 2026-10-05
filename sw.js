@@ -7,7 +7,7 @@
 // El POS está en mostrador con WiFi estable, pero igual cacheamos el
 // shell para tolerar cortes de red/luz.
 
-const CACHE_VERSION = 'pos-retail-v47-2026-10-05';
+const CACHE_VERSION = 'pos-retail-v49-2026-10-05';
 
 const PRECACHE = [
   './',
@@ -21,6 +21,7 @@ const PRECACHE = [
   './js/pos.js',
   './js/clientes.js',
   './js/barcodes.js',
+  './js/plan.js',
   './js/shared/dialogs.js',
   './js/shared/errors.js',
   './js/sentry-init.js',
