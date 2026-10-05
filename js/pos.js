@@ -261,7 +261,7 @@ function _offEnqueueVenta(params){
     (params.p_items || []).forEach(it => {
       const pid = it.producto_id; if (!pid) return;
       const qty = Number(it.cantidad) || 0;
-      if (stockMap.has(pid)) stockMap.set(pid, (stockMap.get(pid) || 0) - qty);
+      if (stockMap.has(pid)) stockMap.set(pid, Math.max(0, (stockMap.get(pid) || 0) - qty));
     });
   } catch (_) {}
   _offUpdateUI();
@@ -307,8 +307,8 @@ async function _offSync(manual){
   let ok = 0, fail = 0, netCut = false;
   for (const sale of [...q]){
     try {
-      // La venta ya ocurrió físicamente: registrar aunque el stock quede en
-      // negativo (no bloquear por stock estricto al sincronizar).
+      // La venta ya ocurrió físicamente: registrar aunque no alcance el stock
+      // (no bloquear por stock estricto al sincronizar; el stock queda en 0).
       const p = Object.assign({}, sale.params, { p_stock_strict: false });
       const { data, error } = await sb.rpc('pos_registrar_venta', p);
       if (error){ if (_isNetErr(error)){ netCut = true; break; } fail++; }
@@ -661,7 +661,7 @@ async function cargarEnvasesTienda() {
   const filas = data || [];
   if (filas.length === 0) {
     card.innerHTML = `
-      <div style="background:rgba(102,126,234,.04);border:1px dashed var(--border);border-radius:12px;padding:14px;text-align:center;font-size:12px;color:var(--muted)">
+      <div style="background:rgba(15,118,110,.04);border:1px dashed var(--border);border-radius:12px;padding:14px;text-align:center;font-size:12px;color:var(--muted)">
         Sin envases retornables todavía en esta tienda.
       </div>`;
     return;
@@ -680,7 +680,7 @@ async function cargarEnvasesTienda() {
         <div style="text-align:center">↩️ Vacíos</div>
       </div>
       ${filas.map(r => `
-        <div style="display:grid;grid-template-columns:1fr 70px 70px;gap:8px;align-items:center;padding:8px;background:rgba(102,126,234,.04);border-radius:8px;margin-bottom:4px;font-size:13px">
+        <div style="display:grid;grid-template-columns:1fr 70px 70px;gap:8px;align-items:center;padding:8px;background:rgba(15,118,110,.04);border-radius:8px;margin-bottom:4px;font-size:13px">
           <div style="font-weight:600">${r.tipo_nombre}${r.capacidad_litros ? ' · ' + r.capacidad_litros + 'L' : ''}</div>
           <div style="text-align:center;color:var(--primary);font-weight:700">${r.llenos}</div>
           <div style="text-align:center;color:#b45309;font-weight:700">${r.vacios}</div>
@@ -780,7 +780,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const activeTab = document.querySelector('.topbar-tab.active')?.dataset?.tab;
     if (activeTab === 'caja')   renderCaja();
     if (activeTab === 'recibo') renderReciboConfig();
-    if (activeTab === 'envases') renderEnvases();
+    if (activeTab === 'cuentas') renderCuentas();
     toast('Cambiaste a ' + (tiendas.find(t => t.id === tiendaId)?.nombre || 'otra tienda'), 'ok');
   });
 });
@@ -798,7 +798,7 @@ async function renderTiendas() {
 
   let html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
     '<h3 style="font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:0">Tiendas / Puntos de venta</h3>' +
-    '<button id="tienda-add" type="button" style="padding:8px 16px;border-radius:50px;border:1.5px solid var(--primary);background:rgba(124,58,237,.06);color:var(--primary);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">+ Nueva tienda</button>' +
+    '<button id="tienda-add" type="button" style="padding:8px 16px;border-radius:50px;border:1.5px solid var(--primary);background:rgba(15,118,110,.06);color:var(--primary);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">+ Nueva tienda</button>' +
     '</div>';
 
   if (!tiendas.length) {
@@ -993,7 +993,7 @@ window.goTab = (tab) => {
   if (tab === 'reportes') initReportesUI();
   if (tab === 'stock')    renderStock();
   if (tab === 'caja')     renderCaja();
-  if (tab === 'envases')  renderEnvases();
+  if (tab === 'cuentas')  renderCuentas();
   if (tab === 'finanzas') renderFinanzas();
   if (tab === 'config')   renderConfig();
 };
@@ -1061,7 +1061,7 @@ async function renderPromosConfig() {
         '<label style="font-size:11px;color:var(--muted)">Precio del combo (todo junto)<input id="pm-combo-precio" type="number" min="0" step="0.01" class="prod-form-i" style="width:100%" placeholder="Ej: 2500" value="' + (tipo==='combo' && e.precio_total != null ? e.precio_total : '') + '"></label>' +
         '<div style="font-size:11px;color:var(--muted);margin:10px 0 6px;font-weight:600">Productos del combo</div>' +
         '<div id="pm-combo-list"></div>' +
-        '<button type="button" onclick="window._promoComboAdd()" style="width:100%;padding:9px;border:1.5px dashed var(--primary);background:rgba(124,58,237,.05);color:var(--primary);border-radius:9px;font-weight:700;cursor:pointer;font-size:12.5px;margin-top:4px">+ Agregar producto al combo</button>' +
+        '<button type="button" onclick="window._promoComboAdd()" style="width:100%;padding:9px;border:1.5px dashed var(--primary);background:rgba(15,118,110,.05);color:var(--primary);border-radius:9px;font-weight:700;cursor:pointer;font-size:12.5px;margin-top:4px">+ Agregar producto al combo</button>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
         '<label style="font-size:11px;color:var(--muted)">Vigente desde<input id="pm-desde" type="date" class="prod-form-i" style="width:100%" value="' + (e.vigente_desde || '') + '"></label>' +
@@ -1366,7 +1366,7 @@ function _renderCajaAbierta(wrap, caja) {
     '  <button class="btn-mov" data-tipo="egreso"  style="padding:10px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.08);border-radius:8px;color:#dc2626;font-weight:600;cursor:pointer;font-size:12px">↓ Egreso</button>' +
     '  <button onclick="abrirCajonMonedero()" title="Configurá la primera vez (Web Serial). Después se abre solo al cobrar efectivo." style="padding:10px;border:1px solid var(--border);background:white;border-radius:8px;font-weight:600;cursor:pointer;font-size:12px">💰 Cajón</button>' +
     '  <button class="btn-rep" data-tipo="X"       title="Lectura parcial del turno en curso. No cierra la caja, podés sacarla las veces que quieras." style="padding:10px;border:1px solid var(--border);background:white;border-radius:8px;font-weight:600;cursor:pointer;font-size:12px">📋 Reporte X</button>' +
-    '  <button class="btn-rep" data-tipo="Z"       title="Cierre del turno actual: ventas desde la última apertura de caja." style="padding:10px;border:1px solid rgba(124,58,237,.3);background:rgba(124,58,237,.08);color:#7c3aed;font-weight:600;cursor:pointer;font-size:12px">📊 Reporte Z</button>' +
+    '  <button class="btn-rep" data-tipo="Z"       title="Cierre del turno actual: ventas desde la última apertura de caja." style="padding:10px;border:1px solid rgba(15,118,110,.3);background:rgba(15,118,110,.08);color:#0F766E;font-weight:600;cursor:pointer;font-size:12px">📊 Reporte Z</button>' +
     '  <button class="btn-rep" data-tipo="DIA"     title="Suma todos los turnos de la tienda en el día, incluso ventas hechas con la caja cerrada." style="padding:10px;border:1px solid rgba(37,99,235,.3);background:rgba(37,99,235,.08);color:#2563eb;font-weight:600;cursor:pointer;font-size:12px">🗓️ Cierre del día</button>' +
     '</div>' +
     '<div class="caja-form">' +
@@ -1521,7 +1521,7 @@ window.cargarReportes = async () => {
     kpiCard('Total cobrado', fmtARS(t.total || 0), (t.count || 0) + ' ventas', '#10b981', INFO.total_cobrado) +
     kpiCard('Efectivo',      fmtARS(t.efectivo || 0), '', '#374151', INFO.efectivo) +
     kpiCard('MercadoPago',   fmtARS(t.mp || 0), '', '#009ee3', INFO.mercadopago) +
-    kpiCard('Transferencia', fmtARS(t.transf || 0), '', '#7C3AED', INFO.transferencia) +
+    kpiCard('Transferencia', fmtARS(t.transf || 0), '', '#0F766E', INFO.transferencia) +
     kpiCard('Débito',        fmtARS(t.debito || 0), '', '#0ea5e9', INFO.debito) +
     kpiCard('Crédito',       fmtARS(t.credito || 0), '', '#0284c7', INFO.credito) +
     kpiCard('Cuenta corriente', fmtARS(t.cc || 0), '', '#f59e0b', INFO.cuenta_corriente) +
@@ -1669,7 +1669,7 @@ window.cargarCortesCaja = async () => {
       '<td style="white-space:nowrap">' + fmtT(c.abierta_at) + ' → ' + fmtT(c.cerrada_at) + '</td>' +
       '<td style="text-align:right;white-space:nowrap">' + fmtARS(c.monto_cierre_declarado || 0) + '</td>' +
       '<td style="text-align:right;white-space:nowrap;color:' + difColor + ';font-weight:600">' + difTxt + '</td>' +
-      '<td style="text-align:right;white-space:nowrap"><button class="corte-ver" data-id="' + c.id + '" style="padding:6px 12px;border:1px solid rgba(124,58,237,.3);background:rgba(124,58,237,.08);color:#7c3aed;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">📊 Ver Z</button></td>' +
+      '<td style="text-align:right;white-space:nowrap"><button class="corte-ver" data-id="' + c.id + '" style="padding:6px 12px;border:1px solid rgba(15,118,110,.3);background:rgba(15,118,110,.08);color:#0F766E;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">📊 Ver Z</button></td>' +
       '</tr>';
   });
   html += '</tbody></table>' +
@@ -2177,7 +2177,7 @@ async function abrirReporteCaja(cajaId, tipo) {
     '<h3 style="margin:0;font-size:20px">' + tituloRep + '</h3>' +
     '<button id="rep-print" style="padding:6px 12px;border:1px solid var(--border);background:white;border-radius:6px;cursor:pointer;font-size:12px">🖨 Imprimir</button>' +
     '</div>' +
-    '<div style="font-size:12px;color:var(--ink);background:rgba(102,126,234,.06);border-radius:8px;padding:8px 10px;margin-bottom:12px">ℹ️ ' + scopeRep + '</div>' +
+    '<div style="font-size:12px;color:var(--ink);background:rgba(15,118,110,.06);border-radius:8px;padding:8px 10px;margin-bottom:12px">ℹ️ ' + scopeRep + '</div>' +
     '<div style="font-size:12px;color:var(--muted);margin-bottom:16px">' +
     (tipo === 'DIA'
       ? 'Día: <b>' + new Date(data.dia + 'T00:00:00').toLocaleDateString('es-AR') + '</b> · ' + (data.turnos || 0) + ' turno' + ((data.turnos||0) === 1 ? '' : 's') + '<br>'
@@ -2377,11 +2377,11 @@ function renderProductGrid(){
     if (_prodView === 'list') {
       const tags =
         (sinTipo ? '<span class="prod-row-tag" style="background:rgba(245,158,11,.12);color:#b45309" title="Sin tipo de envase">⚠</span>' : '') +
-        (p.es_combo ? '<span class="prod-row-tag" style="background:rgba(124,58,237,.12);color:#7c3aed">🎁</span>' : '') +
+        (p.es_combo ? '<span class="prod-row-tag" style="background:rgba(15,118,110,.12);color:#0F766E">🎁</span>' : '') +
         (vencido ? '<span class="prod-row-tag" style="background:rgba(239,68,68,.12);color:#dc2626">⏰ VENC</span>' : '') +
         (porVencer ? '<span class="prod-row-tag" style="background:rgba(245,158,11,.12);color:#b45309">⏰ ' + p.fecha_vencimiento.slice(5) + '</span>' : '') +
         (p.peso_variable ? '<span class="prod-row-tag" style="background:rgba(59,130,246,.12);color:#2563eb" title="Peso variable">⚖</span>' : '') +
-        (tienePromo ? '<span class="prod-row-tag" style="background:rgba(124,58,237,.12);color:#7c3aed">🎟 ' + p.descuento_volumen_pct + '%</span>' : '') +
+        (tienePromo ? '<span class="prod-row-tag" style="background:rgba(15,118,110,.12);color:#0F766E">🎟 ' + p.descuento_volumen_pct + '%</span>' : '') +
         (favKey ? '<span class="prod-row-tag" style="background:rgba(245,158,11,.18);color:#b45309" title="Atajo ' + favKey + '">' + favKey + '</span>' : '');
       card.innerHTML =
         '<span class="prod-card-name"></span>' +
@@ -2402,7 +2402,7 @@ function renderProductGrid(){
       (favKey ? '<div class="prod-card-fav" title="Atajo: presioná ' + favKey + '">' + favKey + '</div>' : '') +
       '<div class="prod-card-name"></div>' +
       '<div class="prod-card-precio">' + fmtARS(p.precio) + '</div>' +
-      (tienePromo ? '<div style="font-size:10px;color:#7c3aed;font-weight:700">🎟 ' + p.descuento_volumen_qty + '+ → ' + p.descuento_volumen_pct + '% off</div>' : '') +
+      (tienePromo ? '<div style="font-size:10px;color:#0F766E;font-weight:700">🎟 ' + p.descuento_volumen_qty + '+ → ' + p.descuento_volumen_pct + '% off</div>' : '') +
       '<div class="prod-card-stock ' + stockClass + '">' +
         '<span>' + (p.es_combo ? 'Stock por componentes' : stockTxt) + '</span>' +
         (p.unidad ? '<span style="text-transform:uppercase;font-size:10px;letter-spacing:.04em">' + p.unidad + '</span>' : '') +
@@ -2565,7 +2565,7 @@ function renderCart(){
       total += sub; count += it.cantidad;
       const row = document.createElement('div');
       row.className = 'cart-item';
-      const toggleHtml = it.tiene_envase
+      const toggleHtml = (ENVASES_ON && it.tiene_envase)
         ? '<div class="cart-item-envase ' + (it.envase_modo === 'venta' ? 'venta' : 'comodato') + '" data-prod="' + prodId + '">' +
             (it.envase_modo === 'venta' ? '💰 Compra envase' : '📦 Comodato') +
           '</div>'
@@ -2851,7 +2851,7 @@ async function _stockPrediccionCard(){
   const head = '<div style="font-weight:700;margin-bottom:8px;display:flex;align-items:center">Reposición sugerida' +
       iHelp('Predicción según tu ritmo de venta de los últimos ' + DIAS + ' días: estimamos cuántos días de stock te quedan. Se listan los que se agotarían en ' + UMBRAL + ' días o menos, con una cantidad sugerida para cubrir ~' + COBERTURA + ' días.') + '</div>';
   if (!_stockSug.length) {
-    return '<div style="background:#f8f9ff;border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:14px">' + head +
+    return '<div style="background:#F1F5F4;border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:14px">' + head +
       '<div style="font-size:12.5px;color:var(--muted);line-height:1.5">Por ahora ningún producto con ventas recientes está por agotarse. A medida que registres más ventas, acá te avisamos qué reponer y cuánto, antes de quedarte sin stock.</div></div>';
   }
   return '<div style="background:rgba(245,158,11,.07);border:1.5px solid rgba(245,158,11,.4);border-radius:12px;padding:12px 14px;margin-bottom:14px">' + head +
@@ -2863,7 +2863,7 @@ async function _stockPrediccionCard(){
       return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:8px 10px">' +
         '<div style="min-width:0"><b>' + esc(s.nombre) + '</b>' +
         '<div style="font-size:11px;color:var(--muted)">stock ' + s.stock + ' · vendés ~' + (Math.round(s.ritmo * 10) / 10) + '/día · <b style="color:' + col + '">te queda ' + dTxt + '</b></div></div>' +
-        (puedeRep ? '<button class="sug-rep" data-i="' + i + '" style="padding:6px 12px;border:1.5px solid var(--primary);background:rgba(124,58,237,.06);color:var(--primary);border-radius:50px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex:0 0 auto">+ Reponer ' + s.sugerido + '</button>' : '') +
+        (puedeRep ? '<button class="sug-rep" data-i="' + i + '" style="padding:6px 12px;border:1.5px solid var(--primary);background:rgba(15,118,110,.06);color:var(--primary);border-radius:50px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex:0 0 auto">+ Reponer ' + s.sugerido + '</button>' : '') +
       '</div>';
     }).join('') +
     '</div></div>';
@@ -2987,7 +2987,7 @@ async function renderStock(){
       '<div class="stock-row-cant ' + cls + '">' + cant + '</div>' +
       (canAny
         ? '<div style="display:flex;gap:6px">' +
-            (canRecibir ? '<button class="rep-btn" style="padding:6px 12px;border:1.5px solid var(--primary);background:rgba(124,58,237,.06);color:var(--primary);border-radius:50px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">' + (canAjustar ? '+ Reponer' : '+ Recibir') + '</button>' : '') +
+            (canRecibir ? '<button class="rep-btn" style="padding:6px 12px;border:1.5px solid var(--primary);background:rgba(15,118,110,.06);color:var(--primary);border-radius:50px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">' + (canAjustar ? '+ Reponer' : '+ Recibir') + '</button>' : '') +
             (canAjustar ? '<button class="edit-btn" title="Editar producto" style="padding:6px 10px;border:1.5px solid var(--border);background:#fff;border-radius:50px;font-size:12px;cursor:pointer">✏️</button>' : '') +
             (canAjustar ? '<button class="baja-btn" title="Dar de baja" style="padding:6px 10px;border:1.5px solid rgba(239,68,68,.35);background:rgba(239,68,68,.06);color:#dc2626;border-radius:50px;font-size:12px;cursor:pointer">🗑</button>' : '') +
           '</div>'
@@ -3059,7 +3059,7 @@ async function renderStock(){
 function _stockAdminToolbar(canRecibir, canAjustar) {
   if (canRecibir === undefined) { canRecibir = true; canAjustar = true; }  // compat
   return '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">' +
-    (canAjustar ? '<button id="stk-add" type="button" style="padding:9px 16px;border-radius:50px;border:1.5px solid var(--primary);background:rgba(124,58,237,.06);color:var(--primary);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">➕ Producto</button>' : '') +
+    (canAjustar ? '<button id="stk-add" type="button" style="padding:9px 16px;border-radius:50px;border:1.5px solid var(--primary);background:rgba(15,118,110,.06);color:var(--primary);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">➕ Producto</button>' : '') +
     (canRecibir ? '<button id="stk-carga" type="button" style="padding:9px 16px;border-radius:50px;border:1.5px solid var(--border);background:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">📦 Cargar mercadería</button>' : '') +
     (canAjustar ? '<button id="stk-inact" type="button" style="padding:9px 16px;border-radius:50px;border:1.5px solid var(--border);background:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">' + (_stockShowInactive ? '✓ Ocultar dados de baja' : '👁 Ver dados de baja') + '</button>' : '') +
     '</div>';
@@ -3515,6 +3515,7 @@ window._posAbrirNuevoCliente = async function() {
             <input type="checkbox" id="pos-nc-cc"> Cuenta corriente habilitada
           </label>
         </div>
+        <div style="${ENVASES_ON ? '' : 'display:none'}">
         <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">
           Envases que trae (relevo inicial · opcional)
         </div>
@@ -3526,6 +3527,7 @@ window._posAbrirNuevoCliente = async function() {
           style="background:none;border:1.5px dashed var(--border);color:var(--primary);padding:7px 12px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;margin-bottom:14px">
           + Agregar tipo
         </button>
+        </div>
         <div style="margin-bottom:14px">
           <label style="font-size:11px;color:#64748b;font-weight:600">Notas internas</label>
           <textarea id="pos-nc-notas" rows="2"
@@ -3543,7 +3545,7 @@ window._posAbrirNuevoCliente = async function() {
   document.body.appendChild(div.firstElementChild);
   setTimeout(() => document.getElementById('pos-nc-nombre')?.focus(), 100);
   setTimeout(() => _posInitGeoMap(), 150);
-  setTimeout(() => _posInitNcEnvases(), 150);
+  if (ENVASES_ON) setTimeout(() => _posInitNcEnvases(), 150);
 };
 
 // ── ENVASES INICIALES (relevo al alta) ──────────────────────
@@ -3657,7 +3659,7 @@ function _posLoadMapbox(cb) {
     const mapEl = document.getElementById('geo-map');
     if (mapEl && !mapEl.dataset.noMap) {
       mapEl.dataset.noMap = '1';
-      mapEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;padding:12px;text-align:center;font-size:12px;color:var(--muted);background:#f8f9ff">🗺️ Mapa deshabilitado (sin token de Mapbox). Usá la búsqueda de dirección o cargá los campos manualmente.</div>';
+      mapEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;padding:12px;text-align:center;font-size:12px;color:var(--muted);background:#F1F5F4">🗺️ Mapa deshabilitado (sin token de Mapbox). Usá la búsqueda de dirección o cargá los campos manualmente.</div>';
     }
     return;
   }
@@ -3690,7 +3692,7 @@ function _posInitGeoMap(latI, lngI) {
     } catch (e) { console.error('[pos] mapbox init', e); return; }
     _posMbMap.addControl(new mapboxgl.NavigationControl({ showCompass:false }), 'top-right');
     const pinEl = document.createElement('div');
-    pinEl.style.cssText = 'width:24px;height:24px;background:var(--primary);border-radius:50%;border:3px solid white;box-shadow:0 2px 12px rgba(102,126,234,.6);cursor:grab';
+    pinEl.style.cssText = 'width:24px;height:24px;background:var(--primary);border-radius:50%;border:3px solid white;box-shadow:0 2px 12px rgba(15,118,110,.6);cursor:grab';
     _posMbMarker = new mapboxgl.Marker({ element: pinEl, draggable: true }).setLngLat([lng, lat]).addTo(_posMbMap);
     const updateCoords = (lng, lat) => {
       const latR = parseFloat(lat.toFixed(6));
@@ -3743,7 +3745,7 @@ window.geoSuggest = function(q) {
         const l2 = [a.neighbourhood||a.suburb, a.city||a.town||a.village, a.country].filter(Boolean).slice(0,3).join(', ');
         return `<div onclick="window.geoSeleccionar(${idx})"
           style="padding:10px 14px;cursor:pointer;border-bottom:1px solid rgba(0,0,0,.05)"
-          onmouseover="this.style.background='rgba(102,126,234,.05)'"
+          onmouseover="this.style.background='rgba(15,118,110,.05)'"
           onmouseout="this.style.background=''">
           <div style="font-weight:600;font-size:13px">${l1}</div>
           ${l2 ? `<div style="font-size:11px;color:#94a3b8;margin-top:2px">${l2}</div>` : ''}
@@ -3882,6 +3884,9 @@ window._posGuardarNuevoCliente = async function() {
 let _envasesDevueltos = [];
 let _envasesSaldoActual = 0;
 let _envasesSaldoClientId = null;
+// El módulo de envases retornables está apagado: su lugar lo ocupa Cuenta
+// corriente. El código queda por si algún negocio lo vuelve a necesitar.
+const ENVASES_ON = false;
 let _tiposEnvase     = [];
 function _envasesRetornadosSum() {
   return _envasesDevueltos.reduce((s, r) => s + (parseInt(r.cantidad, 10) || 0), 0);
@@ -3971,7 +3976,7 @@ async function _refrescarEnvasesSaldo() {
   const tag = document.getElementById('env-saldo');
   const btnSolo = document.getElementById('btn-solo-devolver');
   if (!wrap) return;
-  if (!clienteSel?.id) {
+  if (!ENVASES_ON || !clienteSel?.id) {
     wrap.style.display = 'none';
     _resetEnvasesUI();
     if (btnSolo) btnSolo.style.display = 'none';
@@ -4187,7 +4192,7 @@ function _renderHistorialUI(d) {
   h.innerHTML =
     '<div style="display:flex;gap:6px;flex-wrap:wrap;font-size:12px;align-items:center">' +
     '<span class="pos-cli-pill">💰 ' + saldoTxt + '</span>' +
-    (envases > 0 ? '<span class="pos-cli-pill">' + envases + ' envase' + (envases > 1 ? 's' : '') + '</span>' : '') +
+    (ENVASES_ON && envases > 0 ? '<span class="pos-cli-pill">' + envases + ' envase' + (envases > 1 ? 's' : '') + '</span>' : '') +
     (compras > 0 ? '<span class="pos-cli-pill">📅 ' + compras + ' / 30d · ' + fmtARS(monto30) + '</span>' : '') +
     ccBadge +
     '</div>' + ultHtml + accionesCC;
@@ -4295,7 +4300,7 @@ window.posEntregarPrepago = async (valeId, pendiente, nombre, prodId, precio) =>
     clienteNombre: cli?.nombre || '—',
     telefono:      cli?.telefono || null,
     email:         cli?.email || null,
-    envasesMov:    esRetornable ? { tenia, devolvio: 0, prestado: cant, ahora: tenia + cant } : null,
+    envasesMov:    (ENVASES_ON && esRetornable) ? { tenia, devolvio: 0, prestado: cant, ahora: tenia + cant } : null,
     items: [{ nombre, cantidad: cant, precio: Number(precio) || 0, entregado: cant, prepagado: 0 }],
     fecha: new Date(),
   });
@@ -4308,27 +4313,8 @@ window.posEntregarPrepago = async (valeId, pendiente, nombre, prodId, precio) =>
 };
 
 async function abrirAbonoCuenta(clienteId, saldoActual) {
-  const monto = prompt('Abono a cuenta de ' + (clienteSel?.nombre || 'cliente') +
-    '\nDeuda actual: ' + fmtARS(saldoActual) + '\n\nMonto a recibir:', String(saldoActual));
-  if (monto === null) return;
-  const m = parseFloat(String(monto).replace(',', '.'));
-  if (!Number.isFinite(m) || m <= 0) { toast('Monto inválido', 'warn'); return; }
-  const metodo = prompt('Método (efectivo / transferencia / mercadopago / otro):', 'efectivo');
-  if (!metodo) return;
-  if (!['efectivo','transferencia','mercadopago','otro'].includes(metodo.trim())) {
-    toast('Método inválido', 'err'); return;
-  }
-  const { data, error } = await sb.rpc('pos_abonar_cuenta', {
-    p_organization_id: orgId,
-    p_cliente_id:      clienteId,
-    p_monto:           m,
-    p_metodo:          metodo.trim(),
-    p_referencia:      null,
-    p_notas:           null,
-  });
-  if (error) { tmvShowError(error); return; }
-  if (!data?.ok) { alert('No se pudo registrar el abono'); return; }
-  toast('Abono ' + fmtARS(m) + ' ✓', 'ok');
+  const ok = await _ccPedirPago({ id: clienteId, nombre: clienteSel?.nombre || 'Cliente', saldo: saldoActual });
+  if (!ok) return;
   _resumenCliCache.delete(clienteId);
   _renderHistorialCliente(clienteId);
 }
@@ -4354,7 +4340,7 @@ function confirmarOperacionPOS({titulo, subtitulo, lineas, btnOkLabel, btnOkColo
         </div>
         ${lineas?.length ? `
           <div style="padding:0 22px 14px">
-            <div style="background:rgba(102,126,234,.06);border-radius:10px;padding:12px 14px;font-size:13px;color:#0f172a">
+            <div style="background:rgba(15,118,110,.06);border-radius:10px;padding:12px 14px;font-size:13px;color:#0f172a">
               ${lineas.map(l => `<div style="display:flex;justify-content:space-between;padding:3px 0">
                 <span>${l.label}</span><strong>${l.value}</strong>
               </div>`).join('')}
@@ -4501,7 +4487,7 @@ function abrirRecibo(v){
             ? '<div class="receipt-pago" style="color:#059669"><span>Devolvió</span><span>− ' + m.devolvio + '</span></div>'
             : '') +
           (m.prestado > 0
-            ? '<div class="receipt-pago" style="color:#7c3aed"><span>Se llevó (prestado)</span><span>+ ' + m.prestado + '</span></div>'
+            ? '<div class="receipt-pago" style="color:#0F766E"><span>Se llevó (prestado)</span><span>+ ' + m.prestado + '</span></div>'
             : '') +
           '<div class="receipt-pago" style="font-weight:800;color:#0f172a;border-top:1px solid #e2e8f0;padding-top:4px;margin-top:4px"><span>Ahora tiene</span><span>' + (m.ahora || 0) + '</span></div>' +
         '</div>';
@@ -4531,13 +4517,17 @@ function abrirRecibo(v){
         ? '  <div class="receipt-tot" style="font-size:13px;color:#b45309"><span>Descuento</span><span>−' + fmtARS(descuentoRecibo) + '</span></div>'
         : '') +
       (recargoRecibo > 0
-        ? '  <div class="receipt-tot" style="font-size:13px;color:#7c3aed"><span>Recargo' + (cuotasRecibo > 1 ? ' (' + cuotasRecibo + ' cuotas)' : '') + '</span><span>+' + fmtARS(recargoRecibo) + '</span></div>'
+        ? '  <div class="receipt-tot" style="font-size:13px;color:#0F766E"><span>Recargo' + (cuotasRecibo > 1 ? ' (' + cuotasRecibo + ' cuotas)' : '') + '</span><span>+' + fmtARS(recargoRecibo) + '</span></div>'
         : '') +
       '  <div class="receipt-tot"><span>Total</span><span>' + fmtARS(v.total) + '</span></div>' +
       (recargoRecibo > 0 && cuotasRecibo > 1
         ? '  <div class="receipt-pago"><span>Cuotas</span><span>' + cuotasRecibo + ' × ' + fmtARS(v.total / cuotasRecibo) + '</span></div>'
         : '') +
-      '  <div class="receipt-pago"><span>Método</span><span>' + metodoLabel + '</span></div>';
+      '  <div class="receipt-pago"><span>Método</span><span>' + metodoLabel + '</span></div>' +
+      (v.metodo === 'efectivo' && Number(v.pagaCon) > 0
+        ? '  <div class="receipt-pago"><span>Paga con</span><span>' + fmtARS(v.pagaCon) + '</span></div>' +
+          '  <div class="receipt-tot" style="color:#0F766E"><span>Vuelto</span><span>' + fmtARS(v.vuelto) + '</span></div>'
+        : '');
 
   const itemsBlockHtml = esDevolucionSola
     ? '<div style="font-size:12px;color:var(--muted);font-style:italic;padding:8px 0">Operación sin venta · sin cobro</div>'
@@ -4591,7 +4581,7 @@ function abrirRecibo(v){
 
 async function pintarEnvasesDomicilio(clienteId) {
   const anchor = document.getElementById('rcp-envases-dom');
-  if (!anchor || !clienteId) return;
+  if (!ENVASES_ON || !anchor || !clienteId) return;
   try {
     const { data: envases, error } = await sb.rpc('get_envases_en_cliente_por_tipo', { p_cliente_id: clienteId });
     if (error || !envases?.length) return;
@@ -4636,7 +4626,7 @@ async function cargarVentasHoy(){
     kpiCard('Total cobrado', fmtARS(totales.total || 0), totales.count + ' ventas', '#10b981', INFO.total_cobrado) +
     kpiCard('Efectivo',      fmtARS(totales.efectivo || 0), '', '#374151', INFO.efectivo) +
     kpiCard('MercadoPago',   fmtARS(totales.mp || 0),       '', '#009ee3', INFO.mercadopago) +
-    kpiCard('Transferencia', fmtARS(totales.transf || 0),   '', '#7C3AED', INFO.transferencia) +
+    kpiCard('Transferencia', fmtARS(totales.transf || 0),   '', '#0F766E', INFO.transferencia) +
     kpiCard('Débito',        fmtARS(totales.debito || 0),   '', '#0ea5e9', INFO.debito) +
     kpiCard('Crédito',       fmtARS(totales.credito || 0),  '', '#0284c7', INFO.credito) +
     kpiCard('Cuenta corriente', fmtARS(totales.cc || 0),    '', '#f59e0b', INFO.cuenta_corriente) +
@@ -4774,7 +4764,7 @@ async function abrirDevolucion(v) {
     '</select>' +
     '<label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Motivo (opcional)</label>' +
     '<input id="devo-motivo" placeholder="Producto en mal estado, error de cantidad, etc." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:14px">' +
-    '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:rgba(102,126,234,.06);border-radius:10px;margin-bottom:14px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:rgba(15,118,110,.06);border-radius:10px;margin-bottom:14px">' +
     '  <span style="font-weight:600">Total a reembolsar</span>' +
     '  <span id="devo-total" style="font-weight:800;font-size:20px">$0</span>' +
     '</div>' +
@@ -4847,7 +4837,7 @@ async function abrirDevolucion(v) {
 }
 
 async function _capturarMovEnvases(items) {
-  if (!clienteSel?.id) return null;
+  if (!ENVASES_ON || !clienteSel?.id) return null;
   let prestado = 0;
   (items || []).forEach(it => {
     if (it.envase_modo !== 'comodato') return;
@@ -4872,6 +4862,7 @@ async function _capturarMovEnvases(items) {
 }
 
 async function _confirmarVentaEnvases(items, totalBruto) {
+  if (!ENVASES_ON) return true;
   // Sin cliente (venta a Mostrador) no hay comodato ni devolución que confirmar:
   // el retornable se vende como un producto más.
   if (!clienteSel?.id) return true;
@@ -4895,7 +4886,7 @@ async function _confirmarVentaEnvases(items, totalBruto) {
 
   const lineas = [];
   if (prestados.length) {
-    lineas.push({ label: '<span style="color:#7c3aed;font-weight:700">Vas a prestar</span>', value: totalPrestados + ' envase' + (totalPrestados>1?'s':'') });
+    lineas.push({ label: '<span style="color:#0F766E;font-weight:700">Vas a prestar</span>', value: totalPrestados + ' envase' + (totalPrestados>1?'s':'') });
     prestados.forEach(p => lineas.push({ label: '&nbsp;&nbsp;· ' + p.label, value: p.value }));
   }
   if (devueltos.length) {
@@ -4943,6 +4934,78 @@ async function cargarCuotasConfig() {
       .filter(p => p.cuotas >= 1 && p.recargo_pct >= 0)
       .sort((a, b) => a.cuotas - b.cuotas);
   } catch (_) { _cuotasConfig = []; }
+}
+
+// Cobro en efectivo: pregunta con cuánto paga el cliente y muestra el vuelto.
+// Resuelve { pagaCon, vuelto } o null si se cancela. Vacío = paga justo.
+function _pedirPagaCon(total) {
+  return new Promise(resolve => {
+    const billetes = [1000, 2000, 5000, 10000, 20000, 50000];
+    const sugeridos = [];
+    billetes.forEach(b => {
+      const v = Math.ceil(total / b) * b;
+      if (v > total && !sugeridos.includes(v) && sugeridos.length < 4) sugeridos.push(v);
+    });
+    const ov = document.createElement('div');
+    ov.className = 'qr-overlay show';
+    ov.style.cssText = 'background:rgba(0,0,0,.5);z-index:240';
+    const chip = (v, lbl) => '<button type="button" class="pc-op" data-v="' + v + '" style="flex:1 1 30%;padding:10px 8px;border:1px solid var(--border);background:#fff;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums">' + lbl + '</button>';
+    ov.innerHTML =
+      '<div style="background:#fff;border-radius:14px;width:min(400px,92vw);padding:20px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+      '<h3 style="margin:0;font-size:18px">Cobro en efectivo</h3>' +
+      '<button type="button" id="pc-x" aria-label="Cancelar" style="background:none;border:0;font-size:22px;cursor:pointer;color:#64748b">×</button>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;margin:10px 0 14px;font-variant-numeric:tabular-nums"><span style="color:var(--muted);font-size:14px">Total</span><span style="font-size:24px;font-weight:800">' + fmtARS(total) + '</span></div>' +
+      '<label for="pc-in" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px">¿Con cuánto paga?</label>' +
+      '<input id="pc-in" type="text" inputmode="numeric" autocomplete="off" placeholder="' + Math.round(total) + '" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;outline:none">' +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">' + chip(total, 'Justo') + sugeridos.map(v => chip(v, fmtARS(v))).join('') + '</div>' +
+      '<div id="pc-res" style="margin-top:16px;padding:14px;border-radius:10px;display:flex;justify-content:space-between;align-items:baseline;font-variant-numeric:tabular-nums"></div>' +
+      '<button type="button" id="pc-ok" style="margin-top:14px;width:100%;padding:14px;border:0;border-radius:10px;background:var(--primary);color:#fff;font-size:16px;font-weight:700;cursor:pointer">Confirmar cobro</button>' +
+      '</div>';
+    document.body.appendChild(ov);
+    const inp = ov.querySelector('#pc-in');
+    const res = ov.querySelector('#pc-res');
+    const ok  = ov.querySelector('#pc-ok');
+    const leer = () => {
+      const raw = inp.value.replace(/[^0-9,]/g, '').replace(',', '.');
+      return raw === '' ? total : (parseFloat(raw) || 0);
+    };
+    const pintar = () => {
+      const paga = leer();
+      const dif = Math.round((paga - total) * 100) / 100;
+      if (dif < 0) {
+        res.style.background = '#FEF3F2'; res.style.color = '#B42318';
+        res.innerHTML = '<span style="font-weight:600">Falta</span><span style="font-size:22px;font-weight:800">' + fmtARS(-dif) + '</span>';
+        ok.disabled = true; ok.style.opacity = '.5';
+      } else {
+        res.style.background = '#E6F2F1'; res.style.color = '#0D5C56';
+        res.innerHTML = '<span style="font-weight:600">Vuelto</span><span style="font-size:26px;font-weight:800">' + fmtARS(dif) + '</span>';
+        ok.disabled = false; ok.style.opacity = '1';
+      }
+    };
+    const cerrar = (val) => { document.removeEventListener('keydown', onKey, true); ov.remove(); resolve(val); };
+    const confirmar = () => {
+      const paga = leer();
+      if (paga < total) return;
+      cerrar({ pagaCon: paga, vuelto: Math.round((paga - total) * 100) / 100 });
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar(null); }
+      else if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); confirmar(); }
+      else if (/^F\d{1,2}$/.test(e.key)) { e.preventDefault(); e.stopPropagation(); }  // sin atajos con el diálogo abierto
+    };
+    document.addEventListener('keydown', onKey, true);
+    inp.addEventListener('input', pintar);
+    ov.querySelectorAll('.pc-op').forEach(b => b.addEventListener('click', () => {
+      inp.value = String(Math.round(Number(b.dataset.v))); pintar(); ok.focus();
+    }));
+    ok.addEventListener('click', confirmar);
+    ov.querySelector('#pc-x').addEventListener('click', () => cerrar(null));
+    ov.addEventListener('mousedown', e => { if (e.target === ov) cerrar(null); });
+    pintar();
+    setTimeout(() => inp.focus(), 30);
+  });
 }
 
 function _pedirCuotasCredito(totalBase) {
@@ -5138,6 +5201,12 @@ window.cobrar = async (metodo) => {
   }
   const totalFinal = total + recargoMonto;
 
+  let efectivoInfo = null;
+  if (metodo === 'efectivo') {
+    efectivoInfo = await _pedirPagaCon(totalFinal);
+    if (!efectivoInfo) return;
+  }
+
   const btnIds = ['btn-efe', 'btn-trs', 'btn-mp', 'btn-cc', 'btn-deb', 'btn-cre'];
   btnIds.forEach(id => { const b = document.getElementById(id); if (b) b.disabled = true; });
 
@@ -5181,7 +5250,7 @@ window.cobrar = async (metodo) => {
     }
 
     const factInfo = await _maybeEmitirFactura(data, total);
-    _postVentaOk(data, metodo, total, factInfo, _envasesMovSnap, { monto: recargoMonto, cuotas: cuotasSel }, totalBruto);
+    _postVentaOk(data, metodo, total, factInfo, _envasesMovSnap, { monto: recargoMonto, cuotas: cuotasSel }, totalBruto, efectivoInfo);
   } catch (e) {
     console.error(e);
     tmvShowError(e, { title: 'No se pudo registrar la venta' });
@@ -5191,7 +5260,21 @@ window.cobrar = async (metodo) => {
   }
 };
 
-function _postVentaOk(data, metodo, totalEstimado, factInfo, envasesMov, recargoInfo, brutoOverride) {
+// Productos del carrito cuya cantidad entregada supera el stock que había.
+// El servidor nunca deja stock negativo: esos productos quedan en 0.
+function _productosSinStockEnCarrito() {
+  const out = [];
+  cart.forEach((i, pid) => {
+    const p = productos.find(x => x.id === pid);
+    if (!p || p.es_combo || !stockMap.has(pid)) return;
+    const lleva = (i.entregar != null && i.entregar < i.cantidad) ? i.entregar : i.cantidad;
+    if (lleva > (Number(stockMap.get(pid)) || 0)) out.push(p.nombre);
+  });
+  return out;
+}
+
+function _postVentaOk(data, metodo, totalEstimado, factInfo, envasesMov, recargoInfo, brutoOverride, efectivoInfo) {
+  const sinStock = _productosSinStockEnCarrito();
   if (data?.vales_creados > 0) {
     toast('📦 ' + data.vales_creados + ' prepago(s) registrado(s) — pendiente de entrega', 'ok');
   }
@@ -5211,6 +5294,8 @@ function _postVentaOk(data, metodo, totalEstimado, factInfo, envasesMov, recargo
     descuento: Math.max(0, _bruto - totalEstimado),
     recargo:   _recargo,
     cuotas:    _cuotas,
+    pagaCon:   efectivoInfo?.pagaCon || null,
+    vuelto:    efectivoInfo?.vuelto || 0,
     metodo:    metodo,
     clienteId: cliIdParaSaldo,
     clienteNombre: clienteSel?.nombre || 'Mostrador',
@@ -5241,15 +5326,10 @@ function _postVentaOk(data, metodo, totalEstimado, factInfo, envasesMov, recargo
   renderClienteUI();
   cargarStock().then(() => renderProductGrid());
 
-  if (data.stock_warns && data.stock_warns.length) {
-    const warnsTxt = data.stock_warns.slice(0, 3).map(w => {
-      const p = productos.find(x => x.id === w.producto_id);
-      const nm = p ? p.nombre : (w.producto_id || '').slice(0, 8);
-      return nm + ' (' + w.stock_actual + ')';
-    }).join(', ');
-    const restantes = data.stock_warns.length - 3;
+  if (sinStock.length) {
+    const restantes = sinStock.length - 3;
     const sufijo = restantes > 0 ? ' y ' + restantes + ' más' : '';
-    toast('⚠ Stock negativo: ' + warnsTxt + sufijo + ' — andá a Stock para reponer', 'warn');
+    toast('Venta registrada ✓ · Sin stock, quedó en 0: ' + sinStock.slice(0, 3).join(', ') + sufijo + ' — reponé en Stock', 'warn');
   } else {
     toast('Venta registrada ✓', 'ok');
   }
@@ -5807,7 +5887,7 @@ async function _llenarSelectTipoEnvase(seleccionar) {
 function _toggleTipoEnvaseVisibility() {
   const wrap = document.getElementById('prod-tipo-envase-wrap');
   const cb   = document.getElementById('prod-tiene-envase');
-  if (wrap && cb) wrap.style.display = cb.checked ? '' : 'none';
+  if (wrap && cb) wrap.style.display = (ENVASES_ON && cb.checked) ? '' : 'none';
 }
 function _toggleComboVisibility() {
   const wrap = document.getElementById('prod-combo-wrap');
@@ -6107,7 +6187,7 @@ function _cargaAgregar(p) {
     const v = parseInt(existente.value, 10);
     existente.value = String((Number.isFinite(v) ? v : 0) + 1);
     const row = existente.closest('.carga-row');
-    if (row) { list.prepend(row); row.style.transition = 'background .2s'; row.style.background = 'rgba(124,58,237,.14)'; setTimeout(() => { row.style.background = ''; }, 400); }
+    if (row) { list.prepend(row); row.style.transition = 'background .2s'; row.style.background = 'rgba(15,118,110,.14)'; setTimeout(() => { row.style.background = ''; }, 400); }
     existente.focus(); existente.select();
     return;
   }
@@ -6344,6 +6424,317 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+// ── CUENTA CORRIENTE ─────────────────────────────────────
+// Reemplaza al módulo de envases: quién debe, cuánto, y registrar pagos.
+// Saldo > 0 = el cliente debe; saldo < 0 = tiene saldo a favor.
+let _ccFiltro = 'deuda';   // 'deuda' | 'todos'
+let _ccBusca  = '';
+let _ccRows   = [];
+
+async function renderCuentas() {
+  const wrap = document.getElementById('cuentas-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>';
+
+  const [ccResp, cliResp] = await Promise.all([
+    sb.from('cuenta_corriente')
+      .select('cliente_id, saldo, ultima_entrega, ultimo_cobro, updated_at')
+      .eq('organization_id', orgId)
+      .neq('saldo', 0),
+    sb.from('clientes')
+      .select('id, nombre, telefono, whatsapp, limite_cc, cuenta_corriente_habilitada')
+      .eq('organization_id', orgId)
+      .eq('activo', true)
+      .eq('cuenta_corriente_habilitada', true)
+      .limit(2000),
+  ]);
+  if (ccResp.error || cliResp.error) {
+    const err = ccResp.error || cliResp.error;
+    wrap.innerHTML = '<div style="background:#FEF3F2;border:1px solid #FECDCA;border-radius:12px;padding:14px;color:#B42318">Error: ' + _esc(err.message) + '</div>';
+    return;
+  }
+
+  const porId = new Map();
+  (cliResp.data || []).forEach(c => porId.set(c.id, { ...c, saldo: 0, ult: null }));
+  const faltan = (ccResp.data || []).filter(r => !porId.has(r.cliente_id)).map(r => r.cliente_id);
+  if (faltan.length) {
+    // Clientes con saldo pero sin CC habilitada (ej. deuda vieja): también se listan.
+    const { data: extra } = await sb.from('clientes')
+      .select('id, nombre, telefono, whatsapp, limite_cc, cuenta_corriente_habilitada')
+      .in('id', faltan.slice(0, 500));
+    (extra || []).forEach(c => porId.set(c.id, { ...c, saldo: 0, ult: null }));
+  }
+  (ccResp.data || []).forEach(r => {
+    const c = porId.get(r.cliente_id);
+    if (!c) return;
+    c.saldo = Number(r.saldo) || 0;
+    c.ult = r.ultimo_cobro || r.ultima_entrega || r.updated_at || null;
+  });
+  // El cliente genérico "Mostrador" acumula ajustes de descuentos: no es una cuenta real.
+  _ccRows = [...porId.values()].filter(c => c.id !== clienteMostradorId && (c.nombre || '').trim().toLowerCase() !== 'mostrador');
+  _ccRender();
+}
+
+function _ccRender() {
+  const wrap = document.getElementById('cuentas-wrap');
+  if (!wrap) return;
+  const deudores  = _ccRows.filter(c => c.saldo > 0.009);
+  const totDeuda  = deudores.reduce((s, c) => s + c.saldo, 0);
+  const totFavor  = _ccRows.filter(c => c.saldo < -0.009).reduce((s, c) => s - c.saldo, 0);
+  const habilit   = _ccRows.filter(c => c.cuenta_corriente_habilitada).length;
+
+  const q = _ccBusca.trim().toLowerCase();
+  let lista = _ccFiltro === 'deuda' ? deudores : _ccRows;
+  if (q) lista = lista.filter(c => (c.nombre || '').toLowerCase().includes(q) || (c.telefono || c.whatsapp || '').includes(q));
+  lista = [...lista].sort((a, b) => b.saldo - a.saldo || (a.nombre || '').localeCompare(b.nombre || ''));
+
+  const fila = (c) => {
+    const excede = c.limite_cc != null && c.saldo > Number(c.limite_cc);
+    const saldoHtml = c.saldo > 0.009
+      ? '<span style="color:#B42318;font-weight:700">' + fmtARS(c.saldo) + '</span>'
+      : c.saldo < -0.009
+        ? '<span style="color:#047857;font-weight:700">' + fmtARS(-c.saldo) + ' a favor</span>'
+        : '<span style="color:var(--muted)">Al día</span>';
+    const ult = c.ult ? new Date(c.ult).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—';
+    return '<div class="cc-row" data-id="' + c.id + '">' +
+      '<div class="cc-cli"><div class="cc-nm">' + _esc(c.nombre) + (c.cuenta_corriente_habilitada ? '' : ' <span class="cc-tag">sin CC</span>') + '</div>' +
+      '<div class="cc-sub">' + _esc(c.telefono || c.whatsapp || 'Sin teléfono') + ' · últ. mov. ' + ult + '</div></div>' +
+      '<div class="cc-saldo">' + saldoHtml +
+      (c.limite_cc != null ? '<div class="cc-sub' + (excede ? '" style="color:#B42318' : '') + '">límite ' + fmtARS(c.limite_cc) + '</div>' : '') + '</div>' +
+      '<div class="cc-acts">' +
+      (c.saldo > 0.009 ? '<button type="button" class="cc-btn cc-btn-pri" data-act="pagar">Registrar pago</button>' : '') +
+      '<button type="button" class="cc-btn" data-act="movs">Movimientos</button>' +
+      ((c.saldo > 0.009 && (c.whatsapp || c.telefono)) ? '<button type="button" class="cc-btn" data-act="wa" title="Recordatorio por WhatsApp">WhatsApp</button>' : '') +
+      '<button type="button" class="cc-btn" data-act="cfg" title="Habilitar y límite">Límite</button>' +
+      '</div></div>';
+  };
+
+  wrap.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px">' +
+      '<div><h2 style="font-size:22px;font-weight:700;letter-spacing:-.02em;margin:0">Cuenta corriente</h2>' +
+      '<div style="font-size:13px;color:var(--muted);margin-top:4px">Lo que te deben tus clientes (fiado) y los pagos a cuenta.</div></div>' +
+      '<button type="button" id="cc-habilitar" class="cc-btn cc-btn-pri">+ Habilitar cliente</button>' +
+    '</div>' +
+    '<div class="env-kpis">' +
+      '<div class="env-kpi"><div class="env-kpi-l">Total a cobrar</div><div class="env-kpi-v" style="color:#B42318">' + fmtARS(totDeuda) + '</div></div>' +
+      '<div class="env-kpi"><div class="env-kpi-l">Clientes que deben</div><div class="env-kpi-v">' + deudores.length + '</div></div>' +
+      '<div class="env-kpi"><div class="env-kpi-l">Saldo a favor</div><div class="env-kpi-v" style="color:#047857">' + fmtARS(totFavor) + '</div></div>' +
+      '<div class="env-kpi"><div class="env-kpi-l">Con CC habilitada</div><div class="env-kpi-v">' + habilit + '</div></div>' +
+    '</div>' +
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px">' +
+      '<input id="cc-q" type="search" placeholder="Buscar cliente o teléfono" value="' + _esc(_ccBusca) + '" autocomplete="off" style="flex:1;min-width:200px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none">' +
+      '<div class="env-period" style="margin:0">' +
+        '<button type="button" data-f="deuda" class="' + (_ccFiltro === 'deuda' ? 'active' : '') + '">Con deuda</button>' +
+        '<button type="button" data-f="todos" class="' + (_ccFiltro === 'todos' ? 'active' : '') + '">Todos</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="env-section" style="padding:0;overflow:hidden">' +
+      (lista.length ? lista.map(fila).join('')
+        : '<div class="env-empty">' + (q ? 'Sin resultados para "' + _esc(_ccBusca) + '"'
+          : _ccFiltro === 'deuda' ? 'Nadie te debe plata. 🎉' : 'Todavía no hay clientes con cuenta corriente. Tocá “Habilitar cliente”.') + '</div>') +
+    '</div>' +
+    '<div style="font-size:12px;color:var(--muted);line-height:1.5">Para fiar, elegí el cliente en Vender y cobrá con <b>Cuenta corriente</b>. Los pagos que registres acá entran a la caja abierta.</div>';
+
+  const qi = wrap.querySelector('#cc-q');
+  qi.addEventListener('input', () => { _ccBusca = qi.value; const pos = qi.selectionStart; _ccRender(); const n = document.getElementById('cc-q'); n.focus(); try { n.setSelectionRange(pos, pos); } catch (_) {} });
+  wrap.querySelectorAll('[data-f]').forEach(b => b.addEventListener('click', () => { _ccFiltro = b.dataset.f; _ccRender(); }));
+  wrap.querySelector('#cc-habilitar').addEventListener('click', _ccHabilitarCliente);
+  wrap.querySelectorAll('.cc-row').forEach(row => {
+    const c = _ccRows.find(x => x.id === row.dataset.id);
+    row.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => {
+      const act = b.dataset.act;
+      if (act === 'pagar') _ccPedirPago(c).then(ok => { if (ok) renderCuentas(); });
+      if (act === 'movs')  _ccMovimientos(c);
+      if (act === 'wa')    _ccRecordatorioWA(c);
+      if (act === 'cfg')   _ccConfigCliente(c);
+    }));
+  });
+}
+
+function _ccModal(innerHtml, width) {
+  const ov = document.createElement('div');
+  ov.className = 'qr-overlay show';
+  ov.style.cssText = 'background:rgba(0,0,0,.5);z-index:240';
+  ov.innerHTML = '<div style="background:#fff;border-radius:14px;width:min(' + (width || 420) + 'px,92vw);max-height:88vh;overflow:auto;padding:20px">' + innerHtml + '</div>';
+  document.body.appendChild(ov);
+  return ov;
+}
+
+// Registrar un pago a cuenta. Resuelve true si se registró.
+function _ccPedirPago(c) {
+  return new Promise(resolve => {
+    const deuda = Math.max(0, Number(c.saldo) || 0);
+    let metodo = 'efectivo';
+    const metodos = [['efectivo', 'Efectivo'], ['transferencia', 'Transferencia'], ['mercadopago', 'Mercado Pago'], ['otro', 'Otro']];
+    const ov = _ccModal(
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+        '<h3 style="margin:0;font-size:18px">Registrar pago</h3>' +
+        '<button type="button" data-x style="background:none;border:0;font-size:22px;cursor:pointer;color:#64748b">×</button></div>' +
+      '<div style="font-size:14px;color:var(--muted);margin-bottom:14px">' + _esc(c.nombre) + ' · debe <b style="color:#B42318">' + fmtARS(deuda) + '</b></div>' +
+      '<label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px">Monto que paga</label>' +
+      '<input id="ccp-m" type="text" inputmode="decimal" autocomplete="off" value="' + Math.round(deuda) + '" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;outline:none">' +
+      '<div style="display:flex;gap:8px;margin-top:8px"><button type="button" class="cc-btn" data-total>Paga todo</button><button type="button" class="cc-btn" data-mitad>La mitad</button></div>' +
+      '<label style="display:block;font-size:13px;font-weight:600;margin:14px 0 6px">Cómo paga</label>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+        metodos.map(([k, l]) => '<button type="button" class="cc-met" data-m="' + k + '">' + l + '</button>').join('') +
+      '</div>' +
+      '<div id="ccp-res" style="font-size:13px;color:var(--muted);margin-top:14px;min-height:18px"></div>' +
+      '<button type="button" id="ccp-ok" style="margin-top:12px;width:100%;padding:14px;border:0;border-radius:10px;background:var(--primary);color:#fff;font-size:16px;font-weight:700;cursor:pointer">Registrar pago</button>');
+    const inp = ov.querySelector('#ccp-m');
+    const res = ov.querySelector('#ccp-res');
+    const ok  = ov.querySelector('#ccp-ok');
+    const leer = () => parseFloat(inp.value.replace(/[^0-9,.]/g, '').replace(/\./g, '').replace(',', '.')) || 0;
+    const pintar = () => {
+      ov.querySelectorAll('.cc-met').forEach(b => b.classList.toggle('on', b.dataset.m === metodo));
+      const m = leer();
+      const queda = Math.round((deuda - m) * 100) / 100;
+      res.innerHTML = m <= 0 ? 'Ingresá un monto.'
+        : queda > 0 ? 'Le queda debiendo <b>' + fmtARS(queda) + '</b>.'
+        : queda < 0 ? 'Queda con <b style="color:#047857">' + fmtARS(-queda) + ' a favor</b>.'
+        : '<b style="color:#047857">Queda al día.</b>';
+      ok.disabled = m <= 0; ok.style.opacity = m <= 0 ? '.5' : '1';
+    };
+    const cerrar = (v) => { ov.remove(); resolve(v); };
+    ov.querySelector('[data-x]').addEventListener('click', () => cerrar(false));
+    ov.addEventListener('mousedown', e => { if (e.target === ov) cerrar(false); });
+    ov.querySelector('[data-total]').addEventListener('click', () => { inp.value = String(Math.round(deuda)); pintar(); });
+    ov.querySelector('[data-mitad]').addEventListener('click', () => { inp.value = String(Math.round(deuda / 2)); pintar(); });
+    ov.querySelectorAll('.cc-met').forEach(b => b.addEventListener('click', () => { metodo = b.dataset.m; pintar(); }));
+    inp.addEventListener('input', pintar);
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') ok.click(); if (e.key === 'Escape') cerrar(false); });
+    ok.addEventListener('click', async () => {
+      const m = leer();
+      if (m <= 0) return;
+      ok.disabled = true; ok.textContent = 'Registrando…';
+      const { data, error } = await sb.rpc('pos_abonar_cuenta', {
+        p_organization_id: orgId, p_cliente_id: c.id, p_monto: m,
+        p_metodo: metodo, p_referencia: null, p_notas: null,
+      });
+      if (error || !data?.ok) {
+        ok.disabled = false; ok.textContent = 'Registrar pago';
+        if (error) tmvShowError(error); else toast('No se pudo registrar el pago', 'err');
+        return;
+      }
+      toast('Pago de ' + fmtARS(m) + ' registrado ✓', 'ok');
+      _resumenCliCache.delete(c.id);
+      if (metodo === 'efectivo') actualizarDashMini().catch(() => {});
+      cerrar(true);
+    });
+    pintar();
+    setTimeout(() => { inp.focus(); inp.select(); }, 30);
+  });
+}
+
+async function _ccMovimientos(c) {
+  const ov = _ccModal('<div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>', 520);
+  const box = ov.firstElementChild;
+  ov.addEventListener('mousedown', e => { if (e.target === ov) ov.remove(); });
+  const { data, error } = await sb.from('cobros')
+    .select('id, monto, metodo, estado, notas, created_at, cobrado_at, entrega_id, cajero_nombre')
+    .eq('organization_id', orgId)
+    .eq('cliente_id', c.id)
+    .or('metodo.eq.cuenta_corriente,entrega_id.is.null')
+    .neq('estado', 'rechazado')
+    .order('created_at', { ascending: false })
+    .limit(100);
+  if (!document.body.contains(ov)) return;
+  const filas = (data || []).map(r => {
+    const fiado = r.metodo === 'cuenta_corriente';
+    const f = new Date(r.cobrado_at || r.created_at).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const metLbl = { efectivo: 'Efectivo', transferencia: 'Transferencia', mercadopago: 'Mercado Pago', otro: 'Otro' }[r.metodo] || r.metodo;
+    return '<div style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--border);font-size:13px">' +
+      '<div><div style="font-weight:600">' + (fiado ? 'Compra fiada' : 'Pago · ' + _esc(metLbl)) + '</div>' +
+      '<div style="font-size:12px;color:var(--muted)">' + f + (r.cajero_nombre ? ' · ' + _esc(r.cajero_nombre) : '') + '</div></div>' +
+      '<div style="font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;color:' + (fiado ? '#B42318' : '#047857') + '">' + (fiado ? '+' : '−') + fmtARS(r.monto) + '</div></div>';
+  }).join('');
+  box.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+      '<h3 style="margin:0;font-size:18px">' + _esc(c.nombre) + '</h3>' +
+      '<button type="button" data-x style="background:none;border:0;font-size:22px;cursor:pointer;color:#64748b">×</button></div>' +
+    '<div style="font-size:14px;color:var(--muted);margin-bottom:12px">Saldo actual: ' +
+      (c.saldo > 0.009 ? '<b style="color:#B42318">debe ' + fmtARS(c.saldo) + '</b>' : c.saldo < -0.009 ? '<b style="color:#047857">' + fmtARS(-c.saldo) + ' a favor</b>' : '<b>al día</b>') + '</div>' +
+    (error ? '<div style="color:#B42318;font-size:13px">Error: ' + _esc(error.message) + '</div>'
+      : filas || '<div class="env-empty">Sin movimientos de cuenta corriente.</div>') +
+    '<div style="font-size:11px;color:var(--muted);margin-top:10px">Últimos 100 movimientos. Las compras fiadas suman deuda; los pagos la restan.</div>';
+  box.querySelector('[data-x]').addEventListener('click', () => ov.remove());
+}
+
+function _ccRecordatorioWA(c) {
+  const tel = (c.whatsapp || c.telefono || '').replace(/[^\d]/g, '');
+  const negocio = orgName || '';
+  const txt = 'Hola ' + (c.nombre || '') + '! Te escribimos' + (negocio ? ' de ' + negocio : '') +
+    ' para recordarte que tenés un saldo pendiente de ' + fmtARS(c.saldo) + ' en tu cuenta. ¡Gracias!';
+  window.open('https://wa.me/' + tel + '?text=' + encodeURIComponent(txt), '_blank', 'noopener');
+}
+
+// Habilitar CC y fijar límite (vacío = sin límite).
+function _ccConfigCliente(c) {
+  const ov = _ccModal(
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+      '<h3 style="margin:0;font-size:18px">' + _esc(c.nombre) + '</h3>' +
+      '<button type="button" data-x style="background:none;border:0;font-size:22px;cursor:pointer;color:#64748b">×</button></div>' +
+    '<label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;margin-bottom:14px"><input type="checkbox" id="ccc-on"' + (c.cuenta_corriente_habilitada ? ' checked' : '') + '> Puede comprar fiado (cuenta corriente)</label>' +
+    '<label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px">Límite de deuda (opcional)</label>' +
+    '<input id="ccc-lim" type="text" inputmode="numeric" placeholder="Sin límite" value="' + (c.limite_cc != null ? Math.round(c.limite_cc) : '') + '" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:16px;outline:none">' +
+    '<div style="font-size:12px;color:var(--muted);margin-top:6px">Si la compra fiada supera el límite, el sistema no la deja pasar.</div>' +
+    '<button type="button" id="ccc-ok" style="margin-top:16px;width:100%;padding:13px;border:0;border-radius:10px;background:var(--primary);color:#fff;font-size:15px;font-weight:700;cursor:pointer">Guardar</button>');
+  const cerrar = () => ov.remove();
+  ov.querySelector('[data-x]').addEventListener('click', cerrar);
+  ov.addEventListener('mousedown', e => { if (e.target === ov) cerrar(); });
+  ov.querySelector('#ccc-ok').addEventListener('click', async () => {
+    const on  = ov.querySelector('#ccc-on').checked;
+    const raw = ov.querySelector('#ccc-lim').value.replace(/[^0-9]/g, '');
+    const lim = raw === '' ? null : Number(raw);
+    const { error } = await sb.from('clientes')
+      .update({ cuenta_corriente_habilitada: on, limite_cc: lim })
+      .eq('id', c.id).eq('organization_id', orgId);
+    if (error) { tmvShowError(error); return; }
+    toast('Cuenta de ' + c.nombre + ' actualizada ✓', 'ok');
+    _resumenCliCache.delete(c.id);
+    cerrar();
+    renderCuentas();
+  });
+}
+
+function _ccHabilitarCliente() {
+  const ov = _ccModal(
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+      '<h3 style="margin:0;font-size:18px">Habilitar cuenta corriente</h3>' +
+      '<button type="button" data-x style="background:none;border:0;font-size:22px;cursor:pointer;color:#64748b">×</button></div>' +
+    '<input id="cch-q" type="search" placeholder="Buscar cliente por nombre o teléfono" autocomplete="off" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;outline:none">' +
+    '<div id="cch-res" style="margin-top:10px"></div>' +
+    '<div style="font-size:12px;color:var(--muted);margin-top:10px">¿No está? Crealo desde Vender con el botón <b>+</b> junto al buscador de clientes.</div>');
+  const cerrar = () => ov.remove();
+  ov.querySelector('[data-x]').addEventListener('click', cerrar);
+  ov.addEventListener('mousedown', e => { if (e.target === ov) cerrar(); });
+  const q = ov.querySelector('#cch-q'), res = ov.querySelector('#cch-res');
+  let t = null;
+  q.addEventListener('input', () => {
+    clearTimeout(t);
+    const v = q.value.trim();
+    if (v.length < 2) { res.innerHTML = ''; return; }
+    t = setTimeout(async () => {
+      const like = '%' + v.replace(/[%,()]/g, ' ') + '%';
+      const { data } = await sb.from('clientes')
+        .select('id, nombre, telefono, whatsapp, limite_cc, cuenta_corriente_habilitada')
+        .eq('organization_id', orgId).eq('activo', true).neq('nombre', 'Mostrador')
+        .or('nombre.ilike.' + like + ',telefono.ilike.' + like + ',whatsapp.ilike.' + like)
+        .limit(8);
+      res.innerHTML = (data || []).map((c, i) =>
+        '<button type="button" data-i="' + i + '" style="display:flex;justify-content:space-between;width:100%;gap:10px;padding:10px 12px;border:1px solid var(--border);background:#fff;border-radius:10px;margin-bottom:6px;cursor:pointer;text-align:left;font-size:14px">' +
+        '<span>' + _esc(c.nombre) + '<span style="display:block;font-size:12px;color:var(--muted)">' + _esc(c.telefono || c.whatsapp || '') + '</span></span>' +
+        '<span style="font-size:12px;font-weight:600;color:' + (c.cuenta_corriente_habilitada ? '#047857' : 'var(--primary)') + '">' + (c.cuenta_corriente_habilitada ? 'Ya habilitado' : 'Habilitar') + '</span></button>'
+      ).join('') || '<div style="font-size:13px;color:var(--muted);padding:6px 2px">Sin resultados</div>';
+      res.querySelectorAll('[data-i]').forEach(b => b.addEventListener('click', () => {
+        const c = data[Number(b.dataset.i)];
+        cerrar();
+        _ccConfigCliente({ ...c, cuenta_corriente_habilitada: true, saldo: 0 });
+      }));
+    }, 220);
+  });
+  setTimeout(() => q.focus(), 30);
+}
+
 // ── ENVASES (visibilidad y transferencias) ─────────────────
 let _envPeriodo = 30;
 let _envTiposCache = [];
@@ -6370,7 +6761,7 @@ async function renderEnvases() {
   html += '<h3 style="font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:0">Stock por tipo de envase</h3>';
   if (isAdmin) {
     html += '<div style="display:flex;gap:8px;flex-wrap:wrap">';
-    html += '<button id="env-transferir" type="button" style="padding:8px 16px;border-radius:50px;border:1.5px solid var(--primary);background:rgba(124,58,237,.06);color:var(--primary);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">↔ Transferir</button>';
+    html += '<button id="env-transferir" type="button" style="padding:8px 16px;border-radius:50px;border:1.5px solid var(--primary);background:rgba(15,118,110,.06);color:var(--primary);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">↔ Transferir</button>';
     html += '<button id="env-vacios-deposito" type="button" style="padding:8px 16px;border-radius:50px;border:1.5px solid #059669;background:rgba(16,185,129,.08);color:#059669;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">📦 Vacíos → depósito</button>';
     html += '</div>';
   }
@@ -6902,9 +7293,9 @@ async function renderUsuarios() {
 
   let html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap">' +
     '<h3 style="font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:0">Usuarios del negocio</h3>' +
-    '<button id="usr-add" type="button" style="padding:9px 16px;border-radius:50px;border:1.5px solid var(--primary);background:rgba(124,58,237,.06);color:var(--primary);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">+ Nuevo usuario</button>' +
+    '<button id="usr-add" type="button" style="padding:9px 16px;border-radius:50px;border:1.5px solid var(--primary);background:rgba(15,118,110,.06);color:var(--primary);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">+ Nuevo usuario</button>' +
     '</div>' +
-    '<div style="font-size:12px;color:var(--ink);background:rgba(124,58,237,.06);border-radius:8px;padding:8px 10px;margin-bottom:12px">ℹ️ Creá cajeros (solo venta) o administradores (acceso total). A cada cajero podés habilitarle <b>📦 Recibir stock</b> (reponer/cargar mercadería) y/o <b>✏️ Ajustar / descontar</b> (restar stock y editar productos). Sin permisos, el cajero ve el stock en modo lectura.</div>';
+    '<div style="font-size:12px;color:var(--ink);background:rgba(15,118,110,.06);border-radius:8px;padding:8px 10px;margin-bottom:12px">ℹ️ Creá cajeros (solo venta) o administradores (acceso total). A cada cajero podés habilitarle <b>📦 Recibir stock</b> (reponer/cargar mercadería) y/o <b>✏️ Ajustar / descontar</b> (restar stock y editar productos). Sin permisos, el cajero ve el stock en modo lectura.</div>';
 
   if (!usuarios.length) {
     html += '<div class="env-empty" style="background:#fff;border:1px solid var(--border);border-radius:14px">Todavía no hay usuarios.</div>';
@@ -7234,7 +7625,7 @@ async function _cargarFinanzas() {
       '<table style="width:100%;border-collapse:collapse;font-size:13px"><tbody>' +
       gastosPorCat.map(c => '<tr style="border-top:1px solid #f1f5f9"><td style="padding:5px 0">' + String(c.nombre).replace(/[<>&]/g,'') +
         (c.fijo
-          ? ' <span style="font-size:9px;font-weight:800;background:rgba(124,58,237,.1);color:#7c3aed;padding:1px 6px;border-radius:50px">FIJO</span>'
+          ? ' <span style="font-size:9px;font-weight:800;background:rgba(15,118,110,.1);color:#0F766E;padding:1px 6px;border-radius:50px">FIJO</span>'
           : ' <span style="font-size:9px;font-weight:800;background:rgba(2,132,199,.1);color:#0284c7;padding:1px 6px;border-radius:50px">VARIABLE</span>') +
         '</td><td style="text-align:right;font-weight:700;color:#dc2626">' + fmtARS(c.total) + '</td></tr>').join('') +
       '<tr style="border-top:2px solid var(--border)"><td style="padding:6px 0;font-weight:700">🔒 Costos fijos</td><td style="text-align:right;font-weight:800">' + fmtARS(totFijos) + '</td></tr>' +
@@ -7248,7 +7639,7 @@ async function _cargarFinanzas() {
   html += '<div style="background:white;border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:14px"><div style="font-weight:700;margin-bottom:8px">Gastos del período (' + gastos.length + ')' + notaTienda + '</div>';
   if (!gastos.length) html += '<div style="font-size:12px;color:var(--muted)">Sin gastos registrados en este rango. Usá el botón “＋ Registrar gasto” de arriba para cargar sueldos, alquiler y otros gastos.</div>';
   else html += '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="color:var(--muted)"><th style="text-align:left;padding:4px">Fecha</th><th style="text-align:left">Categoría</th><th style="text-align:left">Detalle</th><th style="text-align:right">Monto</th><th></th></tr></thead><tbody>' +
-    gastos.slice(0, 50).map(g => '<tr style="border-top:1px solid #f1f5f9"><td style="padding:4px">' + (g.fecha||'') + '</td><td>' + String(g.categorias_gasto?.nombre||'—').replace(/[<>&]/g,'') + (g.es_recurrente ? ' <span style="font-size:9px;font-weight:800;background:rgba(124,58,237,.1);color:#7c3aed;padding:1px 6px;border-radius:50px">FIJO</span>' : '') + '</td><td>' + String(g.descripcion||g.proveedor||'').replace(/[<>&]/g,'') + '</td><td style="text-align:right;font-weight:600;color:#dc2626">' + fmtARS(g.monto) + '</td><td style="text-align:right"><button class="fin-del-gasto" data-id="' + g.id + '" title="Eliminar gasto" style="background:none;border:none;color:#cbd5e1;font-size:15px;cursor:pointer;padding:0 4px">🗑</button></td></tr>').join('') +
+    gastos.slice(0, 50).map(g => '<tr style="border-top:1px solid #f1f5f9"><td style="padding:4px">' + (g.fecha||'') + '</td><td>' + String(g.categorias_gasto?.nombre||'—').replace(/[<>&]/g,'') + (g.es_recurrente ? ' <span style="font-size:9px;font-weight:800;background:rgba(15,118,110,.1);color:#0F766E;padding:1px 6px;border-radius:50px">FIJO</span>' : '') + '</td><td>' + String(g.descripcion||g.proveedor||'').replace(/[<>&]/g,'') + '</td><td style="text-align:right;font-weight:600;color:#dc2626">' + fmtARS(g.monto) + '</td><td style="text-align:right"><button class="fin-del-gasto" data-id="' + g.id + '" title="Eliminar gasto" style="background:none;border:none;color:#cbd5e1;font-size:15px;cursor:pointer;padding:0 4px">🗑</button></td></tr>').join('') +
     '<tr style="border-top:2px solid var(--border)"><td colspan="3" style="padding:6px;font-weight:700">Total gastos</td><td style="text-align:right;font-weight:800;padding:6px">' + fmtARS(totGastos) + '</td><td></td></tr>' +
     '</tbody></table>';
   html += '</div>';
@@ -7449,8 +7840,8 @@ async function renderCatalogoCompartido(){
     '  <div style="font-size:12.5px;color:var(--muted);margin-bottom:14px;line-height:1.55">Es un catálogo <b>público entre los negocios que optan por compartir</b>: si activás esto, tus productos (nombre, categoría y unidad, por su <b>código de barras</b>) se suman al pool y, a cambio, cuando cargás un producto podés autocompletar los datos de cualquier código que ya esté en el pool — vos solo ponés tu costo y tu precio. <b>Nunca se comparten costos ni precios.</b></div>' +
     '  <label class="recibo-toggle" style="margin-bottom:12px"><span>Compartir mi catálogo (aportar y acceder)</span><input id="cat-share" type="checkbox"' + (cfg.compartir ? ' checked' : '') + '></label>' +
     '  <div style="display:flex;gap:10px;flex-wrap:wrap">' +
-    '    <div style="flex:1;min-width:140px;background:#f8f9ff;border:1px solid var(--border);border-radius:10px;padding:12px 14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Aportados por vos</div><div style="font-size:22px;font-weight:800">' + (cfg.aportados || 0) + '</div></div>' +
-    '    <div style="flex:1;min-width:140px;background:#f8f9ff;border:1px solid var(--border);border-radius:10px;padding:12px 14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Total en el pool</div><div style="font-size:22px;font-weight:800">' + (cfg.pool_total || 0) + '</div></div>' +
+    '    <div style="flex:1;min-width:140px;background:#F1F5F4;border:1px solid var(--border);border-radius:10px;padding:12px 14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Aportados por vos</div><div style="font-size:22px;font-weight:800">' + (cfg.aportados || 0) + '</div></div>' +
+    '    <div style="flex:1;min-width:140px;background:#F1F5F4;border:1px solid var(--border);border-radius:10px;padding:12px 14px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Total en el pool</div><div style="font-size:22px;font-weight:800">' + (cfg.pool_total || 0) + '</div></div>' +
     '  </div>' +
     '  <div id="cat-msg" style="font-size:12.5px;margin-top:12px;line-height:1.5"></div>' +
     '</div>';
@@ -7514,9 +7905,9 @@ async function renderFacturasRecibidas(){
 
   let html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap">' +
     '<h3 style="font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:0">📥 Facturas / remitos recibidos</h3>' +
-    '<button id="frec-add" type="button" style="padding:9px 16px;border-radius:50px;border:1.5px solid var(--primary);background:rgba(124,58,237,.06);color:var(--primary);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">＋ Cargar factura/remito</button>' +
+    '<button id="frec-add" type="button" style="padding:9px 16px;border-radius:50px;border:1.5px solid var(--primary);background:rgba(15,118,110,.06);color:var(--primary);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">＋ Cargar factura/remito</button>' +
     '</div>' +
-    '<div style="font-size:12px;color:var(--ink);background:rgba(124,58,237,.06);border-radius:8px;padding:8px 10px;margin-bottom:12px">ℹ️ Guardá acá las facturas y remitos de tus <b>compras</b> (foto o PDF), con proveedor, número, fecha y monto. Quedan archivados para consulta. (Próximamente: leer la foto y autocargar el stock.)</div>';
+    '<div style="font-size:12px;color:var(--ink);background:rgba(15,118,110,.06);border-radius:8px;padding:8px 10px;margin-bottom:12px">ℹ️ Guardá acá las facturas y remitos de tus <b>compras</b> (foto o PDF), con proveedor, número, fecha y monto. Quedan archivados para consulta. (Próximamente: leer la foto y autocargar el stock.)</div>';
 
   if (!lista.length) {
     html += '<div class="env-empty" style="background:#fff;border:1px solid var(--border);border-radius:14px">Todavía no cargaste facturas recibidas.</div>';

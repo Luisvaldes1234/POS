@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#1a1a2e">
+<meta name="theme-color" content="#F8F9FA">
 <meta name="description" content="Acceso al punto de venta en mostrador.">
-<title>POS · Acceso</title>
+<title>POS Mostrador · Iniciar sesión</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="manifest" href="manifest.webmanifest">
@@ -13,29 +13,35 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  :root{--primary:#7C3AED;--primary-dark:#6d28d9;--ink:#0a0a14;--ink2:#1a1a2e;--muted:#94a3b8;--border:rgba(255,255,255,.1)}
-  html,body{height:100%;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}
-  body{display:flex;align-items:center;justify-content:center;padding:20px;color:#fff;
-    background:linear-gradient(135deg,#1a1a2e 0%,#0a0a14 100%)}
-  .card{background:rgba(255,255,255,.05);border:1.5px solid var(--border);border-radius:24px;padding:34px 30px;max-width:380px;width:100%;backdrop-filter:blur(10px);box-shadow:0 24px 60px rgba(0,0,0,.4)}
-  .logo{font-size:26px;font-weight:800;background:linear-gradient(135deg,#7C3AED,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center}
-  .sub{font-size:13px;color:var(--muted);text-align:center;margin-top:6px;margin-bottom:26px}
-  label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block;margin-bottom:6px}
-  input{width:100%;padding:13px 15px;border-radius:12px;border:1.5px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;font-family:inherit;outline:none;margin-bottom:16px;transition:border .15s}
-  input:focus{border-color:var(--primary)}
-  button{width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#7C3AED,#a855f7);color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:filter .15s}
-  button:hover:not(:disabled){filter:brightness(1.08)}
-  button:disabled{opacity:.5;cursor:not-allowed}
-  .msg{font-size:12.5px;text-align:center;margin-top:16px;min-height:18px;line-height:1.4}
-  .msg.err{color:#fca5a5}
-  .msg.ok{color:#6ee7b7}
-  .foot{font-size:11px;color:var(--muted);text-align:center;margin-top:22px;line-height:1.5}
+  :root{--primary:#0F766E;--primary-dark:#0D5C56;--primary-soft:#E6F2F1;--accent:#E07A5F;--bg:#F8F9FA;--surface:#fff;--text:#1A1A1A;--muted:#64748B;--border:#E2E8F0;--danger:#B42318;--success:#047857}
+  html,body{min-height:100%;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  body{display:flex;align-items:center;justify-content:center;padding:24px 16px;color:var(--text);background:var(--bg)}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px 32px;max-width:400px;width:100%;box-shadow:0 1px 2px rgba(16,24,40,.05),0 12px 32px -12px rgba(16,24,40,.12)}
+  @media(max-width:480px){.card{padding:28px 20px}}
+  .logo{display:flex;align-items:center;justify-content:center;gap:10px;font-size:22px;font-weight:700;letter-spacing:-.02em;color:var(--primary-dark)}
+  .logo svg{width:32px;height:32px}
+  .sub{font-size:14px;color:var(--muted);text-align:center;margin-top:8px;margin-bottom:28px}
+  label{font-size:13px;font-weight:500;color:var(--text);display:block;margin-bottom:6px}
+  input,select{width:100%;padding:11px 14px;border-radius:10px;border:1px solid #CBD5E1;background:#fff;color:var(--text);font-size:15px;font-family:inherit;outline:none;margin-bottom:16px;transition:border-color .15s,box-shadow .15s}
+  input::placeholder{color:#94A3B8}
+  input:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(15,118,110,.15)}
+  button{width:100%;padding:13px;border-radius:10px;border:none;background:var(--primary);color:#fff;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s}
+  button:hover:not(:disabled){background:var(--primary-dark)}
+  button:focus-visible{outline:2px solid var(--primary);outline-offset:3px}
+  button:disabled{opacity:.55;cursor:not-allowed}
+  .msg{font-size:13.5px;text-align:center;margin-top:14px;min-height:18px;line-height:1.5}
+  .msg.err{color:var(--danger)}
+  .msg.ok{color:var(--success)}
+  .foot{font-size:14px;color:var(--muted);text-align:center;margin-top:24px;line-height:1.8}
+  .foot a{color:var(--primary);font-weight:600;text-decoration:none}
+  .foot a:hover{text-decoration:underline}
+  .foot a.back{color:var(--muted);font-weight:500}
 </style>
 </head>
 <body>
   <form class="card" id="login-form" autocomplete="on">
-    <div class="logo">⚡ POS Mostrador</div>
-    <div class="sub">Punto de venta para tiendas, kioscos y ferreterías</div>
+    <div class="logo"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#0F766E"/><g fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"><path d="M112 196 L140 120 H372 L400 196"/><path d="M112 196 a36 36 0 0 0 72 0 a36 36 0 0 0 72 0 a36 36 0 0 0 72 0 a36 36 0 0 0 72 0"/><path d="M136 244 V392 H376 V244"/><path d="M220 392 V316 H292 V392"/></g></svg>POS Mostrador</div>
+    <div class="sub">Iniciá sesión para abrir tu caja</div>
 
     <label for="email">Email</label>
     <input id="email" type="email" name="email" autocomplete="username" required placeholder="cajero@tienda.com">
@@ -45,8 +51,8 @@
 
     <button type="submit" id="btn">Ingresar</button>
     <div class="msg" id="msg"></div>
-    <div class="foot">¿No tenés cuenta? <a href="signup.html" style="color:#a855f7;font-weight:700;text-decoration:none">Creá una gratis</a><br>
-      <a href="index.html" style="color:var(--muted);text-decoration:none">← Volver al inicio</a></div>
+    <div class="foot">¿No tenés cuenta? <a href="signup.html">Creá una gratis</a><br>
+      <a class="back" href="index.html">← Volver al inicio</a></div>
   </form>
 
 <script>

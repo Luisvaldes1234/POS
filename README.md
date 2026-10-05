@@ -30,8 +30,14 @@ como archivos estáticos y se conecta directo a Supabase desde el navegador.
 - **Devoluciones y anulaciones** parciales o totales con reembolso.
 - **Facturación** (borrador + emisión vía edge function), combos, productos de
   peso variable, vencimientos.
-- **Envases retornables / comodato**: soporte completo heredado del sistema de
-  Reparto. En comercios sin envases retornables, el módulo se auto-oculta.
+- **Cuenta corriente**: pestaña con lo que deben los clientes (fiado), saldos a
+  favor, registrar pagos, movimientos, límite de deuda y recordatorio por
+  WhatsApp. Reemplaza al módulo de envases retornables, que queda apagado
+  (`ENVASES_ON = false` en `js/pos.js`).
+- **Stock nunca negativo**: si se vende sin stock, queda en 0 (trigger en
+  `stock_mostrador`, ver `sql/`).
+- **Vuelto en efectivo**: al cobrar en efectivo se pregunta con cuánto paga y se
+  muestra el vuelto (también en el recibo).
 - **Multi-tienda**, configuración de recibo (58/80mm/A4, datos fiscales,
   footer), impresión por iframe (compatible con iOS/PWA), bloqueo por
   inactividad y soporte offline básico vía service worker.

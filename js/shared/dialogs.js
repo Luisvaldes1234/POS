@@ -32,7 +32,7 @@
   .tmvdlg-acts{display:flex;gap:8px;justify-content:flex-end;padding:18px 22px 20px}
   .tmvdlg-btn{padding:10px 18px;border-radius:10px;border:1.5px solid #e2e8f0;background:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;color:#0f172a}
   .tmvdlg-btn:hover{background:#f8fafc}
-  .tmvdlg-btn.primary{border:none;color:#fff;background:#7C3AED}
+  .tmvdlg-btn.primary{border:none;color:#fff;background:#0F766E}
   .tmvdlg-btn.primary.warning{background:#f59e0b}
   .tmvdlg-btn.primary.danger{background:#ef4444}
   .tmvdlg-btn.primary.success{background:#10b981}

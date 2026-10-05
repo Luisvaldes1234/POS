@@ -5,45 +5,48 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#1a1a2e">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#FFFFFF">
 <meta name="apple-mobile-web-app-title" content="POS">
 <meta name="application-name" content="POS Mostrador">
 <meta name="description" content="Punto de venta en mostrador para tiendas de abarrotes, ferreterías y kioscos.">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="manifest" href="manifest.webmanifest">
-<title>POS · Mostrador</title>
+<title>POS Mostrador</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="js/shared/dialogs.js?v=41"></script>
-<script src="js/shared/errors.js?v=41"></script>
+<script src="js/shared/dialogs.js?v=42"></script>
+<script src="js/shared/errors.js?v=42"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   :root{
-    --primary:#7C3AED;--primary-dark:#6d28d9;
-    --ink:#0a0a14;--ink2:#1a1a2e;
-    --muted:#64748b;--light:#f8f9ff;
-    --border:rgba(124,58,237,.14);
-    --grad:linear-gradient(135deg,#7C3AED,#a855f7);
-    --success:#10b981;--danger:#ef4444;--warn:#f59e0b;
-    --bg:#f5f5fa;
+    --primary:#0F766E;--primary-dark:#0D5C56;--primary-soft:#E6F2F1;
+    --accent:#E07A5F;
+    --ink:#1A1A1A;--ink2:#FFFFFF;
+    --muted:#64748b;--light:#F1F5F4;
+    --border:#E2E8F0;
+    --grad:#0F766E;
+    --success:#10b981;--danger:#DC2626;--warn:#f59e0b;
+    --bg:#F8F9FA;
     --safe-top:env(safe-area-inset-top,0px);
     --safe-bot:env(safe-area-inset-bottom,0px);
     --topbar:60px;
   }
-  html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+  html,body{height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
   body{overflow:hidden}
 
   /* ── TOPBAR ───────────────────────────────────────── */
-  .topbar{position:fixed;top:0;left:0;right:0;height:calc(var(--topbar) + var(--safe-top));padding-top:var(--safe-top);background:var(--ink2);display:flex;align-items:center;padding-left:16px;padding-right:16px;gap:12px;z-index:100;border-bottom:1px solid rgba(124,58,237,.18)}
-  .topbar-logo{font-size:16px;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-  .topbar-org{font-size:13px;font-weight:600;color:rgba(255,255,255,.85);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .topbar{position:fixed;top:0;left:0;right:0;height:calc(var(--topbar) + var(--safe-top));padding-top:var(--safe-top);background:#fff;display:flex;align-items:center;padding-left:16px;padding-right:16px;gap:12px;z-index:100;border-bottom:1px solid var(--border)}
+  .topbar-logo{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700;letter-spacing:-.02em;color:var(--primary-dark);white-space:nowrap}
+  .topbar-org{font-size:13px;font-weight:500;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .topbar-tabs{display:flex;gap:4px;overflow-x:auto;min-width:0;flex-shrink:1;scrollbar-width:none;-webkit-overflow-scrolling:touch}
   .topbar-tabs::-webkit-scrollbar{display:none}
-  .topbar-tab{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.55);padding:6px 12px;border-radius:50px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;flex-shrink:0;white-space:nowrap}
-  .topbar-tab.active{background:var(--grad);border-color:transparent;color:#fff;box-shadow:0 4px 12px rgba(124,58,237,.4)}
-  .topbar-logout{background:none;border:none;color:rgba(255,255,255,.45);font-size:18px;cursor:pointer;padding:6px}
+  .topbar-tab{background:transparent;border:1px solid transparent;color:var(--muted);padding:7px 12px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:background .15s,color .15s;flex-shrink:0;white-space:nowrap}
+  .topbar-tab:hover{color:var(--ink);background:#F1F5F9}
+  .topbar-tab.active{background:var(--primary-soft);color:var(--primary-dark);font-weight:600}
+  .topbar-logout{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:6px;border-radius:8px}
+  .topbar-logout:hover{background:#F1F5F9;color:var(--ink)}
 
   /* ── CONTENT ──────────────────────────────────────── */
   .content{position:fixed;top:calc(var(--topbar) + var(--safe-top));bottom:0;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
@@ -82,8 +85,8 @@
   .prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
   .prod-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:12px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:6px;min-height:110px}
   .prod-card:active{transform:scale(.97)}
-  .prod-card:hover{border-color:var(--primary);box-shadow:0 6px 20px -4px rgba(124,58,237,.15)}
-  .prod-card.in-cart{border-color:var(--primary);background:rgba(124,58,237,.04)}
+  .prod-card:hover{border-color:var(--primary);box-shadow:0 6px 20px -4px rgba(15,118,110,.15)}
+  .prod-card.in-cart{border-color:var(--primary);background:rgba(15,118,110,.04)}
   .prod-card-name{font-size:13px;font-weight:700;color:var(--ink);line-height:1.25;flex:1}
   .prod-card-precio{font-size:16px;font-weight:800;color:var(--primary);font-variant-numeric:tabular-nums}
   .prod-card-stock{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);font-weight:500}
@@ -95,7 +98,7 @@
   .prod-row{display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:9px 14px;cursor:pointer;transition:border .15s}
   .prod-row:active{transform:scale(.99)}
   .prod-row:hover{border-color:var(--primary)}
-  .prod-row.in-cart{border-color:var(--primary);background:rgba(124,58,237,.05)}
+  .prod-row.in-cart{border-color:var(--primary);background:rgba(15,118,110,.05)}
   .prod-row .prod-card-name{flex:1;font-size:14px;font-weight:700;color:var(--ink);line-height:1.2}
   .prod-row-tags{display:inline-flex;gap:4px;flex-wrap:wrap;margin-left:6px;vertical-align:middle}
   .prod-row-tag{font-size:9px;font-weight:800;padding:1px 6px;border-radius:50px;letter-spacing:.02em;white-space:nowrap}
@@ -136,12 +139,12 @@
   .pos-cliente{margin-bottom:8px;position:relative}
   .pos-cliente-input,.pos-cliente input[type="text"]{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;font-weight:600;outline:none;background:#fff}
   .pos-cliente-input:focus{border-color:var(--primary)}
-  .pos-cliente-tag{display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,.08);color:var(--primary);padding:8px 14px;border-radius:50px;font-size:13px;font-weight:700}
+  .pos-cliente-tag{display:inline-flex;align-items:center;gap:8px;background:rgba(15,118,110,.08);color:var(--primary);padding:8px 14px;border-radius:50px;font-size:13px;font-weight:700}
   .pos-cliente-tag button{background:none;border:none;color:var(--primary);cursor:pointer;font-size:16px;line-height:1;padding:0}
   .pos-cliente-suggest{position:absolute;bottom:100%;left:0;right:0;background:#fff;border:1.5px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);max-height:240px;overflow-y:auto;margin-bottom:4px;display:none;z-index:10}
   .pos-cliente-suggest.show{display:block}
   .pos-cliente-suggest-item{padding:10px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;font-size:13px}
-  .pos-cliente-suggest-item:hover{background:rgba(124,58,237,.05)}
+  .pos-cliente-suggest-item:hover{background:rgba(15,118,110,.05)}
   .pos-cliente-suggest-item .nm{font-weight:600}
   .pos-cliente-suggest-item .tel{font-size:11px;color:var(--muted)}
 
@@ -153,18 +156,18 @@
   .pos-descuento-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;padding:6px 8px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:10px}
   .pos-descuento-row input{flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-variant-numeric:tabular-nums}
   .pos-descuento-row select{padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:white;cursor:pointer}
-  .pos-cli-historial{margin:8px 0 12px;padding:10px 12px;background:rgba(102,126,234,.04);border:1px solid rgba(102,126,234,.15);border-radius:10px;font-size:12.5px;line-height:1.45}
+  .pos-cli-historial{margin:8px 0 12px;padding:10px 12px;background:rgba(15,118,110,.04);border:1px solid rgba(15,118,110,.15);border-radius:10px;font-size:12.5px;line-height:1.45}
   .pos-cli-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:white;border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:500}
-  .dash-mini{display:flex;align-items:center;gap:6px;padding:4px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:50px;color:white;font-size:12px;font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums;transition:background .15s}
-  .dash-mini:hover{background:rgba(255,255,255,.18)}
+  .dash-mini{display:flex;align-items:center;gap:6px;padding:5px 12px;background:#fff;border:1px solid var(--border);border-radius:50px;color:var(--ink);font-size:12px;font-weight:500;cursor:pointer;font-variant-numeric:tabular-nums;transition:background .15s;white-space:nowrap}
+  .dash-mini:hover{background:#F1F5F9}
   .dash-mini #dash-monto{font-weight:800}
-  .pos-fact-toggle{display:flex;align-items:center;gap:8px;padding:7px 10px;margin-bottom:6px;background:rgba(102,126,234,.06);border:1px solid rgba(102,126,234,.18);border-radius:10px;cursor:pointer;font-size:13px;color:var(--ink);font-weight:500;user-select:none}
+  .pos-fact-toggle{display:flex;align-items:center;gap:8px;padding:7px 10px;margin-bottom:6px;background:rgba(15,118,110,.06);border:1px solid rgba(15,118,110,.18);border-radius:10px;cursor:pointer;font-size:13px;color:var(--ink);font-weight:500;user-select:none}
   .pos-fact-toggle input{cursor:pointer;width:18px;height:18px;accent-color:var(--primary)}
   .pos-fact-toggle .pos-fact-label{flex:1}
   .pos-fact-toggle select{margin-left:auto;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:white;cursor:pointer}
   .pos-pago-btn{padding:9px 8px;border:1.5px solid var(--border);background:#fff;border-radius:10px;cursor:pointer;font-family:inherit;font-weight:700;font-size:12.5px;color:var(--ink);display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;line-height:1.1;transition:all .15s}
   .pos-pago-btn:active{transform:scale(.97)}
-  .pos-pago-btn:hover:not(:disabled){border-color:var(--primary);background:rgba(124,58,237,.04)}
+  .pos-pago-btn:hover:not(:disabled){border-color:var(--primary);background:rgba(15,118,110,.04)}
   .pos-pago-btn:disabled{opacity:.4;cursor:not-allowed}
   .pos-pago-btn .ico{font-size:16px}
   .pos-pago-btn.full{grid-column:1/-1;background:var(--grad);color:#fff;border-color:transparent}
@@ -227,10 +230,10 @@
   .caja-title{font-size:18px;font-weight:800}
   .caja-badge{padding:4px 12px;border-radius:50px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
   .caja-badge.abierta{background:rgba(16,185,129,.12);color:var(--success);border:1.5px solid rgba(16,185,129,.3)}
-  .caja-badge.cerrada{background:rgba(124,58,237,.08);color:var(--primary);border:1.5px solid rgba(124,58,237,.2)}
+  .caja-badge.cerrada{background:rgba(15,118,110,.08);color:var(--primary);border:1.5px solid rgba(15,118,110,.2)}
   .caja-meta{font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5}
   .caja-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-  .caja-stat{background:#f8f9ff;border:1px solid var(--border);border-radius:12px;padding:12px}
+  .caja-stat{background:#F1F5F4;border:1px solid var(--border);border-radius:12px;padding:12px}
   .caja-stat-l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
   .caja-stat-v{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
   .caja-form{display:flex;flex-direction:column;gap:10px}
@@ -247,7 +250,7 @@
   /* ── Historial cliente ──────────────────────────────── */
   .pos-historial{margin-bottom:8px}
   .pos-historial-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
-  .pos-historial-stat{background:#f8f9ff;border:1px solid var(--border);border-radius:10px;padding:8px 10px;text-align:center}
+  .pos-historial-stat{background:#F1F5F4;border:1px solid var(--border);border-radius:10px;padding:8px 10px;text-align:center}
   .pos-historial-stat.deuda{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.3)}
   .pos-historial-stat.favor{background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.3)}
   .pos-historial-l{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
@@ -256,21 +259,22 @@
   .pos-historial-stat.favor .pos-historial-v{color:var(--success)}
 
   /* ── Envases retornados ─────────────────────────────── */
-  .pos-envases{background:rgba(124,58,237,.04);border:1.5px solid rgba(124,58,237,.18);border-radius:14px;padding:10px 12px;margin-bottom:10px}
+  .pos-envases{background:rgba(15,118,110,.04);border:1.5px solid rgba(15,118,110,.18);border-radius:14px;padding:10px 12px;margin-bottom:10px}
   .pos-envases-h{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;color:var(--ink);margin-bottom:6px}
   .pos-envases-info{font-size:11px;color:var(--muted);font-weight:600}
   .pos-envases-stepper{display:flex;align-items:center;gap:8px}
   .pos-envases-stepper button{width:36px;height:36px;border-radius:10px;border:1.5px solid var(--border);background:#fff;font-size:18px;font-weight:700;cursor:pointer}
-  .pos-envases-stepper button:hover{background:#f8f9ff}
+  .pos-envases-stepper button:hover{background:#F1F5F4}
   .pos-envases-stepper input{flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:15px;font-weight:700;text-align:center;outline:none;-moz-appearance:textfield}
   .pos-envases-stepper input::-webkit-outer-spin-button,.pos-envases-stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 
   /* ── Selector de tienda en topbar ───────────────────── */
   .topbar-tienda{padding:6px 12px;border-radius:50px;border:1.5px solid var(--border);background:#fff;font-family:inherit;font-size:12px;font-weight:600;color:var(--ink);cursor:pointer;outline:none;max-width:180px}
   .topbar-tienda:focus{border-color:var(--primary)}
-  .topbar-tienda:hover{background:#f8f9ff}
+  .topbar-tienda:hover{background:#F1F5F4}
   @media (max-width: 760px){.topbar-tienda{max-width:120px}}
   @media (max-width: 980px){.topbar-org{display:none}}
+  @media (max-width: 1280px){.topbar-logo span{display:none}}
 
   /* ── Pantallas chicas (celular / tablet en vertical) ── */
   @media (max-width: 560px){
@@ -294,14 +298,14 @@
   /* ── Tab Tiendas (CRUD) ─────────────────────────────── */
   .tiendas-wrap{max-width:680px;margin:0 auto;padding:20px}
   .tienda-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px}
-  .tienda-card.principal{border-color:var(--primary);background:rgba(124,58,237,.04)}
+  .tienda-card.principal{border-color:var(--primary);background:rgba(15,118,110,.04)}
   .tienda-card.inactiva{opacity:.55}
   .tienda-card-info{flex:1;min-width:0}
   .tienda-card-nm{font-size:15px;font-weight:800;display:flex;align-items:center;gap:6px}
   .tienda-card-nm .pp{font-size:9px;background:var(--primary);color:#fff;padding:2px 8px;border-radius:50px;letter-spacing:.04em;text-transform:uppercase}
   .tienda-card-meta{font-size:12px;color:var(--muted);margin-top:2px}
   .tienda-card-actions button{padding:6px 12px;border-radius:50px;border:1px solid var(--border);background:#fff;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;margin-left:6px}
-  .tienda-card-actions button:hover{background:#f8f9ff}
+  .tienda-card-actions button:hover{background:#F1F5F4}
 
   /* ── Edit button + warning chip en product card ──────── */
   .prod-card{position:relative}
@@ -309,23 +313,23 @@
   .prod-card:hover .prod-card-edit{opacity:1}
   .prod-card-edit:hover{transform:scale(1.1)}
   .prod-card-warn{position:absolute;top:6px;left:6px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.4);color:#b45309;font-size:9px;font-weight:700;padding:2px 6px;border-radius:50px;letter-spacing:.02em}
-  .prod-card-combo{position:absolute;top:6px;left:6px;background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.4);color:#7c3aed;font-size:9px;font-weight:700;padding:2px 6px;border-radius:50px;letter-spacing:.02em}
+  .prod-card-combo{position:absolute;top:6px;left:6px;background:rgba(15,118,110,.12);border:1px solid rgba(15,118,110,.4);color:#0F766E;font-size:9px;font-weight:700;padding:2px 6px;border-radius:50px;letter-spacing:.02em}
   .prod-card-peso{position:absolute;bottom:6px;right:34px;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.4);color:#2563eb;font-size:11px;font-weight:700;padding:0 5px;border-radius:50%;line-height:1;width:20px;height:20px;display:flex;align-items:center;justify-content:center}
   .prod-card-fav{position:absolute;bottom:6px;left:6px;background:rgba(245,158,11,.18);border:1px solid rgba(245,158,11,.5);color:#b45309;font-size:10px;font-weight:800;padding:1px 6px;border-radius:50px;letter-spacing:.04em}
 
   /* ── Toggle comodato/venta del envase en el cart ─────── */
   .cart-item-envase{display:inline-block;margin-top:4px;padding:3px 8px;border-radius:50px;font-size:10px;font-weight:700;cursor:pointer;user-select:none;border:1.5px solid;letter-spacing:.02em}
-  .cart-item-envase.comodato{background:rgba(124,58,237,.06);border-color:rgba(124,58,237,.25);color:var(--primary)}
+  .cart-item-envase.comodato{background:rgba(15,118,110,.06);border-color:rgba(15,118,110,.25);color:var(--primary)}
   .cart-item-envase.venta{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.35);color:#b45309}
   .cart-item-envase:hover{filter:brightness(1.05)}
 
   /* ── Catálogo: barcode + alta ───────────────────────── */
   .prod-search{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
   .prod-search > input{flex:1;min-width:160px}
-  .prod-search #barcode-input{flex:0 0 220px;border:1.5px solid rgba(124,58,237,.25);background:rgba(124,58,237,.04);color:var(--ink);padding:10px 14px;border-radius:50px;font-family:inherit;font-size:13px;outline:none;font-variant-numeric:tabular-nums}
+  .prod-search #barcode-input{flex:0 0 220px;border:1.5px solid rgba(15,118,110,.25);background:rgba(15,118,110,.04);color:var(--ink);padding:10px 14px;border-radius:50px;font-family:inherit;font-size:13px;outline:none;font-variant-numeric:tabular-nums}
   .prod-search #barcode-input:focus{border-color:var(--primary);background:#fff}
-  .btn-add-prod{padding:10px 16px;border-radius:50px;border:1.5px solid var(--primary);background:rgba(124,58,237,.06);color:var(--primary);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0}
-  .btn-add-prod:hover{background:rgba(124,58,237,.12)}
+  .btn-add-prod{padding:10px 16px;border-radius:50px;border:1.5px solid var(--primary);background:rgba(15,118,110,.06);color:var(--primary);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0}
+  .btn-add-prod:hover{background:rgba(15,118,110,.12)}
   .btn-add-prod.activo{background:var(--primary);color:#fff}
 
   /* ── Modales (alta producto + carga stock) ──────────── */
@@ -335,7 +339,7 @@
   /* Dentro de modales flex-column, los selects/inputs no deben comprimirse
      (si no, el texto queda cortado). El cuerpo del modal scrollea en su lugar. */
   .qr-modal-body > select,.qr-modal-body > input,.qr-modal-body > label{flex-shrink:0}
-  .carga-row{display:grid;grid-template-columns:1fr 100px 100px;gap:8px;align-items:center;padding:6px 8px;background:#f8f9ff;border:1px solid var(--border);border-radius:10px}
+  .carga-row{display:grid;grid-template-columns:1fr 100px 100px;gap:8px;align-items:center;padding:6px 8px;background:#F1F5F4;border:1px solid var(--border);border-radius:10px}
   .carga-row-name{font-weight:700;font-size:13px}
   .carga-row-cur{font-size:11px;color:var(--muted);text-align:center}
   .carga-row-input{padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;font-weight:700;text-align:right;outline:none;background:#fff;width:100%;-moz-appearance:textfield}
@@ -348,8 +352,8 @@
   .env-tipo-cap{font-size:11px;color:var(--muted);font-weight:600}
   .env-tipo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
   @media (max-width: 600px){.env-tipo-grid{grid-template-columns:repeat(2,1fr)}}
-  .env-col{background:#f8f9ff;border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center}
-  .env-col.comodato{background:rgba(124,58,237,.04);border-color:rgba(124,58,237,.18)}
+  .env-col{background:#F1F5F4;border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center}
+  .env-col.comodato{background:rgba(15,118,110,.04);border-color:rgba(15,118,110,.18)}
   .env-col-icon{font-size:18px}
   .env-col-l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-top:2px}
   .env-col-v{font-size:20px;font-weight:900;font-variant-numeric:tabular-nums;margin-top:2px}
@@ -367,7 +371,7 @@
   .env-kpi{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:14px}
   .env-kpi-l{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
   .env-kpi-v{font-size:28px;font-weight:900;margin-top:4px;font-variant-numeric:tabular-nums}
-  .env-kpi.hl .env-kpi-v{background:linear-gradient(135deg,var(--primary),#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .env-kpi.hl .env-kpi-v{color:var(--primary)}
   .env-section{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px}
   .env-section h3{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
   .env-row{display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid var(--border);font-size:13px}
@@ -382,7 +386,7 @@
   .cfg-subnav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
   .cfg-subnav button{padding:8px 16px;border-radius:50px;border:1.5px solid var(--border);background:#fff;font-family:inherit;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;transition:all .15s}
   .cfg-subnav button:hover{border-color:var(--primary);color:var(--primary)}
-  .cfg-subnav button.active{background:var(--grad);border-color:transparent;color:#fff;box-shadow:0 4px 12px rgba(124,58,237,.3)}
+  .cfg-subnav button.active{background:var(--grad);border-color:transparent;color:#fff;box-shadow:0 4px 12px rgba(15,118,110,.3)}
 
   /* ── Tab Recibo (config) ────────────────────────────── */
   .recibo-wrap{max-width:560px;margin:0 auto;padding:20px}
@@ -394,31 +398,47 @@
   .recibo-papel-grid label{display:flex;align-items:center;justify-content:center;padding:10px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;text-align:center}
   .recibo-papel-grid input[type=radio]{display:none}
   .recibo-papel-grid input[type=radio]:checked + span{color:var(--primary);font-weight:800}
-  .recibo-papel-grid label:has(input:checked){border-color:var(--primary);background:rgba(124,58,237,.04)}
+  .recibo-papel-grid label:has(input:checked){border-color:var(--primary);background:rgba(15,118,110,.04)}
   .recibo-toggle{display:flex;align-items:center;justify-content:space-between;padding:10px 0;font-size:13px}
   .recibo-toggle input{transform:scale(1.2)}
 
   /* ── Cobro mixto ────────────────────────────────────── */
-  .mix-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;background:#f8f9ff;border:1.5px solid var(--border);border-radius:12px;margin-bottom:6px;font-weight:700}
+  .mix-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;background:#F1F5F4;border:1.5px solid var(--border);border-radius:12px;margin-bottom:6px;font-weight:700}
   .mix-row span{font-size:14px}
   .mix-row input{width:130px;padding:8px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;text-align:right;outline:none}
   .mix-row input:focus{border-color:var(--primary)}
 
+  /* ── Cuenta corriente ───────────────────────────────── */
+  .cc-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:14px;align-items:center;padding:14px 16px;border-top:1px solid var(--border)}
+  .cc-row:first-child{border-top:none}
+  .cc-nm{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cc-sub{font-size:12px;color:var(--muted);margin-top:2px}
+  .cc-saldo{text-align:right;font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .cc-acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .cc-tag{font-size:10px;font-weight:600;color:var(--muted);background:#F1F5F9;border-radius:50px;padding:2px 7px;vertical-align:middle}
+  .cc-btn{padding:8px 12px;border:1px solid var(--border);background:#fff;border-radius:8px;font-family:inherit;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;white-space:nowrap}
+  .cc-btn:hover{border-color:#94A3B8}
+  .cc-btn-pri{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600}
+  .cc-btn-pri:hover{background:var(--primary-dark);border-color:var(--primary-dark)}
+  .cc-met{padding:11px;border:1.5px solid var(--border);background:#fff;border-radius:10px;font-family:inherit;font-size:14px;font-weight:500;cursor:pointer}
+  .cc-met.on{border-color:var(--primary);background:var(--primary-soft);color:var(--primary-dark);font-weight:600}
+  @media (max-width:700px){.cc-row{grid-template-columns:1fr auto}.cc-acts{grid-column:1/-1;justify-content:flex-start}}
+
   /* ── Lock overlay ───────────────────────────────────── */
-  .lock-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e 0%,#0a0a14 100%);z-index:400;display:none;align-items:center;justify-content:center;padding:20px;color:#fff}
+  .lock-overlay{position:fixed;inset:0;background:var(--bg);z-index:400;display:none;align-items:center;justify-content:center;padding:20px;color:var(--ink)}
   .lock-overlay.show{display:flex}
-  .lock-modal{background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);border-radius:24px;padding:32px;max-width:380px;width:100%;text-align:center;backdrop-filter:blur(8px)}
+  .lock-modal{background:#fff;border:1px solid var(--border);border-radius:16px;padding:32px;max-width:380px;width:100%;text-align:center;box-shadow:0 12px 32px -12px rgba(16,24,40,.12)}
   .lock-icon{font-size:48px;margin-bottom:12px}
   .lock-title{font-size:22px;font-weight:800;margin-bottom:6px}
-  .lock-sub{font-size:13px;color:rgba(255,255,255,.6);margin-bottom:20px}
-  .lock-modal input{width:100%;padding:14px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:#fff;font-size:14px;font-family:inherit;margin-bottom:12px;outline:none;text-align:center}
+  .lock-sub{font-size:13px;color:var(--muted);margin-bottom:20px}
+  .lock-modal input{width:100%;padding:14px 16px;border-radius:10px;border:1px solid #CBD5E1;background:#fff;color:var(--ink);font-size:14px;font-family:inherit;margin-bottom:12px;outline:none;text-align:center}
   .lock-modal input:focus{border-color:var(--primary)}
   .lock-modal button{width:100%;padding:14px;border-radius:12px;border:none;background:var(--primary);color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px}
-  .lock-modal .lock-logout{background:transparent;color:rgba(255,255,255,.5);font-size:12px;font-weight:500}
-  .lock-modal .lock-logout:hover{color:#fff}
+  .lock-modal .lock-logout{background:transparent;color:var(--muted);font-size:12px;font-weight:500}
+  .lock-modal .lock-logout:hover{color:var(--ink)}
 
   /* ── QR MercadoPago ─────────────────────────────────── */
-  .qr-overlay{position:fixed;inset:0;background:rgba(10,10,20,.78);z-index:250;display:none;align-items:center;justify-content:center;padding:20px;padding-top:calc(var(--topbar) + var(--safe-top) + 16px)}
+  .qr-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:250;display:none;align-items:center;justify-content:center;padding:20px;padding-top:calc(var(--topbar) + var(--safe-top) + 16px)}
   .qr-overlay.show{display:flex}
   .qr-modal{background:#fff;border-radius:24px;width:100%;max-width:480px;max-height:calc(100vh - var(--topbar) - var(--safe-top) - 32px);overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.35)}
   .qr-modal-h{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0}
@@ -450,17 +470,17 @@
   .qr-foot-btn:disabled{opacity:.5;cursor:not-allowed}
   /* Toggle De a uno / Listado completo en el modal de carga de mercadería. */
   .carga-modo-btn{flex:1;padding:9px 10px;border-radius:50px;border:1.5px solid var(--border);background:#fff;color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
-  .carga-modo-btn.active{background:rgba(124,58,237,.08);border-color:var(--primary);color:var(--primary)}
+  .carga-modo-btn.active{background:rgba(15,118,110,.08);border-color:var(--primary);color:var(--primary)}
   /* Ícono de información (ⓘ): al pasar el cursor (o tocar) muestra un tooltip
      propio (#pos-tip) explicando qué es y cómo se calcula la métrica. */
   .info-i{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;font-size:9px;font-weight:800;font-style:normal;font-family:Georgia,'Times New Roman',serif;color:var(--muted);border:1.3px solid currentColor;cursor:help;vertical-align:middle;opacity:.55;line-height:1;user-select:none;margin-left:4px;flex:0 0 auto}
   .info-i:hover,.info-i:focus{opacity:1;color:var(--primary);outline:none}
   #pos-tip{position:fixed;z-index:9999;max-width:min(280px,90vw);background:#0a0a14;color:#fff;font-size:12px;line-height:1.45;padding:9px 12px;border-radius:9px;box-shadow:0 10px 30px rgba(0,0,0,.35);pointer-events:none;opacity:0;transform:translateY(3px);transition:opacity .12s,transform .12s;white-space:normal;left:0;top:0}
   #pos-tip.show{opacity:1;transform:none}
-  .qr-img-wrap{width:280px;height:280px;display:flex;align-items:center;justify-content:center;background:#f8f9ff;border-radius:18px;border:1.5px solid var(--border);overflow:hidden}
+  .qr-img-wrap{width:280px;height:280px;display:flex;align-items:center;justify-content:center;background:#F1F5F4;border-radius:18px;border:1.5px solid var(--border);overflow:hidden}
   .qr-img-wrap img{width:100%;height:100%;object-fit:contain}
   .qr-status{font-size:13px;font-weight:700;padding:8px 16px;border-radius:50px;text-align:center}
-  .qr-status.wait{background:rgba(124,58,237,.08);color:var(--primary)}
+  .qr-status.wait{background:rgba(15,118,110,.08);color:var(--primary)}
   .qr-status.ok{background:rgba(16,185,129,.08);color:var(--success)}
   .qr-status.err{background:rgba(239,68,68,.08);color:var(--danger)}
   .qr-monto{font-size:32px;font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums}
@@ -501,8 +521,8 @@
   .nc-actions button{padding:11px;border-radius:10px;border:1.5px solid var(--border);background:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
   .nc-actions .btn-primary{background:var(--grad);color:#fff;border-color:transparent}
 
-  .pos-cliente-add-btn{padding:8px 12px;border:1.5px dashed var(--primary);background:rgba(124,58,237,.04);color:var(--primary);border-radius:10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;width:100%;margin-top:6px}
-  .pos-cliente-add-btn:hover{background:rgba(124,58,237,.08)}
+  .pos-cliente-add-btn{padding:8px 12px;border:1.5px dashed var(--primary);background:rgba(15,118,110,.04);color:var(--primary);border-radius:10px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;width:100%;margin-top:6px}
+  .pos-cliente-add-btn:hover{background:rgba(15,118,110,.08)}
 
   /* ── DATE PICKER ──────────────────────────────────── */
   .ventas-toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
@@ -549,12 +569,12 @@
   body.print-a4   @page{size:A4;margin:15mm}
   @page{size:80mm auto;margin:2mm}
 </style>
-  <script src="js/sentry-init.js?v=41" defer></script>
+  <script src="js/sentry-init.js?v=42" defer></script>
 </head>
 <body>
 
 <div class="topbar">
-  <div class="topbar-logo">⚡ POS</div>
+  <div class="topbar-logo"><svg viewBox="0 0 512 512" aria-hidden="true" style="width:26px;height:26px;flex-shrink:0"><rect width="512" height="512" rx="112" fill="#0F766E"/><g fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"><path d="M112 196 L140 120 H372 L400 196"/><path d="M112 196 a36 36 0 0 0 72 0 a36 36 0 0 0 72 0 a36 36 0 0 0 72 0 a36 36 0 0 0 72 0"/><path d="M136 244 V392 H376 V244"/><path d="M220 392 V316 H292 V392"/></g></svg><span>POS Mostrador</span></div>
   <div class="topbar-org" id="t-org">—</div>
   <select class="topbar-tienda" id="t-tienda" title="Cambiar de tienda">
     <option value="">— Cargando tiendas… —</option>
@@ -565,7 +585,7 @@
     <button class="topbar-tab"        data-tab="reservas" onclick="goTab('reservas')">Reservas <span id="reservas-badge" style="display:none;background:#f59e0b;color:white;padding:1px 6px;border-radius:10px;font-size:10px;margin-left:2px"></span></button>
     <button class="topbar-tab"        data-tab="reportes" onclick="goTab('reportes')">Reportes</button>
     <button class="topbar-tab"        data-tab="stock"   onclick="goTab('stock')">Stock</button>
-    <button class="topbar-tab"        data-tab="envases" onclick="goTab('envases')">Envases</button>
+    <button class="topbar-tab"        data-tab="cuentas" onclick="goTab('cuentas')">Cuenta corriente</button>
     <button class="topbar-tab"        data-tab="caja"    onclick="goTab('caja')">Caja</button>
     <button class="topbar-tab"        data-tab="finanzas" onclick="goTab('finanzas')" id="tab-finanzas-btn" style="display:none">📈 Finanzas</button>
     <button class="topbar-tab"        data-tab="config" onclick="goTab('config')" id="tab-config-btn" style="display:none">⚙️ Configuración</button>
@@ -619,7 +639,7 @@
             </div>
             <div id="env-rows" style="display:flex;flex-direction:column;gap:6px"></div>
             <button type="button" id="env-add" class="pos-envases-add"
-              style="margin-top:6px;width:100%;padding:8px 10px;border:1.5px dashed rgba(124,58,237,.35);border-radius:10px;background:#fff;color:var(--ink);font-size:12px;font-weight:600;cursor:pointer">
+              style="margin-top:6px;width:100%;padding:8px 10px;border:1.5px dashed rgba(15,118,110,.35);border-radius:10px;background:#fff;color:var(--ink);font-size:12px;font-weight:600;cursor:pointer">
               + Agregar tipo
             </button>
             <button type="button" id="btn-solo-devolver" onclick="window._posSoloDevolver()"
@@ -697,10 +717,10 @@
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <input id="corte-global-fecha" type="date" onchange="cargarCorteGlobal()" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px">
             <button onclick="cargarCorteGlobal()" style="padding:8px 14px;border:1px solid var(--border);background:white;color:var(--ink);border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">↻ Ver</button>
-            <button onclick="imprimirCorteGlobal()" style="padding:8px 14px;border:1px solid rgba(124,58,237,.3);background:rgba(124,58,237,.08);color:#7c3aed;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">🖨 Imprimir</button>
+            <button onclick="imprimirCorteGlobal()" style="padding:8px 14px;border:1px solid rgba(15,118,110,.3);background:rgba(15,118,110,.08);color:#0F766E;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">🖨 Imprimir</button>
           </div>
         </div>
-        <div style="font-size:12px;color:var(--ink);background:rgba(124,58,237,.06);border-radius:8px;padding:8px 10px;margin-bottom:12px">ℹ️ Consolidado de <b>TODOS los cortes del día</b> (todas las cajas y cajeros): aperturas, ventas por método, ingresos/egresos y diferencia total. Cambiá la fecha para ver días pasados.</div>
+        <div style="font-size:12px;color:var(--ink);background:rgba(15,118,110,.06);border-radius:8px;padding:8px 10px;margin-bottom:12px">ℹ️ Consolidado de <b>TODOS los cortes del día</b> (todas las cajas y cajeros): aperturas, ventas por método, ingresos/egresos y diferencia total. Cambiá la fecha para ver días pasados.</div>
         <div id="corte-global-content"><div style="text-align:center;padding:20px;color:var(--muted)">Cargando…</div></div>
       </div>
 
@@ -709,7 +729,7 @@
           <h2 style="margin:0;font-size:20px;display:flex;align-items:center">🧾 Cortes de caja<span class="info-i" tabindex="0" data-tip="Cajas ya cerradas (cierres Z). Cada fila muestra el cierre, el cajero, el horario del turno, lo declarado y la diferencia. Tocá &quot;Ver Z&quot; para reimprimir el corte aunque la caja se haya cerrado hace días.">i</span></h2>
           <button onclick="cargarCortesCaja()" style="padding:8px 14px;border:1px solid var(--border);background:white;color:var(--ink);border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">↻ Refrescar</button>
         </div>
-        <div style="font-size:12px;color:var(--ink);background:rgba(124,58,237,.06);border-radius:8px;padding:8px 10px;margin-bottom:12px">ℹ️ Cajas ya cerradas. Tocá <b>Ver Z</b> para abrir y reimprimir el corte (ventas por método de pago, productos y movimientos), aunque la caja se haya cerrado hace días.</div>
+        <div style="font-size:12px;color:var(--ink);background:rgba(15,118,110,.06);border-radius:8px;padding:8px 10px;margin-bottom:12px">ℹ️ Cajas ya cerradas. Tocá <b>Ver Z</b> para abrir y reimprimir el corte (ventas por método de pago, productos y movimientos), aunque la caja se haya cerrado hace días.</div>
         <div id="cortes-content"><div style="text-align:center;padding:20px;color:var(--muted)">Cargando…</div></div>
       </div>
 
@@ -748,9 +768,9 @@
     </div>
   </div>
 
-  <!-- ═══ ENVASES RETORNADOS ═══ -->
-  <div class="screen" id="screen-envases">
-    <div class="envases-wrap" id="envases-wrap">
+  <!-- ═══ CUENTA CORRIENTE ═══ -->
+  <div class="screen" id="screen-cuentas">
+    <div class="envases-wrap" id="cuentas-wrap" style="max-width:900px">
       <div style="text-align:center;padding:30px;color:var(--muted)">Cargando…</div>
     </div>
   </div>
@@ -900,7 +920,7 @@
               </div>
               <div>
                 <label class="prod-form-l">Margen</label>
-                <div id="prod-margen" class="prod-form-i" style="display:flex;align-items:center;font-weight:800;color:#059669;background:#f8f9ff">—</div>
+                <div id="prod-margen" class="prod-form-i" style="display:flex;align-items:center;font-weight:800;color:#059669;background:#F1F5F4">—</div>
               </div>
             </div>
             <div style="font-size:11px;color:var(--muted);margin-top:6px">💡 El margen y la ganancia se calculan con el precio de venta. Solo lo ven los administradores.</div>
@@ -909,7 +929,7 @@
           <label class="prod-form-l">Código de barras (opcional)</label>
           <input id="prod-barcode" type="text" placeholder="Escaneá o tipeá" class="prod-form-i" autocomplete="off">
 
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 0;font-size:13px">
+          <label style="display:none;align-items:center;gap:8px;cursor:pointer;padding:8px 0;font-size:13px">
             <input id="prod-tiene-envase" type="checkbox">
             <span>Es retornable (descuenta envases del cliente)</span>
           </label>
@@ -944,10 +964,10 @@
             <span>🎁 Es combo (descuenta stock de los componentes al vender)</span>
           </label>
 
-          <div id="prod-combo-wrap" style="display:none;background:rgba(124,58,237,.04);border:1px solid rgba(124,58,237,.2);border-radius:10px;padding:10px">
-            <div style="font-size:11px;font-weight:700;color:#7c3aed;text-transform:uppercase;margin-bottom:6px">Componentes del combo</div>
+          <div id="prod-combo-wrap" style="display:none;background:rgba(15,118,110,.04);border:1px solid rgba(15,118,110,.2);border-radius:10px;padding:10px">
+            <div style="font-size:11px;font-weight:700;color:#0F766E;text-transform:uppercase;margin-bottom:6px">Componentes del combo</div>
             <div id="prod-combo-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
-            <button type="button" id="prod-combo-add" style="padding:6px 10px;border:1px dashed rgba(124,58,237,.4);background:white;color:#7c3aed;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;width:100%">+ Agregar componente</button>
+            <button type="button" id="prod-combo-add" style="padding:6px 10px;border:1px dashed rgba(15,118,110,.4);background:white;color:#0F766E;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;width:100%">+ Agregar componente</button>
           </div>
 
         </form>
@@ -1027,7 +1047,7 @@
       <input id="stock-q" type="text" placeholder="🔎 Buscar producto o código de barras…" autocomplete="off"
         style="width:100%;padding:11px 16px;border:1.5px solid var(--border);border-radius:50px;font-family:inherit;font-size:14px;background:#fff;outline:none;margin-bottom:14px">
 
-      <div id="stock-envases-card" style="margin-bottom:18px"></div>
+      
 
       <div class="stock-list" id="stock-list"></div>
     </div>
@@ -1107,7 +1127,7 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=41"></script>
-<script src="js/pos.js?v=41"></script>
+<script src="js/config.js?v=42"></script>
+<script src="js/pos.js?v=42"></script>
 </body>
 </html>

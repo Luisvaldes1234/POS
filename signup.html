@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#1a1a2e">
+<meta name="theme-color" content="#F8F9FA">
 <meta name="description" content="Creá tu cuenta del POS Mostrador para tiendas, kioscos y ferreterías.">
-<title>POS · Crear cuenta</title>
+<title>POS Mostrador · Crear cuenta</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="manifest" href="manifest.webmanifest">
@@ -13,41 +13,49 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  :root{--primary:#7C3AED;--primary-dark:#6d28d9;--ink:#0a0a14;--ink2:#1a1a2e;--muted:#94a3b8;--border:rgba(255,255,255,.1)}
-  html,body{min-height:100%;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}
-  body{display:flex;align-items:center;justify-content:center;padding:20px;color:#fff;
-    background:linear-gradient(135deg,#1a1a2e 0%,#0a0a14 100%)}
-  .card{background:rgba(255,255,255,.05);border:1.5px solid var(--border);border-radius:24px;padding:32px 30px;max-width:440px;width:100%;backdrop-filter:blur(10px);box-shadow:0 24px 60px rgba(0,0,0,.4)}
-  .logo{font-size:24px;font-weight:800;background:linear-gradient(135deg,#7C3AED,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center}
-  .sub{font-size:13px;color:var(--muted);text-align:center;margin-top:6px;margin-bottom:24px}
-  .trial{display:inline-flex;gap:6px;align-items:center;background:rgba(124,58,237,.16);border:1px solid rgba(124,58,237,.35);color:#c4b5fd;font-size:11px;font-weight:700;padding:5px 12px;border-radius:50px;margin:0 auto 22px;width:fit-content}
+  :root{--primary:#0F766E;--primary-dark:#0D5C56;--primary-soft:#E6F2F1;--accent:#E07A5F;--bg:#F8F9FA;--surface:#fff;--text:#1A1A1A;--muted:#64748B;--border:#E2E8F0;--danger:#B42318;--success:#047857}
+  html,body{min-height:100%;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  body{display:flex;align-items:center;justify-content:center;padding:24px 16px;color:var(--text);background:var(--bg)}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px 32px;max-width:460px;width:100%;box-shadow:0 1px 2px rgba(16,24,40,.05),0 12px 32px -12px rgba(16,24,40,.12)}
+  @media(max-width:480px){.card{padding:28px 20px}}
+  .logo{display:flex;align-items:center;justify-content:center;gap:10px;font-size:22px;font-weight:700;letter-spacing:-.02em;color:var(--primary-dark)}
+  .logo svg{width:32px;height:32px}
+  .sub{font-size:14px;color:var(--muted);text-align:center;margin-top:8px;margin-bottom:28px}
+  label{font-size:13px;font-weight:500;color:var(--text);display:block;margin-bottom:6px}
+  input,select{width:100%;padding:11px 14px;border-radius:10px;border:1px solid #CBD5E1;background:#fff;color:var(--text);font-size:15px;font-family:inherit;outline:none;margin-bottom:16px;transition:border-color .15s,box-shadow .15s}
+  input::placeholder{color:#94A3B8}
+  input:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(15,118,110,.15)}
+  button{width:100%;padding:13px;border-radius:10px;border:none;background:var(--primary);color:#fff;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s}
+  button:hover:not(:disabled){background:var(--primary-dark)}
+  button:focus-visible{outline:2px solid var(--primary);outline-offset:3px}
+  button:disabled{opacity:.55;cursor:not-allowed}
+  .msg{font-size:13.5px;text-align:center;margin-top:14px;min-height:18px;line-height:1.5}
+  .msg.err{color:var(--danger)}
+  .msg.ok{color:var(--success)}
+  .foot{font-size:14px;color:var(--muted);text-align:center;margin-top:24px;line-height:1.8}
+  .foot a{color:var(--primary);font-weight:600;text-decoration:none}
+  .foot a:hover{text-decoration:underline}
+  .foot a.back{color:var(--muted);font-weight:500}
+  .trial{display:inline-flex;gap:8px;align-items:center;background:var(--primary-soft);color:var(--primary-dark);font-size:13px;font-weight:600;padding:6px 12px;border-radius:999px;margin:0 auto 24px;width:fit-content}
+  .trial::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--primary)}
   .trial-wrap{display:flex;justify-content:center}
-  label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block;margin-bottom:6px}
-  input,select{width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);background:rgba(255,255,255,.05);color:#fff;font-size:14px;font-family:inherit;outline:none;margin-bottom:14px;transition:border .15s}
-  select option{background:#1a1a2e;color:#fff}
-  input:focus,select:focus{border-color:var(--primary)}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  button{width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#7C3AED,#a855f7);color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:filter .15s;margin-top:4px}
-  button:hover:not(:disabled){filter:brightness(1.08)}
-  button:disabled{opacity:.5;cursor:not-allowed}
-  .msg{font-size:12.5px;text-align:center;margin-top:14px;min-height:18px;line-height:1.5}
-  .msg.err{color:#fca5a5}
-  .msg.ok{color:#6ee7b7}
-  .foot{font-size:12px;color:var(--muted);text-align:center;margin-top:20px;line-height:1.6}
-  .foot a{color:#a855f7;font-weight:700;text-decoration:none}
-  .done{display:none;text-align:center;padding:10px 0}
+  @media(max-width:420px){.row{grid-template-columns:1fr;gap:0}}
+  form button{margin-top:4px}
+  .done{display:none;text-align:center;padding:8px 0}
   .done.show{display:block}
-  .done .ico{font-size:46px}
-  .done h2{font-size:19px;font-weight:800;margin:10px 0 6px}
-  .done p{font-size:13.5px;color:var(--muted);line-height:1.6}
-  .terms{font-size:11px;color:var(--muted);text-align:center;margin-top:12px;line-height:1.5}
+  .done .ico{width:56px;height:56px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;margin:0 auto}
+  .done .ico svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+  .done h2{font-size:20px;font-weight:600;margin:16px 0 8px}
+  .done p{font-size:14.5px;color:var(--muted);line-height:1.6}
+  .terms{font-size:12.5px;color:var(--muted);text-align:center;margin-top:12px;line-height:1.5}
 </style>
 </head>
 <body>
   <div class="card">
-    <div class="logo">⚡ POS Mostrador</div>
+    <div class="logo"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#0F766E"/><g fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"><path d="M112 196 L140 120 H372 L400 196"/><path d="M112 196 a36 36 0 0 0 72 0 a36 36 0 0 0 72 0 a36 36 0 0 0 72 0 a36 36 0 0 0 72 0"/><path d="M136 244 V392 H376 V244"/><path d="M220 392 V316 H292 V392"/></g></svg>POS Mostrador</div>
     <div class="sub">Creá tu cuenta y empezá a vender en minutos</div>
-    <div class="trial-wrap"><span class="trial">🎁 14 días de prueba · sin tarjeta</span></div>
+    <div class="trial-wrap"><span class="trial">14 días de prueba · sin tarjeta</span></div>
 
     <form id="signup-form" autocomplete="on">
       <label for="business">Nombre de la organización / empresa *</label>
@@ -90,14 +98,14 @@
     </form>
 
     <div class="done" id="done">
-      <div class="ico">📧</div>
+      <div class="ico"><svg viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></div>
       <h2>¡Casi listo!</h2>
       <p id="done-text">Te enviamos un email para confirmar tu cuenta. Confirmala y después iniciá sesión para entrar al POS.</p>
       <button type="button" onclick="window.location.href='login.html'" style="margin-top:18px">Ir a iniciar sesión</button>
     </div>
 
     <div class="foot">¿Ya tenés cuenta? <a href="login.html">Iniciá sesión</a><br>
-      <a href="index.html" style="color:var(--muted)">← Volver al inicio</a></div>
+      <a class="back" href="index.html">← Volver al inicio</a></div>
   </div>
 
 <script>
