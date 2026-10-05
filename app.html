@@ -14,8 +14,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <title>POS Mostrador</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="js/shared/dialogs.js?v=46"></script>
-<script src="js/shared/errors.js?v=46"></script>
+<script src="js/shared/dialogs.js?v=47"></script>
+<script src="js/shared/errors.js?v=47"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -445,6 +445,7 @@
   .plan-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;flex-direction:column}
   .plan-card.actual{border:2px solid var(--primary)}
   .plan-card{position:relative}
+  .plan-gratis .bloq-gratis::after{content:' 🔒';font-size:.9em}
   .plan-promo{position:absolute;top:-10px;right:14px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px}
   .plan-precio{font-size:26px;font-weight:800;letter-spacing:-.02em;margin-top:6px;font-variant-numeric:tabular-nums}
   .plan-precio span{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:0}
@@ -607,7 +608,7 @@
   body.print-a4   @page{size:A4;margin:15mm}
   @page{size:80mm auto;margin:2mm}
 </style>
-  <script src="js/sentry-init.js?v=46" defer></script>
+  <script src="js/sentry-init.js?v=47" defer></script>
 </head>
 <body>
 
@@ -1188,10 +1189,10 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=46"></script>
-<script src="js/pos.js?v=46"></script>
-<script src="js/clientes.js?v=46"></script>
-<script src="js/barcodes.js?v=46"></script>
-<script src="js/plan.js?v=46"></script>
+<script src="js/config.js?v=47"></script>
+<script src="js/pos.js?v=47"></script>
+<script src="js/clientes.js?v=47"></script>
+<script src="js/barcodes.js?v=47"></script>
+<script src="js/plan.js?v=47"></script>
 </body>
 </html>

@@ -890,7 +890,10 @@ async function renderTiendas() {
     card.querySelector('.dir').textContent = dirEls.join(' · ') || '—';
   });
 
-  document.getElementById('tienda-add').addEventListener('click', () => abrirModalTienda(null));
+  document.getElementById('tienda-add').addEventListener('click', () => {
+    if (typeof planBloquea === 'function' && planBloquea('tiendas', (tiendas || []).filter(t => t.activo).length)) return;
+    abrirModalTienda(null);
+  });
   wrap.querySelectorAll('button[data-edit]').forEach(b => {
     b.addEventListener('click', () => {
       const t = tiendas.find(x => x.id === b.dataset.edit);
@@ -1554,6 +1557,12 @@ async function initReportesUI() {
 }
 
 window.cargarReportes = async () => {
+  // Plan Gratis: el historial llega hasta N días atrás.
+  const minHist = typeof planHistorialDesde === 'function' ? planHistorialDesde() : null;
+  if (minHist && document.getElementById('rep-desde').value < minHist) {
+    document.getElementById('rep-desde').value = minHist;
+    toast('El plan Gratis muestra los últimos ' + planLimite('historial_dias') + ' días. Para ver más, pasate a un plan pago.', 'info');
+  }
   const desde = document.getElementById('rep-desde').value;
   const hasta = document.getElementById('rep-hasta').value;
   const cajeroId = document.getElementById('rep-cajero').value || null;
@@ -1744,7 +1753,12 @@ window.cargarCorteGlobal = async () => {
   const inp  = document.getElementById('corte-global-fecha');
   if (!cont) return;
   if (inp && !inp.value) inp.value = _fechaNegocio();
-  const fecha = (inp && inp.value) ? inp.value : _fechaNegocio();
+  let fecha = (inp && inp.value) ? inp.value : _fechaNegocio();
+  const minHist = typeof planHistorialDesde === 'function' ? planHistorialDesde() : null;
+  if (minHist && fecha < minHist) {
+    fecha = minHist; if (inp) inp.value = minHist;
+    toast('El plan Gratis muestra los últimos ' + planLimite('historial_dias') + ' días.', 'info');
+  }
   cont.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">Cargando…</div>';
   const { data, error } = await sb.rpc('pos_corte_global_dia', { p_organization_id: orgId, p_fecha: fecha });
   if (error) { cont.innerHTML = '<div style="color:var(--danger);padding:16px">Error: ' + error.message + '</div>'; return; }
@@ -2697,7 +2711,8 @@ function renderCart(){
   if (btnMp)  btnMp.disabled  = disabled;
 
   const btnPre = document.getElementById('btn-prepago');
-  if (btnPre) btnPre.style.display = (clienteSel?.id && cart.size > 0) ? '' : 'none';
+  const _reservasOk = typeof planPermite !== 'function' || planPermite('reservas');
+  if (btnPre) btnPre.style.display = (_reservasOk && clienteSel?.id && cart.size > 0) ? '' : 'none';
 
   _renderComboSugerencias(list);
 
@@ -7396,7 +7411,11 @@ async function renderUsuarios() {
     card.querySelector('.email').textContent = u.email + (u.tienda_nombre ? ' · 🏪 ' + u.tienda_nombre : '');
   });
 
-  document.getElementById('usr-add')?.addEventListener('click', abrirNuevoUsuario);
+  document.getElementById('usr-add')?.addEventListener('click', () => {
+    // Plan Gratis: tope de usuarios (la base también lo controla).
+    if (typeof planBloquea === 'function' && planBloquea('usuarios', usuarios.filter(u => u.activo !== false).length)) return;
+    abrirNuevoUsuario();
+  });
   wrap.querySelectorAll('.usr-perms').forEach(box => {
     const uid = box.dataset.uid;
     const rec = box.querySelector('.perm-rec');
