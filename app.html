@@ -14,8 +14,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <title>POS Mostrador</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="js/shared/dialogs.js?v=43"></script>
-<script src="js/shared/errors.js?v=43"></script>
+<script src="js/shared/dialogs.js?v=44"></script>
+<script src="js/shared/errors.js?v=44"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -440,6 +440,16 @@
   .bc-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--border);font-size:13px}
   .bc-row:first-child{border-top:none}
 
+  /* ── Plan ─────────────────────────────────────────────── */
+  .plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+  .plan-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;flex-direction:column}
+  .plan-card.actual{border:2px solid var(--primary)}
+  .plan-card ul{list-style:none;margin:12px 0 14px;padding-top:12px;border-top:1px solid var(--border);flex:1;display:grid;gap:6px;align-content:start}
+  .plan-card li{font-size:13px;padding-left:18px;position:relative;line-height:1.4}
+  .plan-card li::before{content:'✓';position:absolute;left:0;color:var(--primary);font-weight:700}
+  .plan-chip{padding:5px 12px;border-radius:50px;border:1px solid #99D5CF;background:var(--primary-soft);color:var(--primary-dark);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
+  .plan-chip.alerta{border-color:#FECDCA;background:#FEF3F2;color:#B42318}
+
   /* ── Lock overlay ───────────────────────────────────── */
   .lock-overlay{position:fixed;inset:0;background:var(--bg);z-index:400;display:none;align-items:center;justify-content:center;padding:20px;color:var(--ink)}
   .lock-overlay.show{display:flex}
@@ -585,7 +595,7 @@
   body.print-a4   @page{size:A4;margin:15mm}
   @page{size:80mm auto;margin:2mm}
 </style>
-  <script src="js/sentry-init.js?v=43" defer></script>
+  <script src="js/sentry-init.js?v=44" defer></script>
 </head>
 <body>
 
@@ -685,7 +695,7 @@
             style="width:100%;margin-bottom:8px;padding:9px;border:1.5px solid rgba(5,150,105,.35);background:rgba(5,150,105,.06);color:#047857;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;display:none">
             📦 Entrega parcial / prepago
           </button>
-          <label class="pos-fact-toggle" id="fact-toggle-wrap">
+          <label class="pos-fact-toggle" id="fact-toggle-wrap" style="display:none">
             <input type="checkbox" id="fact-toggle">
             <span class="pos-fact-label">🧾 Emitir factura</span>
             <select id="fact-tipo" style="display:none">
@@ -824,6 +834,7 @@
       <h2 style="font-size:20px;margin:0 0 14px">⚙️ Configuración</h2>
       <div class="cfg-subnav" id="cfg-subnav">
         <button type="button" data-cfg="negocio" class="active">🏷 Negocio</button>
+        <button type="button" data-cfg="plan">💳 Mi plan</button>
         <button type="button" data-cfg="usuarios">👤 Usuarios</button>
         <button type="button" data-cfg="tiendas">🏪 Tiendas</button>
         <button type="button" data-cfg="ticket">🧾 Ticket</button>
@@ -839,6 +850,7 @@
       <div class="cfg-panel" data-panel="tiendas" style="display:none"><div class="tiendas-wrap" id="tiendas-wrap" style="padding:0;max-width:none"></div></div>
       <div class="cfg-panel" data-panel="ticket" style="display:none"><div class="recibo-wrap" id="recibo-wrap" style="padding:0;max-width:none"></div></div>
       <div class="cfg-panel" data-panel="promos" style="display:none"><div class="recibo-wrap" id="promos-wrap" style="padding:0;max-width:none"></div></div>
+      <div class="cfg-panel" data-panel="plan" style="display:none"><div class="recibo-wrap" id="plan-wrap" style="padding:0;max-width:none"></div></div>
       <div class="cfg-panel" data-panel="lealtad" style="display:none"><div class="recibo-wrap" id="lealtad-cfg-wrap" style="padding:0;max-width:none"></div></div>
       <div class="cfg-panel" data-panel="cuotas" style="display:none"><div class="recibo-wrap" id="cuotas-wrap" style="padding:0;max-width:none"></div></div>
       <div class="cfg-panel" data-panel="pagos" style="display:none"><div class="recibo-wrap" id="mp-config-wrap" style="padding:0;max-width:none"></div></div>
@@ -1163,9 +1175,10 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=43"></script>
-<script src="js/pos.js?v=43"></script>
-<script src="js/clientes.js?v=43"></script>
-<script src="js/barcodes.js?v=43"></script>
+<script src="js/config.js?v=44"></script>
+<script src="js/pos.js?v=44"></script>
+<script src="js/clientes.js?v=44"></script>
+<script src="js/barcodes.js?v=44"></script>
+<script src="js/plan.js?v=44"></script>
 </body>
 </html>

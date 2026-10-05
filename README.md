@@ -28,8 +28,8 @@ como archivos estáticos y se conecta directo a Supabase desde el navegador.
 - **Stock**: stock por tienda, carga en bulk, reposición/ajuste con origen
   (compra, depósito, otra tienda, vehículo), bloqueo por stock insuficiente.
 - **Devoluciones y anulaciones** parciales o totales con reembolso.
-- **Facturación** (borrador + emisión vía edge function), combos, productos de
-  peso variable, vencimientos.
+- Combos, productos de peso variable, vencimientos. (La emisión de factura
+  desde la venta está apagada: `FACTURACION_ON = false` en `js/pos.js`.)
 - **Cuenta corriente**: pestaña con lo que deben los clientes (fiado), saldos a
   favor, registrar pagos, movimientos, límite de deuda y recordatorio por
   WhatsApp. Reemplaza al módulo de envases retornables, que queda apagado
@@ -118,13 +118,49 @@ detectan que ya existe y no hacen nada):
 El email de bienvenida se dispara una sola vez vía la edge function
 `notify-signup` desde la vía que efectivamente crea la org.
 
+## Plan y cobro de la suscripción (Stripe)
+
+Configuración → **💳 Mi plan** muestra el plan de la organización (prueba con
+días restantes, plan pago, pago pendiente o vencido) y los planes de
+`pos_planes`. Los administradores ven además un aviso en la barra superior
+cuando quedan 7 días o menos de prueba o hay un problema de pago.
+
+Base ya creada en Supabase (`sql/2026-10-05_pos_billing.sql`): `pos_planes`
+(Mostrador / Negocio / Cadena con los precios de la landing), `pos_suscripciones`,
+`pos_billing_eventos` y la RPC `pos_plan_actual`.
+
+Para activar el pago con tarjeta:
+
+1. En Stripe, crear un producto por plan con su precio mensual recurrente y
+   cargar el id del precio en `pos_planes.stripe_price_id`. Opcional: un cupón
+   del 50% por un mes para el primer mes.
+2. Cargar los secrets y desplegar las edge functions de `supabase/functions/`:
+   ```sh
+   supabase secrets set STRIPE_SECRET_KEY=sk_... STRIPE_WEBHOOK_SECRET=whsec_... \
+     APP_URL=https://pos.trackmyvend.com STRIPE_COUPON_PRIMER_MES=<cupón opcional>
+   supabase functions deploy pos-billing-checkout
+   supabase functions deploy pos-billing-portal
+   supabase functions deploy pos-billing-webhook --no-verify-jwt
+   ```
+3. En Stripe → Webhooks, apuntar a `…/functions/v1/pos-billing-webhook` con los
+   eventos `checkout.session.completed`, `customer.subscription.created`,
+   `customer.subscription.updated`, `customer.subscription.deleted`,
+   `invoice.paid` e `invoice.payment_failed`.
+4. Activar el portal de clientes de Stripe (Settings → Billing → Customer portal).
+
+Apenas un plan tiene `stripe_price_id`, el botón "Elegir plan" abre Stripe
+Checkout. El webhook mantiene `pos_suscripciones` y marca la organización como
+paga (`organizations.plan = 'pro'`); si la suscripción se cancela o vence, la
+organización vuelve a `trial` con vencimiento al fin del período pagado, y el
+bloqueo existente por prueba vencida corta el acceso.
+
 ## Backend
 
 Se conecta al proyecto Supabase **Reparto** (`zgdrvptneiwlxlaywfur`) usando la
 clave pública anónima embebida en `js/pos.js` y `login.html`. El modelo es
 multi-tenant por organización: el rol del usuario (`user_roles` /
 `system_roles`) determina la organización, las tiendas visibles y los permisos.
-Toda la lógica de negocio (ventas, caja, stock, envases, facturación) vive en
+Toda la lógica de negocio (ventas, caja, stock, cuenta corriente, lealtad) vive en
 RPCs de Postgres (`pos_registrar_venta`, `pos_abrir_caja`, etc.) y edge
 functions (`mp-crear-cobro`, `emitir-factura`, …) ya existentes.
 

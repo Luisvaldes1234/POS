@@ -5342,7 +5342,10 @@ function _postVentaOk(data, metodo, totalEstimado, factInfo, envasesMov, recargo
   actualizarDashMini().catch(() => {});
 }
 
+// La emisión de factura desde la venta está apagada (opción oculta en la UI).
+const FACTURACION_ON = false;
 async function _maybeEmitirFactura(ventaData, total) {
+  if (!FACTURACION_ON) return;
   // Offline: la venta se registra igual, pero la factura se emite después
   // (la emisión necesita conexión con el servidor de facturación).
   if (ventaData?.offline || !navigator.onLine) return;
@@ -7823,6 +7826,7 @@ function _cfgShow(key) {
   else if (key === 'promos')  renderPromosConfig();
   else if (key === 'cuotas')  renderCuotasConfig();
   else if (key === 'lealtad') renderLealtadConfig();
+  else if (key === 'plan')    renderPlanConfig();
   else if (key === 'pagos')   renderConfigMP();
   else if (key === 'recibidas') renderFacturasRecibidas();
   else if (key === 'catalogo') renderCatalogoCompartido();
