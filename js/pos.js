@@ -261,7 +261,7 @@ function _offEnqueueVenta(params){
     (params.p_items || []).forEach(it => {
       const pid = it.producto_id; if (!pid) return;
       const qty = Number(it.cantidad) || 0;
-      if (stockMap.has(pid)) stockMap.set(pid, (stockMap.get(pid) || 0) - qty);
+      if (stockMap.has(pid)) stockMap.set(pid, Math.max(0, (stockMap.get(pid) || 0) - qty));
     });
   } catch (_) {}
   _offUpdateUI();
@@ -307,8 +307,8 @@ async function _offSync(manual){
   let ok = 0, fail = 0, netCut = false;
   for (const sale of [...q]){
     try {
-      // La venta ya ocurrió físicamente: registrar aunque el stock quede en
-      // negativo (no bloquear por stock estricto al sincronizar).
+      // La venta ya ocurrió físicamente: registrar aunque no alcance el stock
+      // (no bloquear por stock estricto al sincronizar; el stock queda en 0).
       const p = Object.assign({}, sale.params, { p_stock_strict: false });
       const { data, error } = await sb.rpc('pos_registrar_venta', p);
       if (error){ if (_isNetErr(error)){ netCut = true; break; } fail++; }
@@ -4537,7 +4537,11 @@ function abrirRecibo(v){
       (recargoRecibo > 0 && cuotasRecibo > 1
         ? '  <div class="receipt-pago"><span>Cuotas</span><span>' + cuotasRecibo + ' × ' + fmtARS(v.total / cuotasRecibo) + '</span></div>'
         : '') +
-      '  <div class="receipt-pago"><span>Método</span><span>' + metodoLabel + '</span></div>';
+      '  <div class="receipt-pago"><span>Método</span><span>' + metodoLabel + '</span></div>' +
+      (v.metodo === 'efectivo' && Number(v.pagaCon) > 0
+        ? '  <div class="receipt-pago"><span>Paga con</span><span>' + fmtARS(v.pagaCon) + '</span></div>' +
+          '  <div class="receipt-tot" style="color:#0F766E"><span>Vuelto</span><span>' + fmtARS(v.vuelto) + '</span></div>'
+        : '');
 
   const itemsBlockHtml = esDevolucionSola
     ? '<div style="font-size:12px;color:var(--muted);font-style:italic;padding:8px 0">Operación sin venta · sin cobro</div>'
@@ -4945,6 +4949,78 @@ async function cargarCuotasConfig() {
   } catch (_) { _cuotasConfig = []; }
 }
 
+// Cobro en efectivo: pregunta con cuánto paga el cliente y muestra el vuelto.
+// Resuelve { pagaCon, vuelto } o null si se cancela. Vacío = paga justo.
+function _pedirPagaCon(total) {
+  return new Promise(resolve => {
+    const billetes = [1000, 2000, 5000, 10000, 20000, 50000];
+    const sugeridos = [];
+    billetes.forEach(b => {
+      const v = Math.ceil(total / b) * b;
+      if (v > total && !sugeridos.includes(v) && sugeridos.length < 4) sugeridos.push(v);
+    });
+    const ov = document.createElement('div');
+    ov.className = 'qr-overlay show';
+    ov.style.cssText = 'background:rgba(0,0,0,.5);z-index:240';
+    const chip = (v, lbl) => '<button type="button" class="pc-op" data-v="' + v + '" style="flex:1 1 30%;padding:10px 8px;border:1px solid var(--border);background:#fff;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums">' + lbl + '</button>';
+    ov.innerHTML =
+      '<div style="background:#fff;border-radius:14px;width:min(400px,92vw);padding:20px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+      '<h3 style="margin:0;font-size:18px">Cobro en efectivo</h3>' +
+      '<button type="button" id="pc-x" aria-label="Cancelar" style="background:none;border:0;font-size:22px;cursor:pointer;color:#64748b">×</button>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;margin:10px 0 14px;font-variant-numeric:tabular-nums"><span style="color:var(--muted);font-size:14px">Total</span><span style="font-size:24px;font-weight:800">' + fmtARS(total) + '</span></div>' +
+      '<label for="pc-in" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px">¿Con cuánto paga?</label>' +
+      '<input id="pc-in" type="text" inputmode="numeric" autocomplete="off" placeholder="' + Math.round(total) + '" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;outline:none">' +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">' + chip(total, 'Justo') + sugeridos.map(v => chip(v, fmtARS(v))).join('') + '</div>' +
+      '<div id="pc-res" style="margin-top:16px;padding:14px;border-radius:10px;display:flex;justify-content:space-between;align-items:baseline;font-variant-numeric:tabular-nums"></div>' +
+      '<button type="button" id="pc-ok" style="margin-top:14px;width:100%;padding:14px;border:0;border-radius:10px;background:var(--primary);color:#fff;font-size:16px;font-weight:700;cursor:pointer">Confirmar cobro</button>' +
+      '</div>';
+    document.body.appendChild(ov);
+    const inp = ov.querySelector('#pc-in');
+    const res = ov.querySelector('#pc-res');
+    const ok  = ov.querySelector('#pc-ok');
+    const leer = () => {
+      const raw = inp.value.replace(/[^0-9,]/g, '').replace(',', '.');
+      return raw === '' ? total : (parseFloat(raw) || 0);
+    };
+    const pintar = () => {
+      const paga = leer();
+      const dif = Math.round((paga - total) * 100) / 100;
+      if (dif < 0) {
+        res.style.background = '#FEF3F2'; res.style.color = '#B42318';
+        res.innerHTML = '<span style="font-weight:600">Falta</span><span style="font-size:22px;font-weight:800">' + fmtARS(-dif) + '</span>';
+        ok.disabled = true; ok.style.opacity = '.5';
+      } else {
+        res.style.background = '#E6F2F1'; res.style.color = '#0D5C56';
+        res.innerHTML = '<span style="font-weight:600">Vuelto</span><span style="font-size:26px;font-weight:800">' + fmtARS(dif) + '</span>';
+        ok.disabled = false; ok.style.opacity = '1';
+      }
+    };
+    const cerrar = (val) => { document.removeEventListener('keydown', onKey, true); ov.remove(); resolve(val); };
+    const confirmar = () => {
+      const paga = leer();
+      if (paga < total) return;
+      cerrar({ pagaCon: paga, vuelto: Math.round((paga - total) * 100) / 100 });
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar(null); }
+      else if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); confirmar(); }
+      else if (/^F\d{1,2}$/.test(e.key)) { e.preventDefault(); e.stopPropagation(); }  // sin atajos con el diálogo abierto
+    };
+    document.addEventListener('keydown', onKey, true);
+    inp.addEventListener('input', pintar);
+    ov.querySelectorAll('.pc-op').forEach(b => b.addEventListener('click', () => {
+      inp.value = String(Math.round(Number(b.dataset.v))); pintar(); ok.focus();
+    }));
+    ok.addEventListener('click', confirmar);
+    ov.querySelector('#pc-x').addEventListener('click', () => cerrar(null));
+    ov.addEventListener('mousedown', e => { if (e.target === ov) cerrar(null); });
+    pintar();
+    setTimeout(() => inp.focus(), 30);
+  });
+}
+
 function _pedirCuotasCredito(totalBase) {
   return new Promise(resolve => {
     const planes = _cuotasConfig || [];
@@ -5138,6 +5214,12 @@ window.cobrar = async (metodo) => {
   }
   const totalFinal = total + recargoMonto;
 
+  let efectivoInfo = null;
+  if (metodo === 'efectivo') {
+    efectivoInfo = await _pedirPagaCon(totalFinal);
+    if (!efectivoInfo) return;
+  }
+
   const btnIds = ['btn-efe', 'btn-trs', 'btn-mp', 'btn-cc', 'btn-deb', 'btn-cre'];
   btnIds.forEach(id => { const b = document.getElementById(id); if (b) b.disabled = true; });
 
@@ -5181,7 +5263,7 @@ window.cobrar = async (metodo) => {
     }
 
     const factInfo = await _maybeEmitirFactura(data, total);
-    _postVentaOk(data, metodo, total, factInfo, _envasesMovSnap, { monto: recargoMonto, cuotas: cuotasSel }, totalBruto);
+    _postVentaOk(data, metodo, total, factInfo, _envasesMovSnap, { monto: recargoMonto, cuotas: cuotasSel }, totalBruto, efectivoInfo);
   } catch (e) {
     console.error(e);
     tmvShowError(e, { title: 'No se pudo registrar la venta' });
@@ -5191,7 +5273,21 @@ window.cobrar = async (metodo) => {
   }
 };
 
-function _postVentaOk(data, metodo, totalEstimado, factInfo, envasesMov, recargoInfo, brutoOverride) {
+// Productos del carrito cuya cantidad entregada supera el stock que había.
+// El servidor nunca deja stock negativo: esos productos quedan en 0.
+function _productosSinStockEnCarrito() {
+  const out = [];
+  cart.forEach((i, pid) => {
+    const p = productos.find(x => x.id === pid);
+    if (!p || p.es_combo || !stockMap.has(pid)) return;
+    const lleva = (i.entregar != null && i.entregar < i.cantidad) ? i.entregar : i.cantidad;
+    if (lleva > (Number(stockMap.get(pid)) || 0)) out.push(p.nombre);
+  });
+  return out;
+}
+
+function _postVentaOk(data, metodo, totalEstimado, factInfo, envasesMov, recargoInfo, brutoOverride, efectivoInfo) {
+  const sinStock = _productosSinStockEnCarrito();
   if (data?.vales_creados > 0) {
     toast('📦 ' + data.vales_creados + ' prepago(s) registrado(s) — pendiente de entrega', 'ok');
   }
@@ -5211,6 +5307,8 @@ function _postVentaOk(data, metodo, totalEstimado, factInfo, envasesMov, recargo
     descuento: Math.max(0, _bruto - totalEstimado),
     recargo:   _recargo,
     cuotas:    _cuotas,
+    pagaCon:   efectivoInfo?.pagaCon || null,
+    vuelto:    efectivoInfo?.vuelto || 0,
     metodo:    metodo,
     clienteId: cliIdParaSaldo,
     clienteNombre: clienteSel?.nombre || 'Mostrador',
@@ -5241,15 +5339,10 @@ function _postVentaOk(data, metodo, totalEstimado, factInfo, envasesMov, recargo
   renderClienteUI();
   cargarStock().then(() => renderProductGrid());
 
-  if (data.stock_warns && data.stock_warns.length) {
-    const warnsTxt = data.stock_warns.slice(0, 3).map(w => {
-      const p = productos.find(x => x.id === w.producto_id);
-      const nm = p ? p.nombre : (w.producto_id || '').slice(0, 8);
-      return nm + ' (' + w.stock_actual + ')';
-    }).join(', ');
-    const restantes = data.stock_warns.length - 3;
+  if (sinStock.length) {
+    const restantes = sinStock.length - 3;
     const sufijo = restantes > 0 ? ' y ' + restantes + ' más' : '';
-    toast('⚠ Stock negativo: ' + warnsTxt + sufijo + ' — andá a Stock para reponer', 'warn');
+    toast('Venta registrada ✓ · Sin stock, quedó en 0: ' + sinStock.slice(0, 3).join(', ') + sufijo + ' — reponé en Stock', 'warn');
   } else {
     toast('Venta registrada ✓', 'ok');
   }
