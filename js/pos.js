@@ -88,6 +88,7 @@ let tiendaId = null;
 // Nombre de tienda elegido en el registro (queda en el metadata del usuario);
 // se usa al crear la primera tienda de una organización nueva.
 let _provisionTiendaNombre = null;
+let _provisionDireccion = null;   // dirección del local cargada en el registro
 
 // ¿El usuario actual es administrador? (puede gestionar stock, productos,
 // usuarios, ver costos/márgenes y finanzas). Los cajeros (client_pos) no.
@@ -412,6 +413,7 @@ async function init(){
   _lockUserEmail = session.user?.email || null;
   // Nombre de tienda elegido en el registro (para la primera tienda).
   _provisionTiendaNombre = (session.user?.user_metadata?.tienda_name || '').trim() || null;
+  _provisionDireccion = (session.user?.user_metadata?.direccion || '').trim() || null;
   _resetLockTimer();
   const _uid = session.user.id;
   let _offlineMode = false;
@@ -708,7 +710,7 @@ async function cargarTiendas() {
   if (!tiendas.length && _isAdmin()) {
     try {
       const { error: cErr } = await sb.rpc('pos_crear_tienda', {
-        p_organization_id: orgId, p_nombre: (_provisionTiendaNombre || 'Casa central'), p_direccion: null, p_telefono: null,
+        p_organization_id: orgId, p_nombre: (_provisionTiendaNombre || 'Casa central'), p_direccion: _provisionDireccion, p_telefono: null,
       });
       if (!cErr) {
         const { data: d2 } = await sb.rpc('pos_listar_tiendas', { p_organization_id: orgId });

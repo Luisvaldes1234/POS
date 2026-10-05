@@ -77,10 +77,13 @@ async function sincronizarSuscripcion(
   const orgId = sub.metadata?.organization_id;
   if (!orgId) { console.warn("suscripción sin organization_id en metadata:", sub.id); return; }
 
-  const priceId = sub.items.data[0]?.price?.id ?? null;
+  const price = sub.items.data[0]?.price;
+  const priceId = price?.id ?? null;
   const { data: plan } = priceId
-    ? await admin.from("pos_planes").select("id").eq("stripe_price_id", priceId).maybeSingle()
+    ? await admin.from("pos_planes").select("id")
+        .or(`stripe_price_id.eq.${priceId},stripe_price_id_anual.eq.${priceId}`).maybeSingle()
     : { data: null };
+  const periodo = price?.recurring?.interval === "year" ? "anual" : "mensual";
   const estado = estadoDesdeStripe(sub.status);
   const finPeriodo = new Date(sub.current_period_end * 1000).toISOString();
 
@@ -91,6 +94,7 @@ async function sincronizarSuscripcion(
     stripe_customer_id: String(sub.customer),
     stripe_subscription_id: sub.id,
     stripe_price_id: priceId,
+    periodo,
     current_period_end: finPeriodo,
     cancel_at_period_end: sub.cancel_at_period_end,
     ultimo_evento: tipoEvento,
