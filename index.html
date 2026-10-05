@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#FFFFFF">
 <meta name="color-scheme" content="light">
-<meta name="description" content="Mostrador es el punto de venta para almacenes, kioscos, ferreterías y minimercados. Scanner de código de barras, caja, stock, reportes y facturación. 14 días de prueba sin tarjeta.">
-<meta property="og:title" content="Mostrador — Caja rápida. Control total.">
+<meta name="description" content="POS Mostrador es el punto de venta para almacenes, kioscos, ferreterías y minimercados. Scanner de código de barras, caja, stock, reportes y facturación. 14 días de prueba sin tarjeta.">
+<meta property="og:title" content="POS Mostrador — Caja rápida. Control total.">
 <meta property="og:description" content="El punto de venta para tu almacén, kiosco o ferretería. Scanner, caja, stock, reportes y facturación, todo en uno.">
-<title>Mostrador — Punto de venta para almacenes, kioscos y ferreterías</title>
+<title>POS Mostrador — Punto de venta para almacenes, kioscos y ferreterías</title>
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -47,7 +47,8 @@
   /* NAV */
   nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(12px);-webkit-backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--border)}
   .nav-in{display:flex;align-items:center;justify-content:space-between;height:68px;gap:16px}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;letter-spacing:-.02em;color:var(--primary-dark)}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;letter-spacing:-.02em;color:var(--primary-dark);white-space:nowrap}
+  @media(max-width:400px){nav .brand{font-size:17px;gap:8px}nav .brand svg{width:26px;height:26px}.nav-right .btn-sm{padding:9px 14px}}
   .brand svg{width:30px;height:30px}
   .nav-links{display:flex;align-items:center;gap:32px;font-size:15px;font-weight:500;color:var(--text)}
   .nav-links a:hover{color:var(--primary)}
@@ -102,7 +103,7 @@
   .s-total{display:flex;justify-content:space-between;align-items:flex-end;padding:16px 4px 14px}
   .s-total .items{color:var(--text-2)}
   .s-total .lbl{font-size:10.5px;font-weight:600;letter-spacing:.06em;color:var(--text-2);text-align:right}
-  .s-total .amt{font-size:28px;font-weight:700;color:var(--primary-dark);letter-spacing:-.02em;line-height:1.1}
+  .s-total .amt{white-space:nowrap;font-size:28px;font-weight:700;color:var(--primary-dark);letter-spacing:-.02em;line-height:1.1}
   .s-total .iva{display:inline-block;margin-top:4px;font-size:10.5px;font-weight:600;color:#B4532F;background:var(--accent-soft);padding:2px 8px;border-radius:999px}
   .s-foot{display:flex;align-items:center;justify-content:space-between;gap:14px;border-top:1px solid var(--border);margin:0 -16px;padding:12px 16px}
   .s-foot .pays{display:flex;gap:6px;color:var(--text-2)}
@@ -114,6 +115,8 @@
     .device{border-radius:20px;padding:8px}.screen{border-radius:13px;font-size:11.5px}
     .s-body{grid-template-columns:1fr}.s-side{display:none}
     .s-search{display:none}
+    .s-top .who .st{display:none}
+    .s-total .amt{font-size:24px}
     .s-row{grid-template-columns:minmax(0,1fr) 52px 70px;gap:6px}
     .s-row .hide-sm,.s-row .del,.s-row>span:last-child:empty{display:none}
     .s-foot .pays{display:none}.s-pay{flex:1}
@@ -260,7 +263,7 @@
 
 <nav>
   <div class="wrap nav-in">
-    <a class="brand" href="#" aria-label="Mostrador — inicio"><svg aria-hidden="true"><use href="#logo"/></svg>Mostrador</a>
+    <a class="brand" href="#" aria-label="POS Mostrador — inicio"><svg aria-hidden="true"><use href="#logo"/></svg>POS Mostrador</a>
     <div class="nav-links">
       <a href="#funciones">Funciones</a>
       <a href="#precios">Precios</a>
@@ -292,11 +295,11 @@
     </div>
 
     <!-- Mock de la pantalla de venta (HTML, no imagen) -->
-    <div class="device" role="img" aria-label="Pantalla de venta de Mostrador con un carrito de 4 productos y total de $10.460">
+    <div class="device" role="img" aria-label="Pantalla de venta del POS Mostrador con un carrito de 4 productos y total de $10.460">
       <div class="screen" aria-hidden="true">
         <div class="s-top">
-          <div class="brand"><svg><use href="#logo"/></svg>Mostrador</div>
-          <div class="who">Caja 1 · Abierta <b>MP</b></div>
+          <div class="brand"><svg><use href="#logo"/></svg>POS Mostrador</div>
+          <div class="who"><span class="st">Caja 1 · Abierta</span> <b>MP</b></div>
         </div>
         <div class="s-body">
           <div class="s-side">
@@ -352,7 +355,7 @@
 <section id="funciones">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker">Por qué Mostrador</div>
+      <div class="kicker">Por qué POS Mostrador</div>
       <h2>Lo que importa en la caja, sin vueltas.</h2>
       <p>Vender rápido, cerrar la caja sin sorpresas y saber qué te falta. Para eso está hecho.</p>
     </div>
@@ -528,7 +531,7 @@
     <div class="faq">
       <details>
         <summary>¿Necesito instalar algo o comprar un equipo especial?<svg class="ic"><use href="#i-chevron"/></svg></summary>
-        <p>No. Mostrador funciona desde el navegador de una tablet, celular o computadora, y se puede instalar como app. Si ya tenés scanner USB o impresora térmica, los podés usar.</p>
+        <p>No. El POS Mostrador funciona desde el navegador de una tablet, celular o computadora, y se puede instalar como app. Si ya tenés scanner USB o impresora térmica, los podés usar.</p>
       </details>
       <details>
         <summary>¿Tengo que poner la tarjeta para probarlo?<svg class="ic"><use href="#i-chevron"/></svg></summary>
@@ -554,7 +557,7 @@
   <div class="wrap">
     <div class="final">
       <h2>Tu mostrador, más rápido y bajo control.</h2>
-      <p>Probá Mostrador gratis por 14 días. Sin tarjeta y sin instalaciones complicadas.</p>
+      <p>Probá el POS Mostrador gratis por 14 días. Sin tarjeta y sin instalaciones complicadas.</p>
       <div class="cta-row">
         <a class="btn btn-primary" href="signup.html">Probar gratis <svg class="ic"><use href="#i-arrow"/></svg></a>
         <a class="btn btn-outline" href="login.html">Iniciar sesión</a>
@@ -565,7 +568,7 @@
 
 <footer>
   <div class="wrap foot-in">
-    <a class="brand" href="#"><svg aria-hidden="true"><use href="#logo"/></svg>Mostrador</a>
+    <a class="brand" href="#"><svg aria-hidden="true"><use href="#logo"/></svg>POS Mostrador</a>
     <div class="foot-links">
       <a href="#funciones">Funciones</a>
       <a href="#precios">Precios</a>
@@ -573,7 +576,7 @@
       <a href="login.html">Iniciar sesión</a>
       <a href="signup.html">Crear cuenta</a>
     </div>
-    <div>© <span id="year"></span> Mostrador</div>
+    <div>© <span id="year"></span> POS Mostrador</div>
   </div>
 </footer>
 
