@@ -380,7 +380,7 @@ async function renderPrivacidadConfig() {
         (vigente ? 'Aceptados el ' + fecha(c.terminos_aceptados_at) + ' (versión ' + _esc(c.terminos_version) + ').'
                  : 'Hay una versión nueva (' + TERMINOS_VERSION + ') sin aceptar. <button type="button" id="pv-acepto" class="cc-btn" style="margin-left:6px">Aceptar</button>') +
       '</div>' +
-      '<div style="font-size:13px;color:var(--muted);margin-top:10px">Para pedir una copia de tus datos, corregirlos o borrarlos, escribí a <a href="mailto:privacidad@trackmyvend.com" style="color:var(--primary)">privacidad@trackmyvend.com</a>.</div>' +
+      '<div style="font-size:13px;color:var(--muted);margin-top:10px">Para pedir una copia de tus datos, corregirlos o borrarlos, escribí a <a href="mailto:contacto@trackmyvend.com" style="color:var(--primary)">contacto@trackmyvend.com</a>.</div>' +
     '</div>';
   const msg = wrap.querySelector('#pv-msg');
   wrap.querySelector('#pv-ia').addEventListener('change', async (e) => {
