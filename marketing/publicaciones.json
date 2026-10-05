@@ -1,0 +1,460 @@
+{
+  "version": 1,
+  "actualizado": "2026-10-05",
+  "descripcion": "Calendario de publicaciones orgánicas de POS Mostrador. Lo leen las routines: cada día toman las publicaciones con fecha de hoy y estado pendiente.",
+  "reglas": {
+    "voz": "Argentina y Uruguay: voseo. México, Chile, Colombia, Perú y otros: tú. Nunca usted. Ver brand kit (README del design system POS Mostrador).",
+    "rubros": {
+      "AR": "almacén, kiosco, minimercado",
+      "UY": "almacén, kiosco, minimercado",
+      "MX": "tienda de abarrotes, miscelánea, minisúper",
+      "CL": "almacén, botillería, minimarket",
+      "CO": "tienda de barrio, miscelánea, minimercado",
+      "PE": "bodega, quiosco, minimarket",
+      "OT": "tienda, quiosco, minimercado"
+    },
+    "precios": "Argentina: promo $20.000/mes 3 meses, luego $40.000; anual $240.000; 14 días gratis sin tarjeta. Otros países: plan Gratis para siempre y precios en moneda local según pos_planes_precios.",
+    "prohibido": [
+      "Mencionar facturación electrónica o 'emitir factura'",
+      "Inventar historias o testimonios: los posts de historias necesitan un caso real y permiso",
+      "Copiar y pegar el mismo texto en varios grupos",
+      "Links en grupos que no permiten promoción"
+    ],
+    "mezcla": {
+      "tips": 0.35,
+      "comunidad": 0.2,
+      "historias": 0.15,
+      "humor": 0.1,
+      "producto": 0.15,
+      "oferta": 0.05
+    },
+    "estados": [
+      "pendiente",
+      "borrador_listo",
+      "publicado",
+      "descartado"
+    ]
+  },
+  "publicaciones": [
+    {
+      "id": "s1-lun",
+      "fecha": "2026-10-12",
+      "semana": 1,
+      "dia": "lun",
+      "hora_local": "08:00",
+      "pais": "AR",
+      "canal": "pagina",
+      "pilar": "tips",
+      "formato": "carrusel",
+      "titulo": "3 señales de que te faltan productos y no te diste cuenta",
+      "texto": "3 señales de que te está faltando mercadería (y no te diste cuenta):\n\n1. Vendés \"de memoria\" y al cerrar la caja no te da.\n2. Pedís al proveedor lo mismo de siempre, aunque cambie lo que sale.\n3. Te enterás de que no hay cuando el cliente ya está en el mostrador.\n\n¿Cuál te pasa más seguido? Contalo abajo 👇",
+      "visual": "Carrusel 4 láminas: portada con el titular; una lámina por señal, fondo surface, número grande en primary.",
+      "imagen": null,
+      "cta_url": "https://pos.trackmyvend.com/?utm_source=facebook&utm_medium=organico&utm_campaign=s1-lun",
+      "grupos": {
+        "permitido": true,
+        "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
+      },
+      "estado": "pendiente"
+    },
+    {
+      "id": "s1-mar",
+      "fecha": "2026-10-13",
+      "semana": 1,
+      "dia": "mar",
+      "hora_local": "08:00",
+      "pais": "AR",
+      "canal": "pagina",
+      "pilar": "comunidad",
+      "formato": "imagen",
+      "titulo": "¿Fiado en cuaderno o en el celu?",
+      "texto": "Pregunta para los que atienden mostrador: el fiado, ¿lo anotás en cuaderno, en el celu o ya no fiás más?\n\nLeemos todas las respuestas 👇",
+      "visual": "Imagen 1:1, fondo primary-soft, la pregunta en h2 color ink, tres opciones como pills.",
+      "imagen": null,
+      "cta_url": "https://pos.trackmyvend.com/?utm_source=facebook&utm_medium=organico&utm_campaign=s1-mar",
+      "grupos": {
+        "permitido": true,
+        "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
+      },
+      "estado": "pendiente"
+    },
+    {
+      "id": "s1-mie",
+      "fecha": "2026-10-14",
+      "semana": 1,
+      "dia": "mie",
+      "hora_local": "08:00",
+      "pais": "AR",
+      "canal": "pagina",
+      "pilar": "producto",
+      "formato": "video",
+      "titulo": "El vuelto, sin calculadora",
+      "texto": "Son $4.500 y te pagan con $20.000. ¿Cuánto das de vuelto?\n\nCon POS Mostrador lo ves en pantalla apenas cargás con cuánto paga el cliente. Sin calculadora y sin errores en la fila.\n\nProbalo 14 días gratis, sin tarjeta.",
+      "visual": "Video vertical de 15 s grabando la pantalla: escanear 2 productos, elegir Efectivo, escribir 20000, aparece el vuelto. Captura de apoyo: app-vuelto.jpg.",
+      "imagen": "app-vuelto.jpg",
+      "cta_url": "https://pos.trackmyvend.com/?utm_source=facebook&utm_medium=organico&utm_campaign=s1-mie",
+      "grupos": {
+        "permitido": false,
+        "nota": "Solo en grupos con día de promoción o permiso del admin, con utm_source=grupo."
+      },
+      "estado": "pendiente"
+    },
+    {
+      "id": "s1-jue",
+      "fecha": "2026-10-15",
+      "semana": 1,
+      "dia": "jue",
+      "hora_local": "08:00",
+      "pais": "AR",
+      "canal": "pagina",
+      "pilar": "historias",
+      "formato": "imagen",
+      "titulo": "Cómo cierra la caja un almacén de barrio",
+      "texto": "Antes cerraba la caja contando billetes una hora. Ahora lo hace en 5 minutos.\n\n[Contar acá la historia real de un cliente: nombre del comercio, barrio, qué cambió. Pedir permiso antes de publicar.]",
+      "visual": "Foto real del comercio o del dueño en el mostrador, con su permiso. Si no hay, usar app-venta.jpg.",
+      "imagen": "app-venta.jpg",
+      "cta_url": "https://pos.trackmyvend.com/?utm_source=facebook&utm_medium=organico&utm_campaign=s1-jue",
+      "grupos": {
+        "permitido": true,
+        "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
+      },
+      "estado": "pendiente"
+    },
+    {
+      "id": "s1-vie",
+      "fecha": "2026-10-16",
+      "semana": 1,
+      "dia": "vie",
+      "hora_local": "08:00",
+      "pais": "AR",
+      "canal": "pagina",
+      "pilar": "humor",
+      "formato": "imagen",
+      "titulo": "El cliente del billete grande",
+      "texto": "Son las 8:05, recién abriste, y el primer cliente te paga un chicle con un billete de $20.000.\n\nEtiquetá a alguien que vive esto todos los días 😅",
+      "visual": "Imagen 1:1 simple: el texto en h2 sobre surface, sin capturas.",
+      "imagen": null,
+      "cta_url": "https://pos.trackmyvend.com/?utm_source=facebook&utm_medium=organico&utm_campaign=s1-vie",
+      "grupos": {
+        "permitido": true,
+        "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
+      },
+      "estado": "pendiente"
+    },
+    {
+      "id": "s2-lun",
+      "fecha": "2026-10-19",
+      "semana": 2,
+      "dia": "lun",
+      "hora_local": "08:00",
+      "pais": "AR",
+      "canal": "pagina",
+      "pilar": "tips",
+      "formato": "carrusel",
+      "titulo": "Cómo calcular el precio de venta sin perder plata",
+      "texto": "¿Cómo ponés el precio de venta? La cuenta rápida:\n\nPrecio = costo ÷ (1 − margen)\n\nEjemplo: si te cuesta $1.000 y querés ganar 30%, el precio es $1.000 ÷ 0,70 = $1.429. No $1.300.\n\nGuardá este post para la próxima lista de precios.",
+      "visual": "Carrusel 3 láminas: la fórmula, el ejemplo con números en price, el error común (sumar 30%).",
+      "imagen": null,
+      "cta_url": "https://pos.trackmyvend.com/?utm_source=facebook&utm_medium=organico&utm_campaign=s2-lun",
+      "grupos": {
+        "permitido": true,
+        "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
+      },
+      "estado": "pendiente"
+    },
+    {
+      "id": "s2-mar",
+      "fecha": "2026-10-20",
+      "semana": 2,
+      "dia": "mar",
+      "hora_local": "08:00",
+      "pais": "AR",
+      "canal": "pagina",
+      "pilar": "comunidad",
+      "formato": "encuesta",
+      "titulo": "¿Cuánto tardás en cerrar la caja?",
+      "texto": "Encuesta rápida: ¿cuánto tardás en cerrar la caja al final del día?\n\nA) Menos de 10 minutos\nB) Entre 10 y 30\nC) Más de media hora\nD) Prefiero no hablar del tema",
+      "visual": "Encuesta nativa de Facebook o sticker de encuesta en historias.",
+      "imagen": null,
+      "cta_url": "https://pos.trackmyvend.com/?utm_source=facebook&utm_medium=organico&utm_campaign=s2-mar",
+      "grupos": {
+        "permitido": true,
+        "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
+      },
+      "estado": "pendiente"
+    },
+    {
+      "id": "s2-mie",
+      "fecha": "2026-10-21",
+      "semana": 2,
+      "dia": "mie",
+      "hora_local": "08:00",
+      "pais": "AR",
+      "canal": "pagina",
+      "pilar": "producto",
+      "formato": "video",
+      "titulo": "Stock que nunca queda negativo",
+      "texto": "Vendiste algo que el sistema decía que no tenías. ¿Y ahora qué?\n\nEn POS Mostrador la venta sale igual y el stock queda en 0, nunca en negativo. Así el inventario no se te desarma.\n\n14 días gratis, sin tarjeta.",
+      "visual": "Video de 20 s: producto con stock 1, se venden 2, el stock queda en 0. Texto en pantalla: \"Nunca en negativo\".",
+      "imagen": null,
+      "cta_url": "https://pos.trackmyvend.com/?utm_source=facebook&utm_medium=organico&utm_campaign=s2-mie",
+      "grupos": {
+        "permitido": false,
+        "nota": "Solo en grupos con día de promoción o permiso del admin, con utm_source=grupo."
+      },
+      "estado": "pendiente"
+    },
+    {
+      "id": "s2-jue",
+      "fecha": "2026-10-22",
+      "semana": 2,
+      "dia": "jue",
+      "hora_local": "08:00",
+      "pais": "AR",
+      "canal": "pagina",
+      "pilar": "historias",
+      "formato": "imagen",
+      "titulo": "Del cuaderno de fiado a la cuenta corriente",
+      "texto": "\"Tenía tres cuadernos de fiado y nunca sabía cuánto me debían.\"\n\n[Historia real de un cliente que pasó el fiado a la cuenta corriente. Pedir permiso.]",
+      "visual": "Foto del cuaderno viejo al lado de la pantalla de cuenta corriente (app-cuenta-corriente.jpg).",
+      "imagen": "app-cuenta-corriente.jpg",
+      "cta_url": "https://pos.trackmyvend.com/?utm_source=facebook&utm_medium=organico&utm_campaign=s2-jue",
+      "grupos": {
+        "permitido": true,
+        "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
+      },
+      "estado": "pendiente"
+    },
+    {
+      "id": "s2-vie",
+      "fecha": "2026-10-23",
+      "semana": 2,
+      "dia": "vie",
+      "hora_local": "08:00",
+      "pais": "AR",
+      "canal": "pagina",
+      "pilar": "oferta",
+      "formato": "imagen",
+      "titulo": "Promo Mostrador",
+      "texto": "Promo para arrancar: POS Mostrador a $20.000 por mes los primeros 3 meses. O $240.000 el año completo, que queda en $20.000 por mes todo el año.\n\nSin tarjeta para probar: 14 días gratis con todo incluido.",
+      "visual": "Pieza con PriceCard del brand kit: plan Mostrador, etiqueta Promo en accent. Solo Argentina.",
+      "imagen": null,
+      "cta_url": "https://pos.trackmyvend.com/?utm_source=facebook&utm_medium=organico&utm_campaign=s2-vie",
+      "grupos": {
+        "permitido": false,
+        "nota": "Solo en grupos con día de promoción o permiso del admin, con utm_source=grupo."
+      },
+      "estado": "pendiente"
+    },
+    {
+      "id": "s3-lun",
+      "fecha": "2026-10-26",
+      "semana": 3,
+      "dia": "lun",
+      "hora_local": "08:00",
+      "pais": "AR",
+      "canal": "pagina",
+      "pilar": "tips",
+      "formato": "carrusel",
+      "titulo": "5 productos que más se roban en un kiosco",
+      "texto": "Los productos que más \"desaparecen\" en un kiosco o almacén:\n\n1. Golosinas chicas cerca de la caja\n2. Pilas\n3. Encendedores\n4. Desodorantes y maquinitas de afeitar\n5. Chocolates\n\n¿Qué agregarías a la lista?",
+      "visual": "Carrusel 6 láminas, una por producto, ícono de trazo en primary sobre primary-soft.",
+      "imagen": null,
+      "cta_url": "https://pos.trackmyvend.com/?utm_source=facebook&utm_medium=organico&utm_campaign=s3-lun",
+      "grupos": {
+        "permitido": true,
+        "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
+      },
+      "estado": "pendiente"
+    },
+    {
+      "id": "s3-mar",
+      "fecha": "2026-10-27",
+      "semana": 3,
+      "dia": "mar",
+      "hora_local": "08:00",
+      "pais": "AR",
+      "canal": "pagina",
+      "pilar": "comunidad",
+      "formato": "imagen",
+      "titulo": "¿Tenés programa de puntos?",
+      "texto": "¿Le das algo a los clientes que vuelven siempre? ¿Descuento, un regalo, nada?\n\nContanos cómo lo hacés en tu comercio.",
+      "visual": "Imagen 1:1 con la pregunta.",
+      "imagen": null,
+      "cta_url": "https://pos.trackmyvend.com/?utm_source=facebook&utm_medium=organico&utm_campaign=s3-mar",
+      "grupos": {
+        "permitido": true,
+        "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
+      },
+      "estado": "pendiente"
+    },
+    {
+      "id": "s3-mie",
+      "fecha": "2026-10-28",
+      "semana": 3,
+      "dia": "mie",
+      "hora_local": "08:00",
+      "pais": "AR",
+      "canal": "pagina",
+      "pilar": "producto",
+      "formato": "video",
+      "titulo": "Puntos para tus clientes de siempre",
+      "texto": "Tus clientes de siempre se merecen algo. Con el programa de puntos de POS Mostrador los registrás con nombre y teléfono, suman con cada compra y canjean lo que vos elijas: un descuento, un porcentaje o un producto gratis.\n\nIncluido en el plan Negocio.",
+      "visual": "Video de 25 s: registrar cliente, venta suma puntos, canje en caja. Captura: app-lealtad.jpg.",
+      "imagen": "app-lealtad.jpg",
+      "cta_url": "https://pos.trackmyvend.com/?utm_source=facebook&utm_medium=organico&utm_campaign=s3-mie",
+      "grupos": {
+        "permitido": false,
+        "nota": "Solo en grupos con día de promoción o permiso del admin, con utm_source=grupo."
+      },
+      "estado": "pendiente"
+    },
+    {
+      "id": "s3-jue",
+      "fecha": "2026-10-29",
+      "semana": 3,
+      "dia": "jue",
+      "hora_local": "08:00",
+      "pais": "AR",
+      "canal": "pagina",
+      "pilar": "historias",
+      "formato": "imagen",
+      "titulo": "Una ferretería con miles de artículos",
+      "texto": "[Historia real de una ferretería o comercio con muchos artículos: cómo busca precios y controla stock. Pedir permiso.]",
+      "visual": "Foto real del local; si no hay, app-venta.jpg.",
+      "imagen": "app-venta.jpg",
+      "cta_url": "https://pos.trackmyvend.com/?utm_source=facebook&utm_medium=organico&utm_campaign=s3-jue",
+      "grupos": {
+        "permitido": true,
+        "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
+      },
+      "estado": "pendiente"
+    },
+    {
+      "id": "s3-vie",
+      "fecha": "2026-10-30",
+      "semana": 3,
+      "dia": "vie",
+      "hora_local": "08:00",
+      "pais": "AR",
+      "canal": "pagina",
+      "pilar": "humor",
+      "formato": "imagen",
+      "titulo": "\"¿Me lo anotás?\"",
+      "texto": "La frase más escuchada en el mostrador después de \"hola\":\n\n\"¿Me lo anotás y te lo pago el viernes?\"\n\n¿Qué viernes, Carlos? ¿QUÉ VIERNES? 😅",
+      "visual": "Imagen 1:1 con la frase en h2.",
+      "imagen": null,
+      "cta_url": "https://pos.trackmyvend.com/?utm_source=facebook&utm_medium=organico&utm_campaign=s3-vie",
+      "grupos": {
+        "permitido": true,
+        "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
+      },
+      "estado": "pendiente"
+    },
+    {
+      "id": "s4-lun",
+      "fecha": "2026-11-02",
+      "semana": 4,
+      "dia": "lun",
+      "hora_local": "08:00",
+      "pais": "AR",
+      "canal": "pagina",
+      "pilar": "tips",
+      "formato": "carrusel",
+      "titulo": "Qué mirar en el reporte del día",
+      "texto": "Al cerrar el día, mirá estas 3 cosas (2 minutos):\n\n1. Cuánto vendiste y en qué medio de pago.\n2. Los 5 productos que más salieron: ¿te alcanza el stock para mañana?\n3. Qué te deben en fiado hoy.\n\nCon eso ya sabés más de tu negocio que el 90% del barrio.",
+      "visual": "Carrusel 4 láminas, una por punto, con captura de reportes si está disponible.",
+      "imagen": null,
+      "cta_url": "https://pos.trackmyvend.com/?utm_source=facebook&utm_medium=organico&utm_campaign=s4-lun",
+      "grupos": {
+        "permitido": true,
+        "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
+      },
+      "estado": "pendiente"
+    },
+    {
+      "id": "s4-mar",
+      "fecha": "2026-11-03",
+      "semana": 4,
+      "dia": "mar",
+      "hora_local": "08:00",
+      "pais": "AR",
+      "canal": "pagina",
+      "pilar": "comunidad",
+      "formato": "imagen",
+      "titulo": "¿Qué te gustaría que haga tu sistema de caja?",
+      "texto": "Si pudieras pedirle una sola cosa a tu sistema de caja, ¿qué sería?\n\nLas respuestas las leemos todas (y algunas las hacemos).",
+      "visual": "Imagen 1:1 con la pregunta.",
+      "imagen": null,
+      "cta_url": "https://pos.trackmyvend.com/?utm_source=facebook&utm_medium=organico&utm_campaign=s4-mar",
+      "grupos": {
+        "permitido": true,
+        "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
+      },
+      "estado": "pendiente"
+    },
+    {
+      "id": "s4-mie",
+      "fecha": "2026-11-04",
+      "semana": 4,
+      "dia": "mie",
+      "hora_local": "08:00",
+      "pais": "AR",
+      "canal": "pagina",
+      "pilar": "producto",
+      "formato": "video",
+      "titulo": "Productos sin código de barras",
+      "texto": "¿Vendés cosas sueltas o caseras que no traen código de barras?\n\nCon POS Mostrador generás el código, imprimís la etiqueta y después los escaneás como cualquier otro producto.\n\nProbalo 14 días gratis.",
+      "visual": "Video de 20 s: elegir producto sin código, generar, vista de etiquetas, escanear. Captura: app-codigos.jpg.",
+      "imagen": "app-codigos.jpg",
+      "cta_url": "https://pos.trackmyvend.com/?utm_source=facebook&utm_medium=organico&utm_campaign=s4-mie",
+      "grupos": {
+        "permitido": false,
+        "nota": "Solo en grupos con día de promoción o permiso del admin, con utm_source=grupo."
+      },
+      "estado": "pendiente"
+    },
+    {
+      "id": "s4-jue",
+      "fecha": "2026-11-05",
+      "semana": 4,
+      "dia": "jue",
+      "hora_local": "08:00",
+      "pais": "AR",
+      "canal": "pagina",
+      "pilar": "historias",
+      "formato": "imagen",
+      "titulo": "Una sucursal más, sin perder el control",
+      "texto": "[Historia real de un comercio que abrió una segunda sucursal y controla las dos desde el celu. Pedir permiso.]",
+      "visual": "Foto real; si no hay, app-venta.jpg.",
+      "imagen": "app-venta.jpg",
+      "cta_url": "https://pos.trackmyvend.com/?utm_source=facebook&utm_medium=organico&utm_campaign=s4-jue",
+      "grupos": {
+        "permitido": true,
+        "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
+      },
+      "estado": "pendiente"
+    },
+    {
+      "id": "s4-vie",
+      "fecha": "2026-11-06",
+      "semana": 4,
+      "dia": "vie",
+      "hora_local": "08:00",
+      "pais": "AR",
+      "canal": "pagina",
+      "pilar": "oferta",
+      "formato": "carrusel",
+      "titulo": "Todo lo que incluye POS Mostrador",
+      "texto": "Todo lo que hace POS Mostrador por tu mostrador:\n\n✅ Caja con scanner y vuelto\n✅ Stock que nunca queda negativo\n✅ Cuenta corriente (fiado)\n✅ Programa de puntos\n✅ Generador de códigos de barras\n✅ Reportes y varias sucursales\n\n14 días gratis, sin tarjeta.",
+      "visual": "Carrusel de 6 láminas, una por función, cada una con su captura real.",
+      "imagen": null,
+      "cta_url": "https://pos.trackmyvend.com/?utm_source=facebook&utm_medium=organico&utm_campaign=s4-vie",
+      "grupos": {
+        "permitido": false,
+        "nota": "Solo en grupos con día de promoción o permiso del admin, con utm_source=grupo."
+      },
+      "estado": "pendiente"
+    }
+  ]
+}
