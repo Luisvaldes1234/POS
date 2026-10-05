@@ -71,58 +71,19 @@
   .checks span{display:inline-flex;align-items:center;gap:7px}
   .checks .ic{width:18px;height:18px;color:var(--primary)}
 
-  /* PRODUCT MOCK (tablet) */
-  .device{background:#1F2328;border-radius:28px;padding:12px;box-shadow:var(--shadow-lg);max-width:620px;margin-left:auto}
+  /* CAPTURAS REALES */
+  .device{background:#1F2328;border-radius:22px;padding:10px;box-shadow:var(--shadow-lg);max-width:680px;margin-left:auto}
   @media(max-width:980px){.device{margin:0 auto}}
-  .screen{background:#fff;border-radius:18px;overflow:hidden;font-size:12.5px;color:var(--text)}
-  .s-top{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border)}
-  .s-top .brand{font-size:15px}
-  .s-top .brand svg{width:22px;height:22px}
-  .s-top .who{display:flex;align-items:center;gap:8px;color:var(--text-2);font-size:12px}
-  .s-top .who b{width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary-dark);display:grid;place-items:center;font-size:11px;font-weight:600}
-  .s-body{display:grid;grid-template-columns:118px 1fr}
-  .s-side{border-right:1px solid var(--border);padding:10px 8px;display:flex;flex-direction:column;gap:2px}
-  .s-side div{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;color:var(--text-2);font-weight:500}
-  .s-side div.on{background:var(--primary-soft);color:var(--primary-dark)}
-  .s-side .ic{width:15px;height:15px}
-  .s-main{padding:14px 16px 0;display:flex;flex-direction:column;min-width:0}
-  .s-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
-  .s-head h4{font-size:16px;font-weight:600;letter-spacing:-.01em;white-space:nowrap}
-  .s-search{display:flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text-3);font-size:11.5px;flex:1;max-width:230px;min-width:0}
-  .s-search span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .s-search .ic{width:14px;height:14px}
-  .s-search .bc{margin-left:auto;color:var(--accent)}
-  .s-table{border:1px solid var(--border);border-radius:10px;overflow:hidden}
-  .s-row{display:grid;grid-template-columns:minmax(0,1fr) 62px 62px 66px 20px;align-items:center;gap:8px;padding:9px 12px;border-top:1px solid var(--border)}
-  .s-row:first-child{border-top:none;background:#FAFBFC;color:var(--text-2);font-size:11px;font-weight:500;padding:8px 12px}
-  .s-row .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .s-row .r{text-align:right}
-  .qty{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:6px;padding:2px 6px;font-weight:500}
-  .qty i{font-style:normal;color:var(--text-2)}
-  .s-row .del{color:var(--text-3)}
-  .s-row .del .ic{width:14px;height:14px}
-  .s-total{display:flex;justify-content:space-between;align-items:flex-end;padding:16px 4px 14px}
-  .s-total .items{color:var(--text-2)}
-  .s-total .lbl{font-size:10.5px;font-weight:600;letter-spacing:.06em;color:var(--text-2);text-align:right}
-  .s-total .amt{white-space:nowrap;font-size:28px;font-weight:700;color:var(--primary-dark);letter-spacing:-.02em;line-height:1.1}
-  .s-total .iva{display:inline-block;margin-top:4px;font-size:10.5px;font-weight:600;color:#B4532F;background:var(--accent-soft);padding:2px 8px;border-radius:999px}
-  .s-foot{display:flex;align-items:center;justify-content:space-between;gap:14px;border-top:1px solid var(--border);margin:0 -16px;padding:12px 16px}
-  .s-foot .pays{display:flex;gap:6px;color:var(--text-2)}
-  .s-foot .pays span{border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;font-weight:500}
-  .s-foot .pays span.on{border-color:var(--primary);color:var(--primary-dark);background:var(--primary-soft)}
-  .s-pay{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--primary);color:#fff;font-weight:600;border-radius:8px;padding:10px 0;flex:0 0 46%;font-size:13px}
-  .s-pay .ic{width:15px;height:15px}
-  @media(max-width:600px){
-    .device{border-radius:20px;padding:8px}.screen{border-radius:13px;font-size:11.5px}
-    .s-body{grid-template-columns:1fr}.s-side{display:none}
-    .s-search{display:none}
-    .s-top .who .st{display:none}
-    .s-total .amt{font-size:24px}
-    .s-row{grid-template-columns:minmax(0,1fr) 52px 70px;gap:6px}
-    .s-row .hide-sm,.s-row .del,.s-row>span:last-child:empty{display:none}
-    .s-foot .pays{display:none}.s-pay{flex:1}
-    .cta-row .btn{flex:1 1 auto}
-  }
+  @media(max-width:600px){.device{border-radius:14px;padding:6px}}
+  .screen-img{display:block;width:100%;height:auto;border-radius:14px;background:#fff}
+  @media(max-width:600px){.screen-img{border-radius:9px}}
+  .shots{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+  @media(max-width:820px){.shots{grid-template-columns:1fr}}
+  .shot figure{margin:0}
+  .shot img{display:block;width:100%;height:auto;border-radius:14px;border:1px solid var(--border);box-shadow:0 12px 32px -16px rgba(16,24,40,.25);background:#fff}
+  .shot figcaption{margin-top:14px}
+  .shot h3{font-size:18px;font-weight:600;letter-spacing:-.01em}
+  .shot p{color:var(--text-2);font-size:15px;margin-top:4px;line-height:1.55}
 
   /* RUBROS STRIP */
   .rubros{border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--surface)}
@@ -297,48 +258,10 @@
       </div>
     </div>
 
-    <!-- Mock de la pantalla de venta (HTML, no imagen) -->
-    <div class="device" role="img" aria-label="Pantalla de venta del POS Mostrador con un carrito de 4 productos y total de $10.460">
-      <div class="screen" aria-hidden="true">
-        <div class="s-top">
-          <div class="brand"><svg><use href="#logo"/></svg>POS Mostrador</div>
-          <div class="who"><span class="st">Caja 1 · Abierta</span> <b>MP</b></div>
-        </div>
-        <div class="s-body">
-          <div class="s-side">
-            <div class="on"><svg class="ic"><use href="#i-cart"/></svg>Venta</div>
-            <div><svg class="ic"><use href="#i-box"/></svg>Productos</div>
-            <div><svg class="ic"><use href="#i-users"/></svg>Clientes</div>
-            <div><svg class="ic"><use href="#i-cash"/></svg>Caja</div>
-            <div><svg class="ic"><use href="#i-chart"/></svg>Reportes</div>
-          </div>
-          <div class="s-main">
-            <div class="s-head">
-              <h4>Nueva venta</h4>
-              <div class="s-search"><svg class="ic"><use href="#i-search"/></svg><span>Buscar o escanear código</span><svg class="ic bc"><use href="#i-scan"/></svg></div>
-            </div>
-            <div class="s-table num">
-              <div class="s-row"><span>Producto</span><span>Cant.</span><span class="r hide-sm">Precio</span><span class="r">Subtotal</span><span></span></div>
-              <div class="s-row"><span class="name">Yerba mate 500 g</span><span><span class="qty">1 <i>+</i></span></span><span class="r hide-sm">$ 2.450</span><span class="r">$ 2.450</span><span class="del"><svg class="ic"><use href="#i-trash"/></svg></span></div>
-              <div class="s-row"><span class="name">Café molido 250 g</span><span><span class="qty">2 <i>+</i></span></span><span class="r hide-sm">$ 1.890</span><span class="r">$ 3.780</span><span class="del"><svg class="ic"><use href="#i-trash"/></svg></span></div>
-              <div class="s-row"><span class="name">Azúcar 1 kg</span><span><span class="qty">1 <i>+</i></span></span><span class="r hide-sm">$ 1.250</span><span class="r">$ 1.250</span><span class="del"><svg class="ic"><use href="#i-trash"/></svg></span></div>
-              <div class="s-row"><span class="name">Aceite de girasol 900 ml</span><span><span class="qty">1 <i>+</i></span></span><span class="r hide-sm">$ 2.980</span><span class="r">$ 2.980</span><span class="del"><svg class="ic"><use href="#i-trash"/></svg></span></div>
-            </div>
-            <div class="s-total num">
-              <span class="items">5 unidades · 4 productos</span>
-              <div>
-                <div class="lbl">TOTAL</div>
-                <div class="amt">$ 10.460</div>
-                <div style="text-align:right"><span class="iva">IVA incluido</span></div>
-              </div>
-            </div>
-            <div class="s-foot">
-              <div class="pays"><span class="on">Efectivo</span><span>MP QR</span><span>Débito</span></div>
-              <div class="s-pay"><svg class="ic"><use href="#i-card"/></svg>Cobrar</div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <!-- Captura real de la app (datos de ejemplo) -->
+    <div class="device">
+      <img class="screen-img" src="img/app-venta.jpg" width="2560" height="1600" fetchpriority="high"
+        alt="Pantalla de venta del POS Mostrador: grilla de productos con precio y stock, y el carrito con el total listo para cobrar">
     </div>
   </div>
 </header>
@@ -394,6 +317,34 @@
           <li><svg class="ic"><use href="#i-check"/></svg>Productos más vendidos</li>
         </ul>
       </div>
+    </div>
+  </div>
+</section>
+
+<section id="capturas" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker">Así se ve por dentro</div>
+      <h2>Lo que vas a usar todos los días.</h2>
+      <p>Capturas reales del sistema, con productos y clientes de ejemplo.</p>
+    </div>
+    <div class="shots">
+      <div class="shot"><figure>
+        <img src="img/app-vuelto.jpg" width="2560" height="1600" loading="lazy" alt="Cobro en efectivo: el cliente paga con $20.000 y el sistema muestra el vuelto de $660">
+        <figcaption><h3>Cobro con vuelto calculado</h3><p>Ingresás con cuánto paga y el sistema te dice el vuelto. Sin cuentas en la cabeza.</p></figcaption>
+      </figure></div>
+      <div class="shot"><figure>
+        <img src="img/app-cuenta-corriente.jpg" width="2560" height="1600" loading="lazy" alt="Cuenta corriente: total a cobrar, clientes que deben y botón para registrar pagos">
+        <figcaption><h3>Cuenta corriente al día</h3><p>Quién te debe, cuánto, y registrás los pagos en dos toques. Con recordatorio por WhatsApp.</p></figcaption>
+      </figure></div>
+      <div class="shot"><figure>
+        <img src="img/app-lealtad.jpg" width="2560" height="1600" loading="lazy" alt="Programa de lealtad: registro por teléfono, miembros con sus puntos y recompensas">
+        <figcaption><h3>Programa de puntos</h3><p>Registrás al cliente con su teléfono, suma puntos solo y los canjea por las promos que armes.</p></figcaption>
+      </figure></div>
+      <div class="shot"><figure>
+        <img src="img/app-codigos.jpg" width="2560" height="1600" loading="lazy" alt="Generador de códigos de barras: lista de productos para generar códigos e imprimir etiquetas">
+        <figcaption><h3>Códigos de barras y etiquetas</h3><p>Generá códigos para lo que no trae e imprimí las etiquetas con nombre y precio.</p></figcaption>
+      </figure></div>
     </div>
   </div>
 </section>
