@@ -79,10 +79,11 @@ async function sincronizarSuscripcion(
 
   const price = sub.items.data[0]?.price;
   const priceId = price?.id ?? null;
-  const { data: plan } = priceId
-    ? await admin.from("pos_planes").select("id")
-        .or(`stripe_price_id.eq.${priceId},stripe_price_id_anual.eq.${priceId}`).maybeSingle()
+  const { data: precio } = priceId
+    ? await admin.from("pos_planes_precios").select("plan_id")
+        .or(`stripe_price_id.eq.${priceId},stripe_price_id_anual.eq.${priceId}`).limit(1).maybeSingle()
     : { data: null };
+  const plan = precio ? { id: precio.plan_id as string } : null;
   const periodo = price?.recurring?.interval === "year" ? "anual" : "mensual";
   const estado = estadoDesdeStripe(sub.status);
   const finPeriodo = new Date(sub.current_period_end * 1000).toISOString();

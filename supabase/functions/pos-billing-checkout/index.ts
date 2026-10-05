@@ -1,10 +1,12 @@
 // POST { organization_id, plan_id, periodo?: 'mensual' | 'anual' } → { url } de Stripe Checkout.
 // Crea (o reutiliza) el customer de Stripe de la organización y abre la
 // suscripción:
-//   - mensual: pos_planes.stripe_price_id + cupón de promo del plan
-//     (stripe_coupon_promo, ej. Mostrador $20.000 los primeros 3 meses) o, si
-//     el plan no tiene promo, el cupón general STRIPE_COUPON_PRIMER_MES.
-//   - anual:   pos_planes.stripe_price_id_anual (pago del año por adelantado).
+//   - mensual: stripe_price_id + cupón de promo del plan (stripe_coupon_promo,
+//     ej. Mostrador: precio promo los primeros 3 meses) o, si el plan no tiene
+//     promo, el cupón general STRIPE_COUPON_PRIMER_MES.
+//   - anual:   stripe_price_id_anual (pago del año por adelantado).
+// Precios e ids de Stripe por país: pos_planes_precios (país de la org; 'OT'
+// para países no soportados, en USD).
 // Si la organización todavía está en la prueba gratis, el primer cobro se
 // hace cuando termina la prueba (no pierde los días que le quedan).
 import { APP_URL, HttpError, json, corsHeaders, requireOrgAdmin, stripe } from "../_shared/billing.ts";
@@ -18,12 +20,17 @@ Deno.serve(async (req) => {
     const { user, admin } = await requireOrgAdmin(req, orgId);
 
     const { data: plan } = await admin.from("pos_planes")
-      .select("id, nombre, stripe_price_id, stripe_price_id_anual, stripe_coupon_promo, activo").eq("id", planId).maybeSingle();
+      .select("id, nombre, activo").eq("id", planId).maybeSingle();
     if (!plan?.activo) throw new HttpError(404, "Plan no encontrado");
-    const priceId = periodo === "anual" ? plan.stripe_price_id_anual : plan.stripe_price_id;
-    if (!priceId) throw new HttpError(409, periodo === "anual" ? "Este plan no tiene pago anual" : "Este plan todavía no tiene precio en Stripe");
 
-    const { data: org } = await admin.from("organizations").select("name, email, plan, trial_ends_at").eq("id", orgId).single();
+    const { data: org } = await admin.from("organizations").select("name, email, plan, pais, trial_ends_at").eq("id", orgId).single();
+    const pais = ["AR", "MX", "CL", "CO", "PE", "UY"].includes(String(org?.pais ?? "").toUpperCase())
+      ? String(org!.pais).toUpperCase() : "OT";
+    const { data: precio } = await admin.from("pos_planes_precios")
+      .select("stripe_price_id, stripe_price_id_anual, stripe_coupon_promo")
+      .eq("plan_id", planId).eq("pais", pais).maybeSingle();
+    const priceId = periodo === "anual" ? precio?.stripe_price_id_anual : precio?.stripe_price_id;
+    if (!priceId) throw new HttpError(409, periodo === "anual" ? "Este plan no tiene pago anual" : "Este plan todavía no tiene precio en Stripe para tu país");
     const { data: sus } = await admin.from("pos_suscripciones")
       .select("stripe_customer_id, stripe_subscription_id, estado").eq("organization_id", orgId).maybeSingle();
 
@@ -47,7 +54,7 @@ Deno.serve(async (req) => {
 
     // Promo de bienvenida (solo si nunca tuvo suscripción y paga mensual).
     const cupon = periodo === "mensual" && !sus?.stripe_subscription_id
-      ? (plan.stripe_coupon_promo || Deno.env.get("STRIPE_COUPON_PRIMER_MES") || null)
+      ? (precio?.stripe_coupon_promo || Deno.env.get("STRIPE_COUPON_PRIMER_MES") || null)
       : null;
     const discounts = cupon ? [{ coupon: cupon }] : undefined;
 
@@ -63,8 +70,8 @@ Deno.serve(async (req) => {
       line_items: [{ price: priceId, quantity: 1 }],
       discounts,
       allow_promotion_codes: discounts ? undefined : true,
-      subscription_data: { metadata: { organization_id: orgId, plan_id: plan.id, periodo }, trial_end: trialEnd },
-      metadata: { organization_id: orgId, plan_id: plan.id, periodo },
+      subscription_data: { metadata: { organization_id: orgId, plan_id: plan.id, periodo, pais }, trial_end: trialEnd },
+      metadata: { organization_id: orgId, plan_id: plan.id, periodo, pais },
       success_url: `${APP_URL}/app.html?billing=ok`,
       cancel_url: `${APP_URL}/app.html?billing=cancel`,
       locale: "es",

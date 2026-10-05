@@ -57,6 +57,11 @@
     <div class="legal">POS Mostrador by TMV Dynamics S.A.&nbsp;de&nbsp;C.V.</div>
   </form>
 
+<script src="js/pais.js?v=1"></script>
+<script>
+  // Textos con "tú" fuera de Argentina y Uruguay.
+  (function () { const P = window.PosPais; if (P && !P.PAISES[P.detectarPais()].voseo) P.aplicarTuteo(document.body); })();
+</script>
 <script>
   const SB_URL = 'https://zgdrvptneiwlxlaywfur.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpnZHJ2cHRuZWl3bHhsYXl3ZnVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NDU4NDgsImV4cCI6MjA5MDUyMTg0OH0.r1BR_OruT95Ks_xdkvlnuSqT8Lm-Vh6usJhgdLcV_Ig';
