@@ -33,7 +33,28 @@
       "borrador_listo",
       "publicado",
       "descartado"
-    ]
+    ],
+    "canva": "Ver marketing/canva.json: plantilla, assets y reglas de armado.",
+    "paises_activos": {
+      "AR": {
+        "activo": true
+      },
+      "MX": {
+        "activo": false
+      },
+      "CL": {
+        "activo": false
+      },
+      "CO": {
+        "activo": false
+      },
+      "PE": {
+        "activo": false
+      },
+      "UY": {
+        "activo": false
+      }
+    }
   },
   "publicaciones": [
     {
@@ -55,7 +76,18 @@
         "permitido": true,
         "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
       },
-      "estado": "pendiente"
+      "estado": "pendiente",
+      "pieza": {
+        "titular": "3 señales de que te falta mercadería",
+        "bajada": "Y no te diste cuenta. ¿Cuál te pasa más?",
+        "etiqueta": "Tip",
+        "captura": null
+      },
+      "canva": {
+        "design_id": null,
+        "edit_url": null,
+        "png_url": null
+      }
     },
     {
       "id": "s1-mar",
@@ -76,7 +108,18 @@
         "permitido": true,
         "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
       },
-      "estado": "pendiente"
+      "estado": "pendiente",
+      "pieza": {
+        "titular": "¿Fiado en cuaderno o en el celu?",
+        "bajada": "Contanos en los comentarios.",
+        "etiqueta": "Encuesta",
+        "captura": null
+      },
+      "canva": {
+        "design_id": null,
+        "edit_url": null,
+        "png_url": null
+      }
     },
     {
       "id": "s1-mie",
@@ -97,7 +140,18 @@
         "permitido": false,
         "nota": "Solo en grupos con día de promoción o permiso del admin, con utm_source=grupo."
       },
-      "estado": "pendiente"
+      "estado": "pendiente",
+      "pieza": {
+        "titular": "Son $4.500 y te pagan con $20.000",
+        "bajada": "El vuelto aparece solo en pantalla. Sin calculadora.",
+        "etiqueta": "14 días gratis",
+        "captura": "app-vuelto.jpg"
+      },
+      "canva": {
+        "design_id": null,
+        "edit_url": null,
+        "png_url": null
+      }
     },
     {
       "id": "s1-jue",
@@ -118,7 +172,18 @@
         "permitido": true,
         "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
       },
-      "estado": "pendiente"
+      "estado": "pendiente",
+      "pieza": {
+        "titular": "Cierra la caja en 5 minutos",
+        "bajada": "La historia de un almacén de barrio.",
+        "etiqueta": "Historia",
+        "captura": "app-venta.jpg"
+      },
+      "canva": {
+        "design_id": null,
+        "edit_url": null,
+        "png_url": null
+      }
     },
     {
       "id": "s1-vie",
@@ -139,7 +204,18 @@
         "permitido": true,
         "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
       },
-      "estado": "pendiente"
+      "estado": "pendiente",
+      "pieza": {
+        "titular": "Un chicle con un billete de $20.000",
+        "bajada": "Las 8:05 y recién abriste.",
+        "etiqueta": "Humor",
+        "captura": null
+      },
+      "canva": {
+        "design_id": null,
+        "edit_url": null,
+        "png_url": null
+      }
     },
     {
       "id": "s2-lun",
@@ -160,7 +236,18 @@
         "permitido": true,
         "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
       },
-      "estado": "pendiente"
+      "estado": "pendiente",
+      "pieza": {
+        "titular": "Precio = costo ÷ (1 − margen)",
+        "bajada": "Si te cuesta $1.000 y querés ganar 30%: $1.429, no $1.300.",
+        "etiqueta": "Tip",
+        "captura": null
+      },
+      "canva": {
+        "design_id": null,
+        "edit_url": null,
+        "png_url": null
+      }
     },
     {
       "id": "s2-mar",
@@ -181,7 +268,18 @@
         "permitido": true,
         "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
       },
-      "estado": "pendiente"
+      "estado": "pendiente",
+      "pieza": {
+        "titular": "¿Cuánto tardás en cerrar la caja?",
+        "bajada": "Votá en la encuesta.",
+        "etiqueta": "Encuesta",
+        "captura": null
+      },
+      "canva": {
+        "design_id": null,
+        "edit_url": null,
+        "png_url": null
+      }
     },
     {
       "id": "s2-mie",
@@ -202,7 +300,18 @@
         "permitido": false,
         "nota": "Solo en grupos con día de promoción o permiso del admin, con utm_source=grupo."
       },
-      "estado": "pendiente"
+      "estado": "borrador_listo",
+      "pieza": {
+        "titular": "Vendiste algo que el sistema decía que no tenías",
+        "bajada": "La venta sale igual y el stock queda en 0. Nunca en negativo.",
+        "etiqueta": "14 días gratis",
+        "captura": "app-venta.jpg"
+      },
+      "canva": {
+        "design_id": "DAHXIEzxUoA",
+        "edit_url": "https://www.canva.com/d/caLHMYuhLumHabG",
+        "png_url": null
+      }
     },
     {
       "id": "s2-jue",
@@ -223,7 +332,18 @@
         "permitido": true,
         "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
       },
-      "estado": "pendiente"
+      "estado": "pendiente",
+      "pieza": {
+        "titular": "Del cuaderno de fiado a la cuenta corriente",
+        "bajada": "La historia de un comercio que dejó los cuadernos.",
+        "etiqueta": "Historia",
+        "captura": "app-cuenta-corriente.jpg"
+      },
+      "canva": {
+        "design_id": null,
+        "edit_url": null,
+        "png_url": null
+      }
     },
     {
       "id": "s2-vie",
@@ -244,7 +364,18 @@
         "permitido": false,
         "nota": "Solo en grupos con día de promoción o permiso del admin, con utm_source=grupo."
       },
-      "estado": "pendiente"
+      "estado": "pendiente",
+      "pieza": {
+        "titular": "$20.000 por mes los primeros 3 meses",
+        "bajada": "O $240.000 el año completo. Probalo 14 días gratis, sin tarjeta.",
+        "etiqueta": "Promo",
+        "captura": "app-venta.jpg"
+      },
+      "canva": {
+        "design_id": null,
+        "edit_url": null,
+        "png_url": null
+      }
     },
     {
       "id": "s3-lun",
@@ -265,7 +396,18 @@
         "permitido": true,
         "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
       },
-      "estado": "pendiente"
+      "estado": "pendiente",
+      "pieza": {
+        "titular": "Lo que más se roba en un kiosco",
+        "bajada": "5 productos para vigilar cerca de la caja.",
+        "etiqueta": "Tip",
+        "captura": null
+      },
+      "canva": {
+        "design_id": null,
+        "edit_url": null,
+        "png_url": null
+      }
     },
     {
       "id": "s3-mar",
@@ -286,7 +428,18 @@
         "permitido": true,
         "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
       },
-      "estado": "pendiente"
+      "estado": "pendiente",
+      "pieza": {
+        "titular": "¿Le das algo a tus clientes de siempre?",
+        "bajada": "Contanos cómo lo hacés.",
+        "etiqueta": "Encuesta",
+        "captura": null
+      },
+      "canva": {
+        "design_id": null,
+        "edit_url": null,
+        "png_url": null
+      }
     },
     {
       "id": "s3-mie",
@@ -307,7 +460,18 @@
         "permitido": false,
         "nota": "Solo en grupos con día de promoción o permiso del admin, con utm_source=grupo."
       },
-      "estado": "pendiente"
+      "estado": "pendiente",
+      "pieza": {
+        "titular": "Puntos para tus clientes de siempre",
+        "bajada": "Suman con cada compra y canjean lo que vos elijas.",
+        "etiqueta": "Plan Negocio",
+        "captura": "app-lealtad.jpg"
+      },
+      "canva": {
+        "design_id": null,
+        "edit_url": null,
+        "png_url": null
+      }
     },
     {
       "id": "s3-jue",
@@ -328,7 +492,18 @@
         "permitido": true,
         "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
       },
-      "estado": "pendiente"
+      "estado": "pendiente",
+      "pieza": {
+        "titular": "Miles de artículos, cero lío",
+        "bajada": "La historia de una ferretería.",
+        "etiqueta": "Historia",
+        "captura": "app-venta.jpg"
+      },
+      "canva": {
+        "design_id": null,
+        "edit_url": null,
+        "png_url": null
+      }
     },
     {
       "id": "s3-vie",
@@ -349,7 +524,18 @@
         "permitido": true,
         "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
       },
-      "estado": "pendiente"
+      "estado": "pendiente",
+      "pieza": {
+        "titular": "\"¿Me lo anotás y te pago el viernes?\"",
+        "bajada": "¿Qué viernes, Carlos?",
+        "etiqueta": "Humor",
+        "captura": null
+      },
+      "canva": {
+        "design_id": null,
+        "edit_url": null,
+        "png_url": null
+      }
     },
     {
       "id": "s4-lun",
@@ -370,7 +556,18 @@
         "permitido": true,
         "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
       },
-      "estado": "pendiente"
+      "estado": "pendiente",
+      "pieza": {
+        "titular": "3 cosas para mirar al cerrar el día",
+        "bajada": "Dos minutos que te ordenan el negocio.",
+        "etiqueta": "Tip",
+        "captura": null
+      },
+      "canva": {
+        "design_id": null,
+        "edit_url": null,
+        "png_url": null
+      }
     },
     {
       "id": "s4-mar",
@@ -391,7 +588,18 @@
         "permitido": true,
         "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
       },
-      "estado": "pendiente"
+      "estado": "pendiente",
+      "pieza": {
+        "titular": "¿Qué le pedirías a tu sistema de caja?",
+        "bajada": "Leemos todas las respuestas.",
+        "etiqueta": "Encuesta",
+        "captura": null
+      },
+      "canva": {
+        "design_id": null,
+        "edit_url": null,
+        "png_url": null
+      }
     },
     {
       "id": "s4-mie",
@@ -412,7 +620,18 @@
         "permitido": false,
         "nota": "Solo en grupos con día de promoción o permiso del admin, con utm_source=grupo."
       },
-      "estado": "pendiente"
+      "estado": "pendiente",
+      "pieza": {
+        "titular": "¿Productos sin código de barras?",
+        "bajada": "Generá el código, imprimí la etiqueta y escaneá.",
+        "etiqueta": "14 días gratis",
+        "captura": "app-codigos.jpg"
+      },
+      "canva": {
+        "design_id": null,
+        "edit_url": null,
+        "png_url": null
+      }
     },
     {
       "id": "s4-jue",
@@ -433,7 +652,18 @@
         "permitido": true,
         "nota": "Publicar sin link; si preguntan, responder en comentarios o por privado."
       },
-      "estado": "pendiente"
+      "estado": "pendiente",
+      "pieza": {
+        "titular": "Una sucursal más, sin perder el control",
+        "bajada": "La historia de un comercio que creció.",
+        "etiqueta": "Historia",
+        "captura": "app-venta.jpg"
+      },
+      "canva": {
+        "design_id": null,
+        "edit_url": null,
+        "png_url": null
+      }
     },
     {
       "id": "s4-vie",
@@ -454,7 +684,18 @@
         "permitido": false,
         "nota": "Solo en grupos con día de promoción o permiso del admin, con utm_source=grupo."
       },
-      "estado": "pendiente"
+      "estado": "pendiente",
+      "pieza": {
+        "titular": "Todo lo que hace POS Mostrador",
+        "bajada": "Caja, stock, fiado, puntos, códigos y reportes.",
+        "etiqueta": "14 días gratis",
+        "captura": "app-venta.jpg"
+      },
+      "canva": {
+        "design_id": null,
+        "edit_url": null,
+        "png_url": null
+      }
     }
   ]
 }

@@ -43,25 +43,29 @@ Deno.serve(async (req) => {
   }
 
   try {
-    let sub: Stripe.Subscription | null = null;
+    // El cuerpo del evento llega en la versión de API del endpoint (puede ser
+    // más nueva que la del SDK, p. ej. 2025-04-30.basil, donde cambian campos
+    // como current_period_end o invoice.subscription). Por eso solo se toma el
+    // id de la suscripción y se vuelve a leer con el SDK.
+    let subId: string | null = null;
+    const obj = event.data.object as unknown as Record<string, any>;
     switch (event.type) {
-      case "checkout.session.completed": {
-        const s = event.data.object as Stripe.Checkout.Session;
-        if (s.subscription) sub = await stripe.subscriptions.retrieve(String(s.subscription));
+      case "checkout.session.completed":
+        subId = obj.subscription ? String(obj.subscription) : null;
         break;
-      }
       case "customer.subscription.created":
       case "customer.subscription.updated":
       case "customer.subscription.deleted":
-        sub = event.data.object as Stripe.Subscription;
+        subId = String(obj.id);
         break;
       case "invoice.paid":
       case "invoice.payment_failed": {
-        const inv = event.data.object as Stripe.Invoice;
-        if (inv.subscription) sub = await stripe.subscriptions.retrieve(String(inv.subscription));
+        const s = obj.subscription ?? obj.parent?.subscription_details?.subscription;
+        subId = s ? String(typeof s === "object" ? s.id : s) : null;
         break;
       }
     }
+    const sub = subId ? await stripe.subscriptions.retrieve(subId) : null;
     if (sub) await sincronizarSuscripcion(admin, sub, event.type);
     return json({ ok: true });
   } catch (e) {
@@ -87,7 +91,8 @@ async function sincronizarSuscripcion(
   const plan = precio ? { id: precio.plan_id as string } : null;
   const periodo = price?.recurring?.interval === "year" ? "anual" : "mensual";
   const estado = estadoDesdeStripe(sub.status);
-  const finPeriodo = new Date(sub.current_period_end * 1000).toISOString();
+  const finSeg = sub.current_period_end ?? (sub.items.data[0] as unknown as { current_period_end?: number })?.current_period_end;
+  const finPeriodo = finSeg ? new Date(finSeg * 1000).toISOString() : null;
 
   await admin.from("pos_suscripciones").upsert({
     organization_id: orgId,
@@ -113,7 +118,7 @@ async function sincronizarSuscripcion(
       const { error } = await admin.rpc("_pos_pasar_a_gratis", { p_org: orgId });
       if (error) throw error;
     } else {
-      await admin.from("organizations").update({ plan: "trial", trial_ends_at: finPeriodo }).eq("id", orgId);
+      await admin.from("organizations").update({ plan: "trial", trial_ends_at: finPeriodo ?? new Date().toISOString() }).eq("id", orgId);
     }
   }
 }

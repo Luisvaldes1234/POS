@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "actualizado": "2026-10-05",
+  "carpeta": {
+    "id": "FAHXIMcQNnw",
+    "url": "https://www.canva.com/folder/FAHXIMcQNnw",
+    "nombre": "POS Mostrador · Publicaciones"
+  },
+  "plantillas": {
+    "post_4x5": {
+      "design_id": "DAHXINan0NM",
+      "edit_url": "https://www.canva.com/d/u5c2WMZbv_2yn60",
+      "tamano": "1080x1350",
+      "nota": "Nunca editar la plantilla: siempre copy-design y editar la copia. Los locator_id de la copia son los mismos que los de la plantilla.",
+      "elementos": {
+        "titular": {
+          "locator_id": "PBrGthnfgZkwGXkc-LB021RsfHHjkHMw6",
+          "top": 210,
+          "font_size": 84,
+          "color": "#1A1A1A"
+        },
+        "bajada": {
+          "locator_id": "PBrGthnfgZkwGXkc-LB3jzlHSwwN8Vnbr",
+          "font_size": 40,
+          "color": "#475569"
+        },
+        "etiqueta_texto": {
+          "locator_id": "PBrGthnfgZkwGXkc-LBcvzQz5nq8ZQR6r",
+          "nota": "Texto blanco sobre la pill coral. Máximo 18 caracteres."
+        },
+        "etiqueta_fondo": {
+          "locator_id": "PBrGthnfgZkwGXkc-LBfv4fcBYKj7qzsl",
+          "color": "#E07A5F"
+        },
+        "captura": {
+          "locator_id": "PBrGthnfgZkwGXkc-LBldJH3q1h4qN2cc",
+          "top": 620,
+          "left": 80,
+          "width": 920,
+          "height": 575
+        },
+        "marco_captura": {
+          "locator_id": "PBrGthnfgZkwGXkc-LBS5mFM1hl3Q7Mjd"
+        },
+        "fondo": {
+          "locator_id": "PBrGthnfgZkwGXkc-LBDVtsQnzK32mwYY",
+          "color": "#E6F2F1"
+        },
+        "logo": {
+          "locator_id": "PBrGthnfgZkwGXkc-LBT6p9ywWVw1T2HH"
+        },
+        "marca": {
+          "locator_id": "PBrGthnfgZkwGXkc-LBZrp5ccsLN86xbR"
+        },
+        "url": {
+          "locator_id": "PBrGthnfgZkwGXkc-LBflyh3S91gSzBsk"
+        }
+      },
+      "page_id": "PBrGthnfgZkwGXkc"
+    }
+  },
+  "assets": {
+    "app-venta.jpg": "MAHXIOgzYZ0",
+    "app-vuelto.jpg": "MAHXIJYVOPM",
+    "app-lealtad.jpg": "MAHXINWaLd0",
+    "app-codigos.jpg": "MAHXIFMno-8",
+    "app-cuenta-corriente.jpg": "MAHXIE9dKCo",
+    "logo-icono": "MAHXIHqwCtk"
+  },
+  "reglas_de_armado": [
+    "Titular de hasta 2 líneas: hasta ~32 caracteres queda a 84 px; de 33 a 50 caracteres bajar a 72 px. Más de 50: acortar el titular.",
+    "Después de cambiar el titular, poner la bajada en top = top del titular + alto del titular + 32 (leer el alto en el documento que devuelve edit-design).",
+    "La bajada no puede pasar de top 560: si pasa, acortarla.",
+    "Etiqueta coral: la oferta del país ('14 días gratis' en AR; 'Gratis para siempre' en MX, CL, CO, PE, UY y otros) o un rótulo del pilar ('Tip', 'Encuesta', 'Historia'). Máximo 18 caracteres.",
+    "Publicaciones sin captura (tips, comunidad, humor): borrar 'captura' y 'marco_captura', subir el titular a top 300 con 96 px y la bajada debajo; o usar la captura de la función de la que habla el tip.",
+    "Carrusel: una copia de la plantilla por lámina, con el título 'sX-dia · lámina N'. Lámina 1 = gancho, última = cierre con la oferta.",
+    "Fuera de Argentina cambiar 'pos.trackmyvend.com' por 'pos.trackmyvend.com/mx' (o el país que corresponda) y usar tú.",
+    "Revisar siempre la miniatura que devuelve edit-design: nada encimado, nada cortado. Recién ahí commit.",
+    "Título del diseño: '<id> · <titulo>'. Mover el diseño a la carpeta. Exportar PNG."
+  ]
+}
